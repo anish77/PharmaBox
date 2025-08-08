@@ -35,17 +35,26 @@ class LoginPage extends StatelessWidget {
                 TextFormField(
                   decoration: InputDecoration(
                     labelText: 'Email',
-
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF5B55F3)),
+                      borderSide: BorderSide(color: kPrimary),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF5B55F3)),
+                      borderSide: BorderSide(color: kPrimary),
                     ),
                     disabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF5B55F3)),
+                      borderSide: BorderSide(color: kPrimary),
                     ),
                   ),
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  validator: (value) {
+                    if (value == null ||
+                        value.trim().isEmpty ||
+                        !value.contains('@')) {
+                      return kEmailError;
+                    }
+                    return null; // Valid email
+                  },
                 ),
 
                 const SizedBox(height: 16),
@@ -56,12 +65,23 @@ class LoginPage extends StatelessWidget {
                     labelText: 'Password',
                     labelStyle: TextStyle(color: Colors.black),
                     border: OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: kPrimary),
+                    ),
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: kPrimary),
                     ),
-                    suffixIcon: Icon(Icons.lock),
+                    disabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: kPrimary),
+                    ),
                   ),
                   obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.trim().length < 6) {
+                      return kPasswordError;
+                    }
+                    return null; // Valid password
+                  },
                 ),
                 const SizedBox(height: 24),
 

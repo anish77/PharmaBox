@@ -7,3 +7,12 @@ const kLogo = 'assets/Logo.png';
 const kPrimary = Color(0xFF5D5FEF);
 const kSecondary = Color(0xFFE5E6FF);
 const kBackGround = Color(0xFFF5F7FA);
+
+//messages
+const kEmailError = 'Please enter a valid email address';
+const kPasswordError = 'Password must be at least 6 characters long';
+/*const kLoginSuccess = 'Login successful!';
+const kLoginError = 'Login failed. Please try again.';
+const kSignUpSuccess = 'Sign up successful!';
+const kSignUpError = 'Sign up failed. Please try again.';
+const kPasswordHint = 'Enter your password';*/
