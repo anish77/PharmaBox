@@ -1,14 +1,48 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/custom_text_form_field.dart';
 
-class NewAccountPage extends StatelessWidget {
-  NewAccountPage({super.key});
+final _firebase = FirebaseAuth.instance;
 
-  final _formKey = GlobalKey<FormState>();
+class NewAccountPage extends StatefulWidget {
+  const NewAccountPage({super.key});
 
   @override
+  State<NewAccountPage> createState() {
+    return _NewAccountPageState();
+  }
+}
+
+class _NewAccountPageState extends State<NewAccountPage> {
+  final _form = GlobalKey<FormState>();
+
+  final _enteredEmail = '';
+  final _enteredPassword = '';
+
+  void _submitLogin() async {
+    print(_enteredEmail);
+    print(_enteredPassword);
+    try {
+      final userCredential = await _firebase.createUserWithEmailAndPassword(
+        email: _enteredEmail,
+        password: _enteredPassword,
+      );
+      print(userCredential);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'email-already-in-use') {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email già in uso'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +58,7 @@ class NewAccountPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Form(
-            key: _formKey,
+            key: _form,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -88,9 +122,7 @@ class NewAccountPage extends StatelessWidget {
                             titleColor: Colors.white,
                             backgroundColor: kPrimary,
                             onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                // ✅ campi validi
-                              }
+                              _submitLogin();
                             },
                           ),
                           const SizedBox(height: 16),
