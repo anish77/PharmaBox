@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "53295815532",
+    "project_id": "pharmabox-1c149",
+    "storage_bucket": "pharmabox-1c149.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:53295815532:android:cd533c5ba9bd5003a63149",
+        "android_client_info": {
+          "package_name": "com.example.pharma_box"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCySHo0x1vZqzXhRWuQBrYJqlgnpQwozwE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
