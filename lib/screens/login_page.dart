@@ -20,8 +20,13 @@ class _LoginPageState extends State<LoginPage> {
 
   var _enteredEmail = '';
   var _enteredPassword = '';
+  bool _isLoading = false;
 
   void _submitLogin() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final userCredentials = await _firebase.signInWithEmailAndPassword(
         email: _enteredEmail.trim(),
@@ -52,146 +57,181 @@ class _LoginPageState extends State<LoginPage> {
 
       logger.e('Login failed: ${error.message}');
       logger.i(error.code);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  Widget _buildFullScreenLoader() {
+    if (!_isLoading) return const SizedBox.shrink();
+
+    return Container(
+      color: Colors.black54,
+      child: const Center(child: CircularProgressIndicator(color: kPrimary)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Logo + Brand
-                          Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Image.asset(kLogo, height: 70, width: 70),
-                              const SizedBox(height: 8),
-                              const Text(
-                                kAppName,
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: kPrimary,
+                              // Logo + Brand
+                              Column(
+                                children: [
+                                  Image.asset(kLogo, height: 70, width: 70),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    kAppName,
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: kPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 40),
+
+                              // Email field
+                              TextFormField(
+                                decoration: InputDecoration(
+                                  labelText: 'Email',
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: kPrimary),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: kPrimary),
+                                  ),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                autocorrect: false,
+                                validator: (value) {
+                                  if (value == null ||
+                                      value.trim().isEmpty ||
+                                      !value.contains('@')) {
+                                    return kEmailError;
+                                  }
+                                  return null;
+                                },
+                                onSaved: (value) {
+                                  _enteredEmail = value ?? '';
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Password field
+                              TextFormField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Password',
+                                  border: OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: kPrimary),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: kPrimary),
+                                  ),
+                                ),
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null ||
+                                      value.trim().length < 6) {
+                                    return kPasswordError;
+                                  }
+                                  return null;
+                                },
+                                onSaved: (value) {
+                                  _enteredPassword = value ?? '';
+                                },
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Login Button
+                              CustomButton(
+                                title: "Accedi",
+                                titleColor: Colors.white,
+                                backgroundColor: kPrimary,
+                                onPressed: () {
+                                  final isValid =
+                                      _formKey.currentState!.validate();
+                                  if (!isValid) return;
+                                  _formKey.currentState!.save();
+                                  _submitLogin();
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Forgot password
+                              TextButton(
+                                onPressed: () {
+                                  // TODO: implement password reset
+                                },
+                                child: const Text(
+                                  'Password dimenticata?',
+                                  style: TextStyle(
+                                    color: kPrimary,
+                                    fontSize: 18,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 40),
-
-                          // Email field
-                          TextFormField(
-                            decoration: InputDecoration(
-                              labelText: 'Email',
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: kPrimary),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: kPrimary),
-                              ),
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                            autocorrect: false,
-                            validator: (value) {
-                              if (value == null ||
-                                  value.trim().isEmpty ||
-                                  !value.contains('@')) {
-                                return kEmailError;
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredEmail = value ?? '';
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Password field
-                          TextFormField(
-                            decoration: const InputDecoration(
-                              labelText: 'Password',
-                              border: OutlineInputBorder(),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: kPrimary),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: kPrimary),
-                              ),
-                            ),
-                            obscureText: true,
-                            validator: (value) {
-                              if (value == null || value.trim().length < 6) {
-                                return kPasswordError;
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredPassword = value ?? '';
-                            },
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Login Button
-                          CustomButton(
-                            title: "Accedi",
-                            titleColor: Colors.white,
-                            backgroundColor: kPrimary,
-                            onPressed: () {
-                              final isValid = _formKey.currentState!.validate();
-                              if (!isValid) return;
-                              _formKey.currentState!.save();
-                              _submitLogin();
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Forgot password
-                          TextButton(
-                            onPressed: () {
-                              // TODO: implement password reset
-                            },
-                            child: const Text(
-                              'Password dimenticata?',
-                              style: TextStyle(color: kPrimary, fontSize: 18),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
 
-              // Bottom button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: CustomButton(
-                  title: "Crea nuovo account",
-                  titleColor: kPrimary,
-                  backgroundColor: kSecondary,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (ctx) => const NewAccountPage(),
-                      ),
-                    );
-                  },
+                  // Bottone crea account
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: CustomButton(
+                      title: "Crea nuovo account",
+                      titleColor: kPrimary,
+                      backgroundColor: kSecondary,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (ctx) => const NewAccountPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Loader full screen fuori SafeArea così copre tutto
+          if (_isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black54,
+                child: const Center(
+                  child: CircularProgressIndicator(color: kPrimary),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }
