@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/custom_text_form_field.dart';
@@ -17,29 +18,41 @@ class NewAccountPage extends StatefulWidget {
 
 class _NewAccountPageState extends State<NewAccountPage> {
   final _form = GlobalKey<FormState>();
+  var logger = Logger(printer: PrettyPrinter());
 
-  final _enteredEmail = '';
-  final _enteredPassword = '';
+  var _enteredEmail = '';
+  var _enteredPassword = '';
+  var _enteredFirstName = '';
+  var _enteredLastName = '';
+  var _enteredPhoneNumber = '';
 
   void _submitLogin() async {
-    print(_enteredEmail);
-    print(_enteredPassword);
     try {
       final userCredential = await _firebase.createUserWithEmailAndPassword(
-        email: _enteredEmail,
-        password: _enteredPassword,
+        email: _enteredEmail.trim(),
+        password: _enteredPassword.trim(),
       );
-      print(userCredential);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account creato con successo'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      logger.i('Account created: ${userCredential}');
+      logger.i('Password: $_enteredPassword');
     } on FirebaseAuthException catch (error) {
+      String message = 'Errore di registrazione';
       if (error.code == 'email-already-in-use') {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email già in uso'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        message = 'Email già in uso';
+      } else if (error.code == 'invalid-email') {
+        message = 'Email non valida';
+      } else if (error.code == 'weak-password') {
+        message = 'Password troppo debole';
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -102,9 +115,25 @@ class _NewAccountPageState extends State<NewAccountPage> {
                               }
                               return null;
                             },
+                            onSaved: (value) {
+                              _enteredEmail = value ?? '';
+                            },
                           ),
                           const SizedBox(height: 16),
-
+                          CustomTextFormField(
+                            label: 'Cellulare',
+                            keyboardType: TextInputType.phone,
+                            /*validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Inserisci un numero di cellulare valido';
+                              }
+                              return null;
+                            },*/
+                            onSaved: (value) {
+                              _enteredPhoneNumber = value ?? '';
+                            },
+                          ),
+                          const SizedBox(height: 16),
                           CustomTextFormField(
                             label: 'Password',
                             obscureText: true,
@@ -114,6 +143,9 @@ class _NewAccountPageState extends State<NewAccountPage> {
                               }
                               return null;
                             },
+                            onSaved: (value) {
+                              _enteredPassword = value ?? '';
+                            },
                           ),
                           const SizedBox(height: 24),
 
@@ -122,6 +154,11 @@ class _NewAccountPageState extends State<NewAccountPage> {
                             titleColor: Colors.white,
                             backgroundColor: kPrimary,
                             onPressed: () {
+                              final isValid = _form.currentState!.validate();
+                              if (!isValid) {
+                                return;
+                              }
+                              _form.currentState!.save();
                               _submitLogin();
                             },
                           ),
