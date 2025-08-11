@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/screens/selected_list_page.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 
@@ -11,8 +13,20 @@ class ListsPage extends StatefulWidget {
 }
 
 class _ListsPageState extends State<ListsPage> {
+  int? selectedIndex; // indice elemento selezionato
+
   @override
   Widget build(BuildContext context) {
+    final items = [
+      "Tesla Model S",
+      "Ford Mustang",
+      "BMW M3",
+      "Audi A4",
+      "Porsche 911",
+      "Lamborghini Huracán",
+      "Ferrari 488",
+    ];
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -20,6 +34,7 @@ class _ListsPageState extends State<ListsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Logo + titolo
               Row(
                 children: [
                   Image.asset(kLogo, height: 25, width: 25),
@@ -37,7 +52,7 @@ class _ListsPageState extends State<ListsPage> {
 
               const SizedBox(height: 12),
 
-              // BOTTONE
+              // Bottone
               CustomButton(
                 title: "Crea Nuova Lista",
                 titleColor: Colors.white,
@@ -49,6 +64,7 @@ class _ListsPageState extends State<ListsPage> {
 
               const SizedBox(height: 45),
 
+              // Intestazione Liste
               Container(
                 width: double.infinity,
                 color: kSecondary,
@@ -66,24 +82,33 @@ class _ListsPageState extends State<ListsPage> {
                 ),
               ),
 
+              // Lista
               Expanded(
-                child: ListView(
-                  children: const [
-                    ListTile(title: Text("Tesla Model S")),
-                    ListTile(title: Text("Ford Mustang")),
-                    ListTile(title: Text("BMW M3")),
-                    ListTile(title: Text("Audi A4")),
-                    ListTile(title: Text("Porsche 911")),
-                    ListTile(title: Text("Lamborghini Huracán")),
-                    ListTile(title: Text("Ferrari 488")),
-                    ListTile(title: Text("Tesla Model S")),
-                    ListTile(title: Text("Ford Mustang")),
-                    ListTile(title: Text("BMW M3")),
-                    ListTile(title: Text("Audi A4")),
-                    ListTile(title: Text("Porsche 911")),
-                    ListTile(title: Text("Lamborghini Huracán")),
-                    ListTile(title: Text("Ferrari 488")),
-                  ],
+                child: ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final isSelected = selectedIndex == index;
+                    return ListTile(
+                      title: Text(items[index]),
+                      tileColor:
+                          isSelected ? kSecondary.withOpacity(0.3) : null,
+                      onTap: () {
+                        setState(() {
+                          selectedIndex = index;
+                        });
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => SelectedListPage(
+                                  titolo: items[index],
+                                  nrListe: items.length,
+                                ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],

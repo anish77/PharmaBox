@@ -21,6 +21,7 @@ dependencies:
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.0
   logger: ^2.6.1
+  toggle_switch: ^2.3.0
 
 dev_dependencies:
   flutter_test:
