@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 
 class ListsPage extends StatefulWidget {
@@ -10,8 +11,6 @@ class ListsPage extends StatefulWidget {
 }
 
 class _ListsPageState extends State<ListsPage> {
-  final _formKey = GlobalKey<FormState>();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,7 +20,6 @@ class _ListsPageState extends State<ListsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // HEADER
               Row(
                 children: [
                   Image.asset(kLogo, height: 25, width: 25),
@@ -44,7 +42,9 @@ class _ListsPageState extends State<ListsPage> {
                 title: "Crea Nuova Lista",
                 titleColor: Colors.white,
                 backgroundColor: kPrimary,
-                onPressed: () {},
+                onPressed: () {
+                  CreaListaPopup().showPopup(context);
+                },
               ),
 
               const SizedBox(height: 45),
