@@ -7,6 +7,7 @@ const kLogo = 'assets/Logo.png';
 const kPrimary = Color(0xFF5D5FEF);
 const kSecondary = Color(0xFFE5E6FF);
 const kBackGround = Color(0xFFF5F7FA);
+const kBluScuro = Color(0xFF2B2D66);
 
 //messages
 const kEmailError = 'Please enter a valid email address';

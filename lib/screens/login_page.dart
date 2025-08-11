@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/screens/lists_page.dart';
 import 'package:pharma_box/screens/new_account_page.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 
@@ -34,6 +35,11 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       logger.i('Login successful: ${userCredentials.user?.email}');
+      Navigator.push(
+        // ignore: use_build_context_synchronously
+        context,
+        MaterialPageRoute(builder: (ctx) => const ListsPage()),
+      );
     } on FirebaseAuthException catch (error) {
       String message = 'Errore di autenticazione';
       if (error.code == 'wrong-password') {
