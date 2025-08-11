@@ -34,12 +34,6 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       logger.i('Login successful: ${userCredentials.user?.email}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login effettuato con successo'),
-          backgroundColor: Colors.green,
-        ),
-      );
     } on FirebaseAuthException catch (error) {
       String message = 'Errore di autenticazione';
       if (error.code == 'wrong-password') {
@@ -50,7 +44,9 @@ class _LoginPageState extends State<LoginPage> {
         message = 'Email non valida';
       }
 
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).clearSnackBars();
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
@@ -64,15 +60,6 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
     }
-  }
-
-  Widget _buildFullScreenLoader() {
-    if (!_isLoading) return const SizedBox.shrink();
-
-    return Container(
-      color: Colors.black54,
-      child: const Center(child: CircularProgressIndicator(color: kPrimary)),
-    );
   }
 
   @override
