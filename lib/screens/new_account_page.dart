@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
@@ -29,19 +30,35 @@ class _NewAccountPageState extends State<NewAccountPage> {
   void _submitLogin() async {
     try {
       final userCredential = await _firebase.createUserWithEmailAndPassword(
-        email: _enteredEmail.trim(),
-        password: _enteredPassword.trim(),
+        email: _enteredEmail,
+        password: _enteredPassword,
       );
 
+      await FirebaseFirestore.instance
+          .collection('$_enteredFirstName $_enteredLastName')
+          .doc(userCredential.user!.uid)
+          .set({
+            'firstName': _enteredFirstName,
+            'lastName': _enteredLastName,
+            'email': _enteredEmail,
+            'phoneNumber': _enteredPhoneNumber,
+            'uid': userCredential.user!.uid,
+            'password': _enteredPassword,
+          });
+
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Account creato con successo'),
           backgroundColor: Colors.green,
         ),
       );
-      logger.i('Account created: ${userCredential}');
+      logger.i('Account created: $userCredential');
       logger.i('Password: $_enteredPassword');
-    } on FirebaseAuthException catch (error) {
+      logger.i(
+        'info: ${userCredential.user!.uid}, $_enteredEmail, $_enteredFirstName, $_enteredLastName, $_enteredPhoneNumber',
+      );
+    } on FirebaseAuthException catch (error, stack) {
       String message = 'Errore di registrazione';
       if (error.code == 'email-already-in-use') {
         message = 'Email già in uso';
@@ -50,12 +67,15 @@ class _NewAccountPageState extends State<NewAccountPage> {
       } else if (error.code == 'weak-password') {
         message = 'Password troppo debole';
       }
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
+      logger.e(stack);
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -98,10 +118,33 @@ class _NewAccountPageState extends State<NewAccountPage> {
                           ),
                           const SizedBox(height: 40),
 
-                          CustomTextFormField(label: 'Nome'),
+                          CustomTextFormField(
+                            label: 'Nome',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return kEmailError;
+                              }
+                              return null;
+                            },
+                            onSaved: (value) {
+                              _enteredFirstName = value!;
+                            },
+                          ),
+
                           const SizedBox(height: 16),
 
-                          CustomTextFormField(label: 'Cognome'),
+                          CustomTextFormField(
+                            label: 'Cognome',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return kEmailError;
+                              }
+                              return null;
+                            },
+                            onSaved: (value) {
+                              _enteredLastName = value!;
+                            },
+                          ),
                           const SizedBox(height: 16),
 
                           CustomTextFormField(
@@ -116,7 +159,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                               return null;
                             },
                             onSaved: (value) {
-                              _enteredEmail = value ?? '';
+                              _enteredEmail = value!;
                             },
                           ),
                           const SizedBox(height: 16),
@@ -130,7 +173,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                               return null;
                             },*/
                             onSaved: (value) {
-                              _enteredPhoneNumber = value ?? '';
+                              _enteredPhoneNumber = value!;
                             },
                           ),
                           const SizedBox(height: 16),
@@ -144,7 +187,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                               return null;
                             },
                             onSaved: (value) {
-                              _enteredPassword = value ?? '';
+                              _enteredPassword = value!;
                             },
                           ),
                           const SizedBox(height: 24),
