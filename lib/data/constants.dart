@@ -12,6 +12,9 @@ const kBluScuro = Color(0xFF2B2D66);
 //messages
 const kEmailError = 'Please enter a valid email address';
 const kPasswordError = 'Password must be at least 6 characters long';
+const kCercaProdotto = 'Cerca prodotto';
+const kMsgErroreCercaProdotto =
+    'Inserisci un valore da cercare che abbia almeno 3 caratteri';
 /*const kLoginSuccess = 'Login successful!';
 const kLoginError = 'Login failed. Please try again.';
 const kSignUpSuccess = 'Sign up successful!';
