@@ -5,6 +5,7 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/lists_page.dart';
 import 'package:pharma_box/screens/new_account_page.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
+import 'package:pharma_box/widgets/custom_text_form_field.dart';
 
 final _firebase = FirebaseAuth.instance;
 
@@ -105,18 +106,9 @@ class _LoginPageState extends State<LoginPage> {
                               const SizedBox(height: 40),
 
                               // Email field
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  labelText: 'Email',
-                                  enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: kPrimary),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: kPrimary),
-                                  ),
-                                ),
+                              CustomTextFormField(
+                                label: 'Email',
                                 keyboardType: TextInputType.emailAddress,
-                                autocorrect: false,
                                 validator: (value) {
                                   if (value == null ||
                                       value.trim().isEmpty ||
@@ -130,19 +122,9 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                               ),
                               const SizedBox(height: 16),
-
                               // Password field
-                              TextFormField(
-                                decoration: const InputDecoration(
-                                  labelText: 'Password',
-                                  border: OutlineInputBorder(),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: kPrimary),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: kPrimary),
-                                  ),
-                                ),
+                              CustomTextFormField(
+                                label: 'Password',
                                 obscureText: true,
                                 validator: (value) {
                                   if (value == null ||
@@ -156,7 +138,6 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                               ),
                               const SizedBox(height: 24),
-
                               // Login Button
                               CustomButton(
                                 title: "Accedi",
