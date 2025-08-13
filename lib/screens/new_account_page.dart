@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/screens/lists_page.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/custom_text_form_field.dart';
 
@@ -46,17 +47,17 @@ class _NewAccountPageState extends State<NewAccountPage> {
             'password': _enteredPassword,
           });
 
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account creato con successo'),
-          backgroundColor: Colors.green,
-        ),
-      );
       logger.i('Account created: $userCredential');
       logger.i('Password: $_enteredPassword');
       logger.i(
         'info: ${userCredential.user!.uid}, $_enteredEmail, $_enteredFirstName, $_enteredLastName, $_enteredPhoneNumber',
+      );
+
+      // Vai a ListsPage
+      Navigator.pushReplacement(
+        // ignore: use_build_context_synchronously
+        context,
+        MaterialPageRoute(builder: (context) => const ListsPage()),
       );
     } on FirebaseAuthException catch (error, stack) {
       String message = 'Errore di registrazione';
