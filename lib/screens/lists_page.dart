@@ -125,6 +125,7 @@ class _ListsPageState extends State<ListsPage> {
                         return ListView.builder(
                           itemCount: items.length,
                           itemBuilder: (context, index) {
+                            final isSelected = selectedIndex == index;
                             return Dismissible(
                               key: Key(items[index]),
                               direction:
@@ -181,6 +182,7 @@ class _ListsPageState extends State<ListsPage> {
 
                                 // usa scaffoldContext stabile
                                 ScaffoldMessenger.of(
+                                  // ignore: use_build_context_synchronously
                                   scaffoldContext,
                                 ).showSnackBar(
                                   SnackBar(
@@ -199,7 +201,28 @@ class _ListsPageState extends State<ListsPage> {
                                   }
                                 });
                               },
-                              child: ListTile(title: Text(items[index])),
+                              child: ListTile(
+                                title: Text(items[index]),
+                                tileColor:
+                                    isSelected
+                                        ? kSecondary.withValues(alpha: 0.3)
+                                        : null,
+                                onTap: () {
+                                  setState(() {
+                                    selectedIndex = index;
+                                  });
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => SelectedListPage(
+                                            titolo: items[index],
+                                            nrListe: items.length,
+                                          ),
+                                    ),
+                                  );
+                                },
+                              ),
                             );
                           },
                         );
