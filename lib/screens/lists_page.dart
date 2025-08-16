@@ -31,6 +31,29 @@ class _ListsPageState extends State<ListsPage> {
         });
   }
 
+  Future<void> eliminaLista(String nomeLista) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data();
+    final liste = data?['liste'] ?? [];
+
+    // Trova la lista da cancellare
+    final listaDaEliminare = liste.firstWhere(
+      (l) => l['nomeLista'] == nomeLista,
+      orElse: () => null,
+    );
+
+    if (listaDaEliminare != null) {
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'liste': FieldValue.arrayRemove([listaDaEliminare]),
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,9 +120,7 @@ class _ListsPageState extends State<ListsPage> {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      return Center(
-                        child: Text("Errore: ${snapshot.error}"),
-                      );
+                      return Center(child: Text("Errore: ${snapshot.error}"));
                     }
 
                     final items = snapshot.data ?? [];
@@ -112,24 +133,84 @@ class _ListsPageState extends State<ListsPage> {
                       itemCount: items.length,
                       itemBuilder: (context, index) {
                         final isSelected = selectedIndex == index;
-                        return ListTile(
-                          title: Text(items[index]),
-                          tileColor:
-                              isSelected ? kSecondary.withValues(alpha: 0.3) : null,
-                          onTap: () {
-                            setState(() {
-                              selectedIndex = index;
-                            });
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SelectedListPage(
-                                  titolo: items[index],
-                                  nrListe: items.length,
-                                ),
-                              ),
+                        return Dismissible(
+                          key: Key(items[index]),
+                          direction:
+                              DismissDirection
+                                  .endToStart, // swipe verso sinistra
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            color: Colors.red,
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                          ),
+                          confirmDismiss: (direction) async {
+                            // Popup di conferma
+                            return await showDialog(
+                              context: context,
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: const Text("Conferma eliminazione"),
+                                    content: Text(
+                                      "Vuoi davvero cancellare la lista \"${items[index]}\"?",
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        child: const Text("Annulla"),
+                                        onPressed:
+                                            () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                      ),
+                                      TextButton(
+                                        child: const Text("Elimina"),
+                                        onPressed:
+                                            () =>
+                                                Navigator.of(context).pop(true),
+                                      ),
+                                    ],
+                                  ),
                             );
                           },
+                          onDismissed: (direction) async {
+                            final nomeListaCancellata =
+                                items[index]; // salva il nome
+                            await eliminaLista(nomeListaCancellata);
+                            Future.delayed(Duration.zero, () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "Lista \"$nomeListaCancellata\" eliminata",
+                                  ),
+                                ),
+                              );
+                            });
+                          },
+                          child: ListTile(
+                            title: Text(items[index]),
+                            tileColor:
+                                isSelected
+                                    ? kSecondary.withValues(alpha: 0.3)
+                                    : null,
+                            onTap: () {
+                              setState(() {
+                                selectedIndex = index;
+                              });
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => SelectedListPage(
+                                        titolo: items[index],
+                                        nrListe: items.length,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
                         );
                       },
                     );
