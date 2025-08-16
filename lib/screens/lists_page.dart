@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/selected_list_page.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
@@ -13,20 +15,24 @@ class ListsPage extends StatefulWidget {
 }
 
 class _ListsPageState extends State<ListsPage> {
-  int? selectedIndex; // indice elemento selezionato
+  int? selectedIndex;
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+
+  Stream<List<String>> getListeStream() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((doc) {
+          if (!doc.exists) return [];
+          final data = doc.data();
+          final liste = data?['liste'] ?? [];
+          return List<String>.from(liste.map((l) => l['nomeLista']));
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      "Tesla Model S",
-      "Ford Mustang",
-      "BMW M3",
-      "Audi A4",
-      "Porsche 911",
-      "Lamborghini Huracán",
-      "Ferrari 488",
-    ];
-
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -84,27 +90,46 @@ class _ListsPageState extends State<ListsPage> {
 
               // Lista
               Expanded(
-                child: ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final isSelected = selectedIndex == index;
-                    return ListTile(
-                      title: Text(items[index]),
-                      tileColor:
-                          isSelected ? kSecondary.withOpacity(0.3) : null,
-                      onTap: () {
-                        setState(() {
-                          selectedIndex = index;
-                        });
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => SelectedListPage(
+                child: StreamBuilder<List<String>>(
+                  stream: getListeStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text("Errore: ${snapshot.error}"),
+                      );
+                    }
+
+                    final items = snapshot.data ?? [];
+
+                    if (items.isEmpty) {
+                      return const Center(child: Text("Nessuna lista trovata"));
+                    }
+
+                    return ListView.builder(
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final isSelected = selectedIndex == index;
+                        return ListTile(
+                          title: Text(items[index]),
+                          tileColor:
+                              isSelected ? kSecondary.withValues(alpha: 0.3) : null,
+                          onTap: () {
+                            setState(() {
+                              selectedIndex = index;
+                            });
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SelectedListPage(
                                   titolo: items[index],
                                   nrListe: items.length,
                                 ),
-                          ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );

@@ -36,7 +36,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
       );
 
       await FirebaseFirestore.instance
-          .collection('$_enteredFirstName $_enteredLastName')
+          .collection('users')
           .doc(userCredential.user!.uid)
           .set({
             'firstName': _enteredFirstName,
@@ -45,6 +45,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
             'phoneNumber': _enteredPhoneNumber,
             'uid': userCredential.user!.uid,
             'password': _enteredPassword,
+            'liste': []
           });
 
       logger.i('Account created: $userCredential');

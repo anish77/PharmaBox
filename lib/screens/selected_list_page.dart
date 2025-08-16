@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:pharma_box/widgets/custom_text_form_field.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
 class SelectedListPage extends StatefulWidget {

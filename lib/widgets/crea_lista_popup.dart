@@ -1,9 +1,21 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 
 class CreaListaPopup {
   var logger = Logger(printer: PrettyPrinter());
+
+  Future<void> aggiungiLista(String nomeLista) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'liste': FieldValue.arrayUnion([
+        {'nomeLista': nomeLista, 'items': []},
+      ]),
+    });
+  }
+
   void showPopup(BuildContext context) {
     // Ottieni mese e anno attuali
     final now = DateTime.now();
@@ -47,9 +59,6 @@ class CreaListaPopup {
                       ),
                     ),
                     autocorrect: false,
-                    onSaved: (value) {
-                      //TODO: salva la lista
-                    },
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -81,6 +90,11 @@ class CreaListaPopup {
                     setState(
                       () => isCreaSelected = true,
                     ); // aggiorna background
+                    final nomeLista = controller.text.trim();
+                    if (nomeLista.isNotEmpty) {
+                      aggiungiLista(nomeLista);
+                      Navigator.of(context).pop();
+                    }
                   },
                 ),
               ],
