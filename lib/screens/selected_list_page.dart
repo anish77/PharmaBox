@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
@@ -16,7 +17,37 @@ class SelectedListPage extends StatefulWidget {
 }
 
 class _SelectedListPageState extends State<SelectedListPage> {
-  var cercaProdottoSelected = false;
+  var logger = Logger(printer: PrettyPrinter());
+  var selectedIndex = 0;
+
+  Widget cercaProdotto() {
+    return TextFormField(
+      decoration: InputDecoration(
+        labelText: kCercaProdotto,
+        labelStyle: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: kBluScuro),
+        enabledBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: kPrimary),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: kPrimary),
+        ),
+      ),
+      keyboardType: TextInputType.text,
+      autocorrect: false,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty || value.length < 3) {
+          return kMsgErroreCercaProdotto;
+        }
+        return null;
+      },
+      onSaved: (value) {
+        // Logica per salvare il prodotto
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,64 +68,26 @@ class _SelectedListPageState extends State<SelectedListPage> {
                       double.infinity, // occupa tutta la larghezza disponibile
                   child: ToggleSwitch(
                     minWidth: double.infinity,
-                    initialLabelIndex: 0,
-                    totalSwitches: 3,
-                    labels: [
-                      'Scan',
-                      'Cerca',
-                      'Lista(${widget.nrListe.toString()})',
-                    ],
-                    activeBgColor: [kPrimary],
-                    inactiveBgColor: kSecondary,
-                    borderColor: [kPrimary],
-                    borderWidth: 1.0,
                     cornerRadius: 28.0,
+                    borderWidth: 1.0,
+                    fontSize: 16,
+                    initialLabelIndex: selectedIndex,
+                    activeBgColor: [kPrimary],
+                    activeFgColor: Colors.white,
+                    inactiveBgColor: kSecondary,
+                    inactiveFgColor: kBluScuro,
+                    totalSwitches: 2,
+                    labels: ['Cerca', 'Opzioni'],
                     onToggle: (index) {
-                      print('switched to: $index');
                       setState(() {
-                        if (index == 0) {
-                          cercaProdottoSelected = false;
-                          // Logica per Scan
-                        } else if (index == 1) {
-                          cercaProdottoSelected = true;
-                        } else if (index == 2) {
-                          cercaProdottoSelected = false;
-                          // Logica per Lista
-                        }
+                        logger.i('switched to: $index');
+                        selectedIndex = index!;
                       });
                     },
                   ),
                 ),
                 const SizedBox(height: 18),
-                if (cercaProdottoSelected == true) ...[
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: kCercaProdotto,
-                      labelStyle: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: kBluScuro),
-                      enabledBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: kPrimary),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: kPrimary),
-                      ),
-                    ),
-                    keyboardType: TextInputType.text,
-                    autocorrect: false,
-                    validator: (value) {
-                      if (value == null ||
-                          value.trim().isEmpty ||
-                          value.length < 3) {
-                        return kMsgErroreCercaProdotto;
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      // Logica per salvare il prodotto
-                    },
-                  ),
-                ],
+                if (selectedIndex == 0) ...[cercaProdotto()],
               ],
             ),
           ),
