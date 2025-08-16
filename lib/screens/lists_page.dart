@@ -15,6 +15,7 @@ class ListsPage extends StatefulWidget {
 }
 
 class _ListsPageState extends State<ListsPage> {
+  var logger = Logger(printer: PrettyPrinter());
   int? selectedIndex;
   final uid = FirebaseAuth.instance.currentUser!.uid;
 
@@ -113,104 +114,94 @@ class _ListsPageState extends State<ListsPage> {
 
               // Lista
               Expanded(
-                child: StreamBuilder<List<String>>(
-                  stream: getListeStream(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(child: Text("Errore: ${snapshot.error}"));
-                    }
+                child: Builder(
+                  builder: (scaffoldContext) {
+                    // context sicuro
+                    return StreamBuilder<List<String>>(
+                      stream: getListeStream(),
+                      builder: (context, snapshot) {
+                        final items = snapshot.data ?? [];
 
-                    final items = snapshot.data ?? [];
+                        return ListView.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            return Dismissible(
+                              key: Key(items[index]),
+                              direction:
+                                  DismissDirection
+                                      .endToStart, // swipe verso sinistra
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                color: Colors.red,
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              confirmDismiss: (direction) async {
+                                // conferma
+                                return await showDialog(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: const Text(
+                                          "Conferma eliminazione",
+                                        ),
+                                        content: Text(
+                                          "Vuoi davvero cancellare la lista \"${items[index]}\"?",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            child: const Text("Annulla"),
+                                            onPressed:
+                                                () => Navigator.of(
+                                                  context,
+                                                ).pop(false),
+                                          ),
+                                          TextButton(
+                                            child: const Text("Elimina"),
+                                            onPressed: () {
+                                              if (context.mounted) {
+                                                Navigator.of(context).pop(true);
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                );
+                              },
+                              onDismissed: (direction) async {
+                                final nomeListaCancellata = items[index];
+                                await eliminaLista(nomeListaCancellata);
 
-                    if (items.isEmpty) {
-                      return const Center(child: Text("Nessuna lista trovata"));
-                    }
+                                if (!mounted) return;
 
-                    return ListView.builder(
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final isSelected = selectedIndex == index;
-                        return Dismissible(
-                          key: Key(items[index]),
-                          direction:
-                              DismissDirection
-                                  .endToStart, // swipe verso sinistra
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            color: Colors.red,
-                            child: const Icon(
-                              Icons.delete,
-                              color: Colors.white,
-                            ),
-                          ),
-                          confirmDismiss: (direction) async {
-                            // Popup di conferma
-                            return await showDialog(
-                              context: context,
-                              builder:
-                                  (context) => AlertDialog(
-                                    title: const Text("Conferma eliminazione"),
+                                // usa scaffoldContext stabile
+                                ScaffoldMessenger.of(
+                                  scaffoldContext,
+                                ).showSnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      "Vuoi davvero cancellare la lista \"${items[index]}\"?",
+                                      'Lista "$nomeListaCancellata" eliminata',
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        child: const Text("Annulla"),
-                                        onPressed:
-                                            () => Navigator.of(
-                                              context,
-                                            ).pop(false),
-                                      ),
-                                      TextButton(
-                                        child: const Text("Elimina"),
-                                        onPressed:
-                                            () =>
-                                                Navigator.of(context).pop(true),
-                                      ),
-                                    ],
                                   ),
+                                );
+
+                                setState(() {
+                                  if (items.length == 1) {
+                                    selectedIndex = null;
+                                  } else if (selectedIndex != null &&
+                                      selectedIndex! >= items.length - 1) {
+                                    selectedIndex = items.length - 2;
+                                  }
+                                });
+                              },
+                              child: ListTile(title: Text(items[index])),
                             );
                           },
-                          onDismissed: (direction) async {
-                            final nomeListaCancellata =
-                                items[index]; // salva il nome
-                            await eliminaLista(nomeListaCancellata);
-                            Future.delayed(Duration.zero, () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    "Lista \"$nomeListaCancellata\" eliminata",
-                                  ),
-                                ),
-                              );
-                            });
-                          },
-                          child: ListTile(
-                            title: Text(items[index]),
-                            tileColor:
-                                isSelected
-                                    ? kSecondary.withValues(alpha: 0.3)
-                                    : null,
-                            onTap: () {
-                              setState(() {
-                                selectedIndex = index;
-                              });
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => SelectedListPage(
-                                        titolo: items[index],
-                                        nrListe: items.length,
-                                      ),
-                                ),
-                              );
-                            },
-                          ),
                         );
                       },
                     );

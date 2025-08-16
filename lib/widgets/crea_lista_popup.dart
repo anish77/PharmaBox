@@ -9,13 +9,15 @@ class CreaListaPopup {
 
   Future<bool> listaEsiste(String nomeLista) async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
     if (doc.exists) {
       final data = doc.data();
       final liste = data?['liste'] ?? [];
       for (var lista in liste) {
-        if (lista['nomeLista'].toString().toLowerCase() == nomeLista.toLowerCase()) {
+        if (lista['nomeLista'].toString().toLowerCase() ==
+            nomeLista.toLowerCase()) {
           return true; // già esistente
         }
       }
@@ -29,6 +31,7 @@ class CreaListaPopup {
     // controllo duplicati
     final esiste = await listaEsiste(nomeLista);
     if (esiste) {
+      // ignore: use_build_context_synchronously
       _mostraErrore(context, "Esiste già una lista con questo nome");
       return;
     }
@@ -44,7 +47,9 @@ class CreaListaPopup {
   void showPopup(BuildContext context) {
     final now = DateTime.now();
     final String meseAnno = "${_nomeMese(now.month)} ${now.year} - ";
-    final TextEditingController controller = TextEditingController(text: meseAnno);
+    final TextEditingController controller = TextEditingController(
+      text: meseAnno,
+    );
 
     showDialog(
       context: context,
@@ -86,7 +91,8 @@ class CreaListaPopup {
               actions: [
                 TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: !isCreaSelected ? kPrimary : Colors.transparent,
+                    backgroundColor:
+                        !isCreaSelected ? kPrimary : Colors.transparent,
                     foregroundColor: !isCreaSelected ? Colors.white : kPrimary,
                   ),
                   child: const Text('Chiudi'),
@@ -97,7 +103,8 @@ class CreaListaPopup {
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: isCreaSelected ? kPrimary : Colors.transparent,
+                    backgroundColor:
+                        isCreaSelected ? kPrimary : Colors.transparent,
                     foregroundColor: isCreaSelected ? Colors.white : kPrimary,
                   ),
                   child: const Text('Crea'),
@@ -106,11 +113,17 @@ class CreaListaPopup {
                     final nomeLista = controller.text.trim();
 
                     if (nomeLista.isEmpty) {
-                      _mostraErrore(context, "Il nome della lista non può essere vuoto");
+                      if (!context.mounted) return;
+                      _mostraErrore(
+                        context,
+                        "Il nome della lista non può essere vuoto",
+                      );
                       return;
                     }
 
                     await aggiungiLista(nomeLista, context);
+
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                   },
                 ),
@@ -124,17 +137,24 @@ class CreaListaPopup {
 
   void _mostraErrore(BuildContext context, String messaggio) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(messaggio),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(messaggio), backgroundColor: Colors.red),
     );
   }
 
   String _nomeMese(int mese) {
     const mesi = [
-      "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-      "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+      "Gennaio",
+      "Febbraio",
+      "Marzo",
+      "Aprile",
+      "Maggio",
+      "Giugno",
+      "Luglio",
+      "Agosto",
+      "Settembre",
+      "Ottobre",
+      "Novembre",
+      "Dicembre",
     ];
     return mesi[mese - 1];
   }
