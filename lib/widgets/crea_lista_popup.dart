@@ -7,8 +7,33 @@ import 'package:pharma_box/data/constants.dart';
 class CreaListaPopup {
   var logger = Logger(printer: PrettyPrinter());
 
-  Future<void> aggiungiLista(String nomeLista) async {
+  Future<bool> listaEsiste(String nomeLista) async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+    if (doc.exists) {
+      final data = doc.data();
+      final liste = data?['liste'] ?? [];
+      for (var lista in liste) {
+        if (lista['nomeLista'].toString().toLowerCase() == nomeLista.toLowerCase()) {
+          return true; // già esistente
+        }
+      }
+    }
+    return false;
+  }
+
+  Future<void> aggiungiLista(String nomeLista, BuildContext context) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    // controllo duplicati
+    final esiste = await listaEsiste(nomeLista);
+    if (esiste) {
+      _mostraErrore(context, "Esiste già una lista con questo nome");
+      return;
+    }
+
+    // aggiunta lista
     await FirebaseFirestore.instance.collection('users').doc(uid).update({
       'liste': FieldValue.arrayUnion([
         {'nomeLista': nomeLista, 'items': []},
@@ -17,19 +42,14 @@ class CreaListaPopup {
   }
 
   void showPopup(BuildContext context) {
-    // Ottieni mese e anno attuali
     final now = DateTime.now();
     final String meseAnno = "${_nomeMese(now.month)} ${now.year} - ";
-
-    // Controller con testo iniziale
-    final TextEditingController controller = TextEditingController(
-      text: meseAnno,
-    );
+    final TextEditingController controller = TextEditingController(text: meseAnno);
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        bool isCreaSelected = true; // default selezionato
+        bool isCreaSelected = true;
 
         return StatefulBuilder(
           builder: (context, setState) {
@@ -63,38 +83,35 @@ class CreaListaPopup {
                   const SizedBox(height: 40),
                 ],
               ),
-
               actions: [
                 TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor:
-                        !isCreaSelected ? kPrimary : Colors.transparent,
+                    backgroundColor: !isCreaSelected ? kPrimary : Colors.transparent,
                     foregroundColor: !isCreaSelected ? Colors.white : kPrimary,
                   ),
                   child: const Text('Chiudi'),
                   onPressed: () {
-                    setState(
-                      () => isCreaSelected = false,
-                    ); // aggiorna background
+                    setState(() => isCreaSelected = false);
                     Navigator.of(context).pop();
                   },
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor:
-                        isCreaSelected ? kPrimary : Colors.transparent,
+                    backgroundColor: isCreaSelected ? kPrimary : Colors.transparent,
                     foregroundColor: isCreaSelected ? Colors.white : kPrimary,
                   ),
                   child: const Text('Crea'),
-                  onPressed: () {
-                    setState(
-                      () => isCreaSelected = true,
-                    ); // aggiorna background
+                  onPressed: () async {
+                    setState(() => isCreaSelected = true);
                     final nomeLista = controller.text.trim();
-                    if (nomeLista.isNotEmpty) {
-                      aggiungiLista(nomeLista);
-                      Navigator.of(context).pop();
+
+                    if (nomeLista.isEmpty) {
+                      _mostraErrore(context, "Il nome della lista non può essere vuoto");
+                      return;
                     }
+
+                    await aggiungiLista(nomeLista, context);
+                    Navigator.of(context).pop();
                   },
                 ),
               ],
@@ -105,21 +122,19 @@ class CreaListaPopup {
     );
   }
 
-  // Funzione per convertire numero mese in nome italiano
+  void _mostraErrore(BuildContext context, String messaggio) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(messaggio),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   String _nomeMese(int mese) {
     const mesi = [
-      "Gennaio",
-      "Febbraio",
-      "Marzo",
-      "Aprile",
-      "Maggio",
-      "Giugno",
-      "Luglio",
-      "Agosto",
-      "Settembre",
-      "Ottobre",
-      "Novembre",
-      "Dicembre",
+      "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+      "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
     ];
     return mesi[mese - 1];
   }
