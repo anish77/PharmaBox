@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:pharma_box/screens/lists_page.dart';
 import 'firebase_options.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/login_page.dart';
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Great Places',
-      home: LoginPage(),
+      home: ListsPage(),
       theme: ThemeData(
         scaffoldBackgroundColor: kBackGround, // Sfondo globale
       ),

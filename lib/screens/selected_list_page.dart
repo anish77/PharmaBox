@@ -135,7 +135,6 @@ class _SelectedListPageState extends State<SelectedListPage> {
                       opzioni("Status"),
                       opzioni("Category"),
                       opzioni("Category"),
-                    
                     ],
                   ],
                 ),
@@ -144,18 +143,25 @@ class _SelectedListPageState extends State<SelectedListPage> {
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 45, left: 24, right: 24),
-        child: // Bottone
-            CustomButton(
-          title: "Applica opzioni",
-          titleColor: Colors.white,
-          backgroundColor: kPrimary,
-          onPressed: () {
-            //TODO 
-          },
-        ),
-      ),
+      bottomNavigationBar:
+          selectedIndex == 1
+              ? Padding(
+                padding: const EdgeInsets.only(
+                  top: 18,
+                  bottom: 45,
+                  left: 24,
+                  right: 24,
+                ),
+                child: CustomButton(
+                  title: "Applica opzioni",
+                  titleColor: Colors.white,
+                  backgroundColor: kPrimary,
+                  onPressed: () {
+                    //TODO
+                  },
+                ),
+              )
+              : null,
     );
   }
 }
