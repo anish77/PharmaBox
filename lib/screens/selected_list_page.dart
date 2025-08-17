@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
+import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
 class SelectedListPage extends StatefulWidget {
@@ -72,16 +73,16 @@ class _SelectedListPageState extends State<SelectedListPage> {
         Align(
           alignment: Alignment.topLeft,
           child: Wrap(
-          spacing: 8, // spazio orizzontale tra elementi
-          runSpacing: 8, // spazio verticale tra righe
-          children: [
-            ContainerOpzione(nomeOpione: "Warning 1"),
-             ContainerOpzione(nomeOpione: "Warning 1"),
-             ContainerOpzione(nomeOpione: "Warning 1"),
-             ContainerOpzione(nomeOpione: "Warning 1"),
-             ContainerOpzione(nomeOpione: "Warning 1"),   
-          ],
-                ),
+            spacing: 8, // spazio orizzontale tra elementi
+            runSpacing: 8, // spazio verticale tra righe
+            children: [
+              ContainerOpzione(nomeOpione: "Warning 1"),
+              ContainerOpzione(nomeOpione: "Warning 1"),
+              ContainerOpzione(nomeOpione: "Warning 1"),
+              ContainerOpzione(nomeOpione: "Warning 1"),
+              ContainerOpzione(nomeOpione: "Warning 1"),
+            ],
+          ),
         ),
         SizedBox(height: 18),
       ],
@@ -94,49 +95,66 @@ class _SelectedListPageState extends State<SelectedListPage> {
       appBar: AppBar(
         title: Text(widget.titolo),
         centerTitle: false,
-        titleSpacing: 0, // riduce lo spazio prima del titolo
+        titleSpacing: 0,
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                SizedBox(
-                  width:
-                      double.infinity, // occupa tutta la larghezza disponibile
-                  child: ToggleSwitch(
-                    minWidth: double.infinity,
-                    cornerRadius: 28.0,
-                    borderWidth: 1.0,
-                    fontSize: 16,
-                    initialLabelIndex: selectedIndex,
-                    activeBgColor: [kPrimary],
-                    activeFgColor: Colors.white,
-                    inactiveBgColor: kSecondary,
-                    inactiveFgColor: kBluScuro,
-                    totalSwitches: 2,
-                    labels: ['Cerca', 'Opzioni'],
-                    onToggle: (index) {
-                      setState(() {
-                        logger.i('switched to: $index');
-                        selectedIndex = index!;
-                      });
-                    },
-                  ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ToggleSwitch(
+                        minWidth: double.infinity,
+                        cornerRadius: 28.0,
+                        borderWidth: 1.0,
+                        fontSize: 16,
+                        initialLabelIndex: selectedIndex,
+                        activeBgColor: [kPrimary],
+                        activeFgColor: Colors.white,
+                        inactiveBgColor: kSecondary,
+                        inactiveFgColor: kBluScuro,
+                        totalSwitches: 2,
+                        labels: ['Cerca', 'Opzioni'],
+                        onToggle: (index) {
+                          setState(() {
+                            logger.i('switched to: $index');
+                            selectedIndex = index!;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (selectedIndex == 0) ...[
+                      cercaProdotto(),
+                    ] else ...[
+                      opzioni("Status"),
+                      opzioni("Category"),
+                      opzioni("Category"),
+                    
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 18),
-                if (selectedIndex == 0) ...[
-                  cercaProdotto(),
-                ] else ...[
-                  opzioni("Status"),
-                  opzioni("Category"),
-                ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(top: 18, bottom: 45, left: 24, right: 24),
+        child: // Bottone
+            CustomButton(
+          title: "Applica opzioni",
+          titleColor: Colors.white,
+          backgroundColor: kPrimary,
+          onPressed: () {
+            //TODO 
+          },
+        ),
       ),
     );
   }
