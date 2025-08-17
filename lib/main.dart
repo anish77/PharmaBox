@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Great Places',
-      home: ListsPage(),
+      home: LoginPage(),
       theme: ThemeData(
         scaffoldBackgroundColor: kBackGround, // Sfondo globale
       ),
