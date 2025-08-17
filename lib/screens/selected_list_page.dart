@@ -61,7 +61,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
             Text(
               title,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: kBluScuro,
               ),
@@ -69,7 +69,21 @@ class _SelectedListPageState extends State<SelectedListPage> {
           ],
         ),
         SizedBox(height: 8),
-        Row(children: [ContainerOpzione(nomeOpione: "Warning warning 2")]),
+        Align(
+          alignment: Alignment.topLeft,
+          child: Wrap(
+          spacing: 8, // spazio orizzontale tra elementi
+          runSpacing: 8, // spazio verticale tra righe
+          children: [
+            ContainerOpzione(nomeOpione: "Warning 1"),
+             ContainerOpzione(nomeOpione: "Warning 1"),
+             ContainerOpzione(nomeOpione: "Warning 1"),
+             ContainerOpzione(nomeOpione: "Warning 1"),
+             ContainerOpzione(nomeOpione: "Warning 1"),   
+          ],
+                ),
+        ),
+        SizedBox(height: 18),
       ],
     );
   }
@@ -117,6 +131,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
                   cercaProdotto(),
                 ] else ...[
                   opzioni("Status"),
+                  opzioni("Category"),
                 ],
               ],
             ),
