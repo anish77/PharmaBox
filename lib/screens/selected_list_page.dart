@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
 class SelectedListPage extends StatefulWidget {
@@ -19,6 +20,7 @@ class SelectedListPage extends StatefulWidget {
 class _SelectedListPageState extends State<SelectedListPage> {
   var logger = Logger(printer: PrettyPrinter());
   var selectedIndex = 0;
+  var productToSearch = '';
 
   Widget cercaProdotto() {
     return TextFormField(
@@ -42,9 +44,33 @@ class _SelectedListPageState extends State<SelectedListPage> {
         }
         return null;
       },
-      onSaved: (value) {
-        // Logica per salvare il prodotto
+      onChanged: (value) {
+        setState(() {
+          productToSearch = value;
+        });
+        print(productToSearch);
       },
+    );
+  }
+
+  Widget opzioni(String title) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: kBluScuro,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Row(children: [ContainerOpzione(nomeOpione: "Warning warning 2")]),
+      ],
     );
   }
 
@@ -87,7 +113,11 @@ class _SelectedListPageState extends State<SelectedListPage> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                if (selectedIndex == 0) ...[cercaProdotto()],
+                if (selectedIndex == 0) ...[
+                  cercaProdotto(),
+                ] else ...[
+                  opzioni("Status"),
+                ],
               ],
             ),
           ),

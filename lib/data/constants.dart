@@ -8,6 +8,10 @@ const kPrimary = Color(0xFF5D5FEF);
 const kSecondary = Color(0xFFE5E6FF);
 const kBackGround = Color(0xFFF5F7FA);
 const kBluScuro = Color(0xFF2B2D66);
+const kWarning = Color(0xFFE59700);
+const kGreen = Color(0xFF0B8E63);
+const kRed = Color(0xFFC6180B);
+const kWhite = Color(0xFFFFFFFF);
 
 //messages
 const kEmailError = 'Please enter a valid email address';
