@@ -24,6 +24,7 @@ dependencies:
   toggle_switch: ^2.3.0
   cloud_firestore: ^6.0.0
   http: ^1.5.0
+  xml: ^6.6.1
 
 dev_dependencies:
   flutter_test:

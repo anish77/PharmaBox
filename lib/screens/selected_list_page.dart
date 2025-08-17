@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:toggle_switch/toggle_switch.dart';
+import 'package:xml/xml.dart' as xml;
 
 class SelectedListPage extends StatefulWidget {
   const SelectedListPage({
@@ -28,31 +29,125 @@ class _SelectedListPageState extends State<SelectedListPage> {
   bool _isLoading = false;
   List<dynamic> _risultati = [];
 
+  // de-escape XML tipo "&lt;Prodotti&gt;...&lt;/Prodotti&gt;"
+String _xmlUnescape(String s) => s
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'");
+
+// prova a trovare il <soap:Body> (SOAP 1.1 o 1.2)
+xml.XmlElement? _findSoapBody(xml.XmlDocument doc) {
+  final body11 = doc.findAllElements('Body',
+      namespace: 'http://schemas.xmlsoap.org/soap/envelope/');
+  if (body11.isNotEmpty) return body11.first;
+
+  final body12 = doc.findAllElements('Body',
+      namespace: 'http://www.w3.org/2003/05/soap-envelope');
+  if (body12.isNotEmpty) return body12.first;
+
+  // fallback senza namespace (non standard ma utile in test)
+  final any = doc.findAllElements('Body');
+  return any.isNotEmpty ? any.first : null;
+}
+
+/// Estrae la stringa XML annidata:
+/// - Se c’è CDATA: prende il contenuto cdata
+/// - Se è escapato: fa unescape
+/// - Se l’XML è direttamente annidato come sotto-elementi, restituisce l’outerXML di quel nodo
+String? _extractInnerXmlFromSoap(String soapXml) {
+  final doc = xml.XmlDocument.parse(soapXml);
+  final body = _findSoapBody(doc);
+  if (body == null) return null;
+
+  // Cerca un nodo "Result" o "Response" che tipicamente contiene l'XML annidato
+  final candidates = body.descendants
+      .whereType<xml.XmlElement>()
+      .where((e) => e.name.local.endsWith('OutputValue'))
+      .toList();
+
+  if (candidates.isEmpty) {
+    // fallback: prendi il primo figlio del Body
+    final first = body.children.whereType<xml.XmlElement>().toList();
+    if (first.isEmpty) return null;
+    // se ha CDATA o testo con &lt;...&gt; lo gestiamo sotto
+    final text = first.first.descendants.whereType<xml.XmlText>().map((t) => t.text).join().trim();
+    if (text.contains('<') || text.contains('&lt;')) {
+      return text.contains('&lt;') ? _xmlUnescape(text) : text;
+    }
+    // altrimenti potremmo avere già XML annidato come elementi: prendi l'outer XML del sottoalbero
+    return first.first.toXmlString();
+  }
+
+  final node = candidates.first;
+
+  // 1) CDATA?
+  final cdataText = node.children.whereType<xml.XmlCDATA>().map((c) => c.text.trim()).join();
+  if (cdataText.isNotEmpty) return cdataText;
+
+  // 2) Testo escapato?
+  final text = node.descendants.whereType<xml.XmlText>().map((t) => t.text).join().trim();
+  if (text.isNotEmpty) {
+    return text.contains('&lt;') ? _xmlUnescape(text) : text;
+  }
+
+  // 3) XML direttamente annidato come elementi
+  final firstChildElem = node.children.whereType<xml.XmlElement>().toList();
+  if (firstChildElem.isNotEmpty) {
+    // restituisce l'outer xml del sottoalbero
+    return firstChildElem.first.toXmlString();
+  }
+
+  return null;
+}
+
   Future<String> _postXml(String endpoint, String xmlBody) async {
   final uri = Uri.parse(endpoint);
   final resp = await http
       .post(
         uri,
         headers: {
-          'Content-Type': 'application/xml',
+          'Content-Type': 'text/xml; charset=utf-8',
           'Accept': 'application/xml',
+          'SOAPAction': 'http://webservices.farmadati.it/FarmadatiItaliaWebServicesM1/ExecuteQuery',
         },
-        body: utf8.encode(xmlBody), // assicuri UTF-8
+        body: xmlBody, // assicuri UTF-8
       )
       .timeout(const Duration(seconds: 12));
 
   if (resp.statusCode != 200) {
     throw Exception('HTTP ${resp.statusCode}: ${resp.body}');
   }
+  logger.i(utf8.decode(resp.bodyBytes));
   return utf8.decode(resp.bodyBytes); // risposta come XML string
 }
 
 String buildSearchXml(String query) {
   return '''
-<?xml version="1.0" encoding="UTF-8"?>
-<Request>
-  <Search>${query}</Search>
-</Request>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.farmadati.it" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:fdiw="http://schemas.datacontract.org/2004/07/FDIWebServices">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <web:ExecuteQuery>
+         <web:Username>BDF203348XC</web:Username>
+         <web:Password>epxD67iZR</web:Password>
+         <web:CodiceSetDati>TR001</web:CodiceSetDati>
+         <web:CampiDaEstrarre>
+            <arr:string>ALL</arr:string>
+         </web:CampiDaEstrarre>
+         
+		<web:Filtri>            
+            <fdiw:Filter>               
+               <fdiw:Key>FDI_0001</fdiw:Key>               
+               <fdiw:Operator>CONTIENE</fdiw:Operator>               
+               <fdiw:Value>$query</fdiw:Value>
+            </fdiw:Filter>
+         </web:Filtri>
+         <web:PageN>1</web:PageN>
+         <web:PagingN>1</web:PagingN>
+      </web:ExecuteQuery>
+   </soapenv:Body>
+</soapenv:Envelope>
 ''';
 }
 
@@ -73,6 +168,10 @@ String buildSearchXml(String query) {
     // }
     final xmlBody = buildSearchXml(_query);
     final responseXml = await _postXml('http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc', xmlBody);
+
+    final inner = _extractInnerXmlFromSoap(responseXml);
+    //final prodotti = _parseInnerProductsXml(inner);
+
 
     // per demo:
     await Future.delayed(const Duration(milliseconds: 500));
