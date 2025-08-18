@@ -7,6 +7,24 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:xml/xml.dart' as xml;
 
+class Prodotto {
+  final String codice;
+  final String nome;
+  Prodotto({required this.codice, required this.nome});
+}
+
+List<Prodotto> _parseInnerProductsXml(String innerXml) {
+  final innerDoc = xml.XmlDocument.parse(innerXml);
+
+  // se l'XML ha un root <Prodotti> con figli <Prodotto>...
+  final prodotti = innerDoc.findAllElements('Product');
+  return prodotti.map((p) {
+    final codice = p.getElement('FDI_0001')?.text.trim() ?? '';
+    final nome   = p.getElement('FDI_0004')?.text.trim()   ?? '';
+    return Prodotto(codice: codice, nome: nome);
+  }).toList();
+}
+
 class SelectedListPage extends StatefulWidget {
   const SelectedListPage({
     super.key,
@@ -27,7 +45,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
   final _cercaProdottoKeyForm = GlobalKey<FormState>();
   String _query = '';
   bool _isLoading = false;
-  List<dynamic> _risultati = [];
+  List<Prodotto> _prodotti = [];
 
   // de-escape XML tipo "&lt;Prodotti&gt;...&lt;/Prodotti&gt;"
 String _xmlUnescape(String s) => s
@@ -144,7 +162,7 @@ String buildSearchXml(String query) {
             </fdiw:Filter>
          </web:Filtri>
          <web:PageN>1</web:PageN>
-         <web:PagingN>1</web:PagingN>
+         <web:PagingN>100</web:PagingN>
       </web:ExecuteQuery>
    </soapenv:Body>
 </soapenv:Envelope>
@@ -170,12 +188,26 @@ String buildSearchXml(String query) {
     final responseXml = await _postXml('http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc', xmlBody);
 
     final inner = _extractInnerXmlFromSoap(responseXml);
-    //final prodotti = _parseInnerProductsXml(inner);
+    if (inner == null) {
+    setState(() => _prodotti = []);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Nessun XML interno trovato')),
+    );
+    return;
+  }
+    final prodotti = _parseInnerProductsXml(inner);
+    setState(() => _prodotti = prodotti);
+    } catch (e) {
+    logger.e('SOAP parse error: $e');
+    setState(() => _prodotti = []);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Errore nella lettura dei prodotti')),
+    );
 
 
     // per demo:
     await Future.delayed(const Duration(milliseconds: 500));
-    setState(() => _risultati = ['Prodotto A', 'Prodotto B', 'Prodotto C']);
+    //setState(() => _risultati = ['Prodotto A', 'Prodotto B', 'Prodotto C']);
   } finally {
     setState(() => _isLoading = false);
   }
@@ -267,8 +299,26 @@ String buildSearchXml(String query) {
               ],
             ),
           ),
+          SizedBox(
+  height: 300,
+  child: _prodotti.isEmpty
+      ? const Center(child: Text('Nessun risultato'))
+      : Expanded(child:ListView.builder(
+          itemCount: _prodotti.length,
+          itemBuilder: (context, i) {
+            final p = _prodotti[i];
+            return Card(
+              child: ListTile(
+                leading: Text(p.codice),
+                title: Text(p.nome),
+              ),
+            );
+          },
+        )),
+),
         ],
       ),
+      
     );
   }
 }
