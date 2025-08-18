@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/screens/forgot_password.dart';
 import 'package:pharma_box/screens/lists_page.dart';
 import 'package:pharma_box/screens/new_account_page.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
@@ -156,7 +157,12 @@ class _LoginPageState extends State<LoginPage> {
                               // Forgot password
                               TextButton(
                                 onPressed: () {
-                                  // TODO: implement password reset
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ForgotPassword(),
+                                    ),
+                                  );
                                 },
                                 child: const Text(
                                   'Password dimenticata?',
@@ -175,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Bottone crea account
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.only(bottom: 21),
                     child: CustomButton(
                       title: "Crea nuovo account",
                       titleColor: kPrimary,

@@ -19,6 +19,8 @@ const kPasswordError = 'Password must be at least 6 characters long';
 const kCercaProdotto = 'Cerca prodotto';
 const kMsgErroreCercaProdotto =
     'Inserisci un valore da cercare che abbia almeno 3 caratteri';
+const kForgotPasswordTitle = 'Password dimenticata';
+const kForgotPassword = 'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
 /*const kLoginSuccess = 'Login successful!';
 const kLoginError = 'Login failed. Please try again.';
 const kSignUpSuccess = 'Sign up successful!';
