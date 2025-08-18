@@ -6,6 +6,7 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/selected_list_page.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
+import 'package:pharma_box/widgets/log_out_popup.dart';
 
 class ListsPage extends StatefulWidget {
   const ListsPage({super.key});
@@ -58,31 +59,70 @@ class _ListsPageState extends State<ListsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false, // niente icona automatica a sinistra
+        title: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Row(
+            children: [
+              Image.asset(kLogo, height: 25, width: 25),
+              const SizedBox(width: 8),
+              const Text(
+                kAppName,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: kPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Builder(
+            builder:
+                (context) => IconButton(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Icon(Icons.menu, color: kPrimary),
+                  ), // colore che vuoi
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
+                ),
+          ),
+        ],
+      ),
+      endDrawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: kPrimary),
+              child: Text(
+                'Menu',
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+            ListTile(
+             // leading: Icon(Icons.settings),
+              title: Text('Opzione 1'),
+              onTap: () => Navigator.pop(context),
+            ),
+             ListTile(
+              title: Text('Log out', style: TextStyle( fontSize: 18,
+                  fontWeight: FontWeight.w500, color: kRed),),
+              onTap: () {
+                 LogoutPopup().showLogout(context);
+              },
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(top: 45, left: 24, right: 24),
+          padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo + titolo
-              Row(
-                children: [
-                  Image.asset(kLogo, height: 25, width: 25),
-                  const SizedBox(width: 8),
-                  const Text(
-                    kAppName,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: kPrimary,
-                    ),
-                  ),
-                  
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
               // Bottone
               CustomButton(
                 title: "Crea Nuova Lista",
@@ -92,9 +132,7 @@ class _ListsPageState extends State<ListsPage> {
                   CreaListaPopup().showPopup(context);
                 },
               ),
-
               const SizedBox(height: 45),
-
               // Intestazione Liste
               Container(
                 width: double.infinity,
