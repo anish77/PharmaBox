@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:pharma_box/screens/lists_page.dart';
 import 'firebase_options.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/login_page.dart';

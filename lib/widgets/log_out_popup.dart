@@ -27,11 +27,14 @@ class LogoutPopup {
                   onPressed: () async {
                     try {
                       await FirebaseAuth.instance.signOut();
+                      // ignore: use_build_context_synchronously
                       Navigator.of(context).pop(); // chiude il dialog
                       Navigator.of(
+                        // ignore: use_build_context_synchronously
                         context,
                         rootNavigator: true,
                       ).pop(); // chiude il drawer se è aperto
+                      // ignore: use_build_context_synchronously
                       Navigator.pop(context);
                       logger.d('Log out: SUCCESS');
                     } catch (error) {
