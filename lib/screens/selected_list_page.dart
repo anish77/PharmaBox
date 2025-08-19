@@ -49,7 +49,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
         setState(() {
           productToSearch = value;
         });
-        print(productToSearch);
+        //print(productToSearch);
       },
     );
   }
