@@ -20,9 +20,21 @@ const kCercaProdotto = 'Cerca prodotto';
 const kMsgErroreCercaProdotto =
     'Inserisci un valore da cercare che abbia almeno 3 caratteri';
 const kForgotPasswordTitle = 'Password dimenticata';
-const kForgotPassword = 'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
+const kForgotPassword =
+    'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
 /*const kLoginSuccess = 'Login successful!';
 const kLoginError = 'Login failed. Please try again.';
 const kSignUpSuccess = 'Sign up successful!';
 const kSignUpError = 'Sign up failed. Please try again.';
 const kPasswordHint = 'Enter your password';*/
+
+// Password sicura
+// Requisiti:
+// - Almeno 8 caratteri
+// - Almeno 1 lettera maiuscola
+// - Almeno 1 lettera minuscola
+// - Almeno 1 numero
+// - Almeno 1 carattere speciale
+final kRegex = RegExp(
+  r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#\$&*~^%+=?_\-]).{8,}$',
+);
