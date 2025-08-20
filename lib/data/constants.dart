@@ -15,7 +15,8 @@ const kWhite = Color(0xFFFFFFFF);
 
 //messages
 const kEmailError = 'Please enter a valid email address';
-const kPasswordError = 'Password must be at least 6 characters long';
+const kPasswordError = 'La Password deve avere almeno 8 caratteri, una lettera maiuscola, una lettera minuscola, un numero, e un carattere speciale';
+const kCellError = 'Inserisci un numero di cellulare valido';
 const kCercaProdotto = 'Cerca prodotto';
 const kMsgErroreCercaProdotto =
     'Inserisci un valore da cercare che abbia almeno 3 caratteri';
@@ -35,6 +36,8 @@ const kPasswordHint = 'Enter your password';*/
 // - Almeno 1 lettera minuscola
 // - Almeno 1 numero
 // - Almeno 1 carattere speciale
-final kRegex = RegExp(
+final kRegexPassword = RegExp(
   r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#\$&*~^%+=?_\-]).{8,}$',
 );
+// reguisiti per il numero di cellulare 
+final kRegexCell = RegExp(r'^(?:\+39)?3\d{9}$');

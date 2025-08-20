@@ -78,7 +78,11 @@ class _NewAccountPageState extends State<NewAccountPage> {
   }
 
   bool isPasswordSecure(String password) {
-    return kRegex.hasMatch(password);
+    return kRegexPassword.hasMatch(password);
+  }
+
+  bool isCellCorrect(String cellulare) {
+    return kRegexCell.hasMatch(cellulare);
   }
 
   @override
@@ -172,12 +176,12 @@ class _NewAccountPageState extends State<NewAccountPage> {
                           CustomTextFormField(
                             label: 'Cellulare',
                             keyboardType: TextInputType.phone,
-                            /*validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Inserisci un numero di cellulare valido';
+                            validator: (value) {
+                              if (value != null && isCellCorrect(value) == false) {
+                                return kCellError;
                               }
                               return null;
-                            },*/
+                            },
                             onSaved: (value) {
                               _enteredPhoneNumber = value!;
                             },
@@ -187,7 +191,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                             label: 'Password',
                             obscureText: true,
                             validator: (value) {
-                              if (isPasswordSecure == false ){
+                              if (value != null && isPasswordSecure(value) == false) {
                                 return kPasswordError;
                               }
                               return null;
