@@ -14,8 +14,10 @@ const kRed = Color(0xFFC6180B);
 const kWhite = Color(0xFFFFFFFF);
 
 //messages
-const kEmailError = 'Please enter a valid email address';
-const kPasswordError = 'La Password deve avere almeno 8 caratteri, una lettera maiuscola, una lettera minuscola, un numero, e un carattere speciale';
+const kNomeError = 'Il nome non deve essere vuoto';
+const kCognomeError = 'Il cognome non deve essere vuoto';
+const kEmailError = 'Inserisci un email corretto';
+const kPasswordError = 'La Password deve avere almeno 8 caratteri, \nuna lettera maiuscola, \nuna lettera minuscola, \nun numero, e un carattere speciale';
 const kCellError = 'Inserisci un numero di cellulare valido';
 const kCercaProdotto = 'Cerca prodotto';
 const kMsgErroreCercaProdotto =
@@ -39,5 +41,6 @@ const kPasswordHint = 'Enter your password';*/
 final kRegexPassword = RegExp(
   r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#\$&*~^%+=?_\-]).{8,}$',
 );
-// reguisiti per il numero di cellulare 
+// reguisiti: 
 final kRegexCell = RegExp(r'^(?:\+39)?3\d{9}$');
+final kRegexEmail = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
