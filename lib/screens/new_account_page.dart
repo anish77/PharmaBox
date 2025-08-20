@@ -45,7 +45,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
             'phoneNumber': _enteredPhoneNumber,
             'uid': userCredential.user!.uid,
             'password': _enteredPassword,
-            'liste': []
+            'liste': [],
           });
 
       logger.i('Account created: $userCredential');
@@ -75,6 +75,10 @@ class _NewAccountPageState extends State<NewAccountPage> {
       );
       logger.e(stack);
     }
+  }
+
+  bool isPasswordSecure(String password) {
+    return kRegex.hasMatch(password);
   }
 
   @override
@@ -183,7 +187,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                             label: 'Password',
                             obscureText: true,
                             validator: (value) {
-                              if (value == null || value.length < 6) {
+                              if (isPasswordSecure == false ){
                                 return kPasswordError;
                               }
                               return null;
