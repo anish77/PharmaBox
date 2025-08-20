@@ -92,43 +92,81 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("")),
-      backgroundColor: kBackGround,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 45),
-              child: Text(
-                kForgotPasswordTitle,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+      appBar: AppBar(
+        backgroundColor: kBackGround,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: kPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo + Brand Name
+                      Padding(
+                        padding: const EdgeInsets.only(top: 60),
+                        child: Column(
+                          children: [
+                            Image.asset(kLogo, height: 70, width: 70),
+                            const SizedBox(height: 8),
+                            const Text(
+                              kAppName,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: kPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      Text(
+                        kForgotPasswordTitle,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 30,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      CustomTextFormField(
+                        label: "Email",
+                        onChanged: (value) {
+                          setState(() {
+                            _enteredEmail = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      Text(kForgotPassword, style: TextStyle(fontSize: 16)),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            CustomTextFormField(
-              label: "Email",
-              onChanged: (value) {
-                setState(() {
-                  _enteredEmail = value;
-                });
-              },
-            ),
-            const SizedBox(height: 20),
-            Text(kForgotPassword, style: TextStyle(fontSize: 16)),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 45),
-              child: CustomButton(
-                title: "Invia",
-                titleColor: Colors.white,
-                backgroundColor: kPrimary,
-                onPressed: () {
-                  _resetPassword();
-                },
+              Padding(
+                padding: const EdgeInsets.only(bottom: 45),
+                child: CustomButton(
+                  title: "Invia",
+                  titleColor: Colors.white,
+                  backgroundColor: kPrimary,
+                  onPressed: () {
+                    _resetPassword();
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

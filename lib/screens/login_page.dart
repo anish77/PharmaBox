@@ -178,7 +178,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
                   // Bottone crea account
                   Padding(
                     padding: const EdgeInsets.only(bottom: 45),
