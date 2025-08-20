@@ -142,6 +142,7 @@ String? _extractInnerXmlFromSoap(String soapXml) {
 }
 
 String buildSearchXml(String query) {
+  final cCampo = int.tryParse(query) != null ? 'FDI_0001':'FDI_0004'; 
   return '''
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.farmadati.it" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:fdiw="http://schemas.datacontract.org/2004/07/FDIWebServices">
    <soapenv:Header/>
@@ -156,7 +157,7 @@ String buildSearchXml(String query) {
          
 		<web:Filtri>            
             <fdiw:Filter>               
-               <fdiw:Key>FDI_0001</fdiw:Key>               
+               <fdiw:Key>$cCampo</fdiw:Key>               
                <fdiw:Operator>CONTIENE</fdiw:Operator>               
                <fdiw:Value>$query</fdiw:Value>
             </fdiw:Filter>
