@@ -260,9 +260,11 @@ String buildSearchXml(String query) {
         centerTitle: false,
         titleSpacing: 0, // riduce lo spazio prima del titolo
       ),
-      body: Column(
+      body: Stack(
+    children: [
+      // ------ CONTENUTO NORMALE ------
+      Column(
         children: [
-          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -300,26 +302,50 @@ String buildSearchXml(String query) {
               ],
             ),
           ),
-          SizedBox(
-  height: 300,
-  child: _prodotti.isEmpty
-      ? const Center(child: Text('Nessun risultato'))
-      : Expanded(child:ListView.builder(
-          itemCount: _prodotti.length,
-          itemBuilder: (context, i) {
-            final p = _prodotti[i];
-            return Card(
-              child: ListTile(
-                leading: Text(p.codice),
-                title: Text(p.nome),
-              ),
-            );
-          },
-        )),
+          const SizedBox(height: 18),
+          Expanded(
+            child: _prodotti.isEmpty
+            ? const Center(child: Text('Nessun risultato'))
+            : ListView.builder(
+              itemCount: _prodotti.length,
+              itemBuilder: (context, i) {
+                final p = _prodotti[i];
+                return Card(
+                  child: ListTile(
+                    leading: Text(p.codice),
+                    title: Text(p.nome),
+                  ),
+                );
+              },
+            ),
+          ),
+          // 👇 FOOTER fisso in basso, sempre visibile
+Container(
+  width: double.infinity,
+  color: Colors.grey.shade200,           // opzionale: sfondo leggero
+  padding: const EdgeInsets.all(8.0),
+  child: Text(
+    'Totale risultati: ${_prodotti.length}',
+    textAlign: TextAlign.center,
+    style: const TextStyle(fontWeight: FontWeight.bold),
+  ),
 ),
         ],
-      ),
-      
+      ),      
+      // ------ OVERLAY LOADING ------
+      if (_isLoading)
+        Positioned.fill(
+          child: AbsorbPointer( // blocca tocchi sotto
+            absorbing: true,
+            child: Container(
+              color: Colors.black.withOpacity(0.2),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+        ),
+    ],
+    ),
+       
     );
   }
 }
