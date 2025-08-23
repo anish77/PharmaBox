@@ -6,11 +6,13 @@ import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:xml/xml.dart' as xml;
+import 'package:pharma_box/data/datacached.dart';
 
 class Prodotto {
   final String codice;
   final String nome;
-  Prodotto({required this.codice, required this.nome});
+  final String tipo_prodotto;
+  Prodotto({required this.codice, required this.nome, required this.tipo_prodotto});
 }
 
 List<Prodotto> _parseInnerProductsXml(String innerXml) {
@@ -20,8 +22,9 @@ List<Prodotto> _parseInnerProductsXml(String innerXml) {
   final prodotti = innerDoc.findAllElements('Product');
   return prodotti.map((p) {
     final codice = p.getElement('FDI_0001')?.text.trim() ?? '';
-    final nome   = p.getElement('FDI_0004')?.text.trim()   ?? '';
-    return Prodotto(codice: codice, nome: nome);
+    final nome   = p.getElement('FDI_0004')?.text.trim() ?? '';
+    final tipo_prodotto = CategoriaMapper.getDescrizione(p.getElement('FDI_0008')?.text.trim() ?? '') ?? '';
+    return Prodotto(codice: codice, nome: nome, tipo_prodotto: tipo_prodotto);
   }).toList();
 }
 
@@ -314,22 +317,23 @@ String buildSearchXml(String query) {
                   child: ListTile(
                     leading: Text(p.codice),
                     title: Text(p.nome),
+                    trailing: Text(p.tipo_prodotto),
                   ),
                 );
               },
             ),
           ),
           // 👇 FOOTER fisso in basso, sempre visibile
-Container(
-  width: double.infinity,
-  color: Colors.grey.shade200,           // opzionale: sfondo leggero
-  padding: const EdgeInsets.all(8.0),
-  child: Text(
-    'Totale risultati: ${_prodotti.length}',
-    textAlign: TextAlign.center,
-    style: const TextStyle(fontWeight: FontWeight.bold),
-  ),
-),
+          Container(
+            width: double.infinity,
+            color: Colors.grey.shade200,           // opzionale: sfondo leggero
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Totale risultati: ${_prodotti.length}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),      
       // ------ OVERLAY LOADING ------
