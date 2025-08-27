@@ -14,15 +14,33 @@ const kRed = Color(0xFFC6180B);
 const kWhite = Color(0xFFFFFFFF);
 
 //messages
-const kEmailError = 'Please enter a valid email address';
-const kPasswordError = 'Password must be at least 6 characters long';
+const kNomeError = 'Il nome non deve essere vuoto';
+const kCognomeError = 'Il cognome non deve essere vuoto';
+const kEmailError = 'Inserisci un email corretto';
+const kPasswordError = 'La Password deve avere almeno 8 caratteri, \nuna lettera maiuscola, \nuna lettera minuscola, \nun numero, e un carattere speciale';
+const kCellError = 'Inserisci un numero di cellulare valido';
 const kCercaProdotto = 'Cerca prodotto';
 const kMsgErroreCercaProdotto =
     'Inserisci un valore da cercare che abbia almeno 3 caratteri';
 const kForgotPasswordTitle = 'Password dimenticata';
-const kForgotPassword = 'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
+const kForgotPassword =
+    'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
 /*const kLoginSuccess = 'Login successful!';
 const kLoginError = 'Login failed. Please try again.';
 const kSignUpSuccess = 'Sign up successful!';
 const kSignUpError = 'Sign up failed. Please try again.';
 const kPasswordHint = 'Enter your password';*/
+
+// Password sicura
+// Requisiti:
+// - Almeno 8 caratteri
+// - Almeno 1 lettera maiuscola
+// - Almeno 1 lettera minuscola
+// - Almeno 1 numero
+// - Almeno 1 carattere speciale
+final kRegexPassword = RegExp(
+  r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#\$&*~^%+=?_\-]).{8,}$',
+);
+// reguisiti: 
+final kRegexCell = RegExp(r'^(?:\+39)?3\d{9}$');
+final kRegexEmail = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');

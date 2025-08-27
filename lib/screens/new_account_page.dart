@@ -45,7 +45,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
             'phoneNumber': _enteredPhoneNumber,
             'uid': userCredential.user!.uid,
             'password': _enteredPassword,
-            'liste': []
+            'liste': [],
           });
 
       logger.i('Account created: $userCredential');
@@ -77,6 +77,18 @@ class _NewAccountPageState extends State<NewAccountPage> {
     }
   }
 
+  bool isPasswordSecure(String password) {
+    return kRegexPassword.hasMatch(password);
+  }
+
+  bool isCellCorrect(String cellulare) {
+    return kRegexCell.hasMatch(cellulare);
+  }
+
+  bool isEmailCorrect(String email) {
+    return kRegexEmail.hasMatch(email);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,19 +116,21 @@ class _NewAccountPageState extends State<NewAccountPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Logo + Brand Name
-                          Column(
-                            children: [
-                              Image.asset(kLogo, height: 70, width: 70),
-                              const SizedBox(height: 8),
-                              const Text(
-                                kAppName,
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: kPrimary,
+                          SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                Image.asset(kLogo, height: 70, width: 70),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  kAppName,
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: kPrimary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 40),
 
@@ -124,7 +138,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                             label: 'Nome',
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return kEmailError;
+                                return kNomeError;
                               }
                               return null;
                             },
@@ -139,7 +153,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                             label: 'Cognome',
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return kEmailError;
+                                return kCognomeError;
                               }
                               return null;
                             },
@@ -153,9 +167,8 @@ class _NewAccountPageState extends State<NewAccountPage> {
                             label: 'Email',
                             keyboardType: TextInputType.emailAddress,
                             validator: (value) {
-                              if (value == null ||
-                                  value.trim().isEmpty ||
-                                  !value.contains('@')) {
+                              if (value != null &&
+                                  isEmailCorrect(value) == false) {
                                 return kEmailError;
                               }
                               return null;
@@ -168,12 +181,13 @@ class _NewAccountPageState extends State<NewAccountPage> {
                           CustomTextFormField(
                             label: 'Cellulare',
                             keyboardType: TextInputType.phone,
-                            /*validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Inserisci un numero di cellulare valido';
+                            validator: (value) {
+                              if (value != null &&
+                                  isCellCorrect(value) == false) {
+                                return kCellError;
                               }
                               return null;
-                            },*/
+                            },
                             onSaved: (value) {
                               _enteredPhoneNumber = value!;
                             },
@@ -183,7 +197,8 @@ class _NewAccountPageState extends State<NewAccountPage> {
                             label: 'Password',
                             obscureText: true,
                             validator: (value) {
-                              if (value == null || value.length < 6) {
+                              if (value != null &&
+                                  isPasswordSecure(value) == false) {
                                 return kPasswordError;
                               }
                               return null;
@@ -192,25 +207,26 @@ class _NewAccountPageState extends State<NewAccountPage> {
                               _enteredPassword = value!;
                             },
                           ),
-                          const SizedBox(height: 24),
-
-                          CustomButton(
-                            title: "Crea Account",
-                            titleColor: Colors.white,
-                            backgroundColor: kPrimary,
-                            onPressed: () {
-                              final isValid = _form.currentState!.validate();
-                              if (!isValid) {
-                                return;
-                              }
-                              _form.currentState!.save();
-                              _submitLogin();
-                            },
-                          ),
                           const SizedBox(height: 16),
                         ],
                       ),
                     ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 45),
+                  child: CustomButton(
+                    title: "Crea Account",
+                    titleColor: Colors.white,
+                    backgroundColor: kPrimary,
+                    onPressed: () {
+                      final isValid = _form.currentState!.validate();
+                      if (!isValid) {
+                        return;
+                      }
+                      _form.currentState!.save();
+                      _submitLogin();
+                    },
                   ),
                 ),
               ],

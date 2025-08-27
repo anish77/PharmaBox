@@ -178,10 +178,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
                   // Bottone crea account
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 21),
+                    padding: const EdgeInsets.only(bottom: 45),
                     child: CustomButton(
                       title: "Crea nuovo account",
                       titleColor: kPrimary,

@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
       title: 'Great Places',
       home: LoginPage(),
       theme: ThemeData(
+        
         scaffoldBackgroundColor: kBackGround, // Sfondo globale
         appBarTheme: const AppBarTheme(       // Tema globale per le AppBar
         backgroundColor: kBackGround,
