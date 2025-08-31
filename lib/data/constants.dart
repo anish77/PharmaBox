@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
+const kNoImage = 'assets/noImage.png';
+const kNotAuthorized = 'assets/lock.png';
 
 //colors
 const kPrimary = Color(0xFF5D5FEF);
@@ -17,7 +19,8 @@ const kWhite = Color(0xFFFFFFFF);
 const kNomeError = 'Il nome non deve essere vuoto';
 const kCognomeError = 'Il cognome non deve essere vuoto';
 const kEmailError = 'Inserisci un email corretto';
-const kPasswordError = 'La Password deve avere almeno 8 caratteri, \nuna lettera maiuscola, \nuna lettera minuscola, \nun numero, e un carattere speciale';
+const kPasswordError =
+    'La Password deve avere almeno 8 caratteri, \nuna lettera maiuscola, \nuna lettera minuscola, \nun numero, e un carattere speciale';
 const kCellError = 'Inserisci un numero di cellulare valido';
 const kCercaProdotto = 'Cerca prodotto';
 const kMsgErroreCercaProdotto =
@@ -25,11 +28,9 @@ const kMsgErroreCercaProdotto =
 const kForgotPasswordTitle = 'Password dimenticata';
 const kForgotPassword =
     'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
-/*const kLoginSuccess = 'Login successful!';
-const kLoginError = 'Login failed. Please try again.';
-const kSignUpSuccess = 'Sign up successful!';
-const kSignUpError = 'Sign up failed. Please try again.';
-const kPasswordHint = 'Enter your password';*/
+// Errori
+const kProdottoNonConsentito = 'Severe worning';
+const kUtenteNonAutorizzato = 'Utente non autorizzato, invia un email a xxxx ';
 
 // Password sicura
 // Requisiti:
@@ -41,6 +42,6 @@ const kPasswordHint = 'Enter your password';*/
 final kRegexPassword = RegExp(
   r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#\$&*~^%+=?_\-]).{8,}$',
 );
-// reguisiti: 
+// reguisiti:
 final kRegexCell = RegExp(r'^(?:\+39)?3\d{9}$');
 final kRegexEmail = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
