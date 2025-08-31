@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/firebase/firebase_logic.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
+import 'package:pharma_box/widgets/gestione_prodotto.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
 class SelectedListPage extends StatefulWidget {
@@ -22,36 +24,17 @@ class _SelectedListPageState extends State<SelectedListPage> {
   var logger = Logger(printer: PrettyPrinter());
   var selectedIndex = 0;
   var productToSearch = '';
+  var uid_ble = '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B';
+  bool? isAuthorized;
 
-  Widget cercaProdotto() {
-    return TextFormField(
-      decoration: InputDecoration(
-        labelText: kCercaProdotto,
-        labelStyle: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: kBluScuro),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: kPrimary),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: kPrimary),
-        ),
-      ),
-      keyboardType: TextInputType.text,
-      autocorrect: false,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty || value.length < 3) {
-          return kMsgErroreCercaProdotto;
-        }
-        return null;
-      },
-      onChanged: (value) {
-        setState(() {
-          productToSearch = value;
-        });
-        //print(productToSearch);
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    FirebaseLogic.instance.isUIDAuthorized(uid_ble).then((value) {
+      setState(() {
+        isAuthorized = value;
+      });
+    });
   }
 
   Widget opzioni(String title) {
@@ -118,8 +101,8 @@ class _SelectedListPageState extends State<SelectedListPage> {
                         activeFgColor: Colors.white,
                         inactiveBgColor: kSecondary,
                         inactiveFgColor: kBluScuro,
-                        totalSwitches: 2,
-                        labels: ['Cerca', 'Opzioni'],
+                        totalSwitches: 3,
+                        labels: ['Scan', 'Cerca', 'Lista'],
                         onToggle: (index) {
                           setState(() {
                             logger.i('switched to: $index');
@@ -130,11 +113,24 @@ class _SelectedListPageState extends State<SelectedListPage> {
                     ),
                     const SizedBox(height: 18),
                     if (selectedIndex == 0) ...[
-                      cercaProdotto(),
-                    ] else ...[
+                      if (isAuthorized == true)
+                        GestioneProdotto().prodottoTrovato()
+                      else
+                        GestioneProdotto().nonAutorizzato(),
+                    ] else if (selectedIndex == 1) ...[
+                      GestioneProdotto().cercaProdotto(
+                        context: context,
+                        onChanged: (value) {
+                          setState(() {
+                            productToSearch = value;
+                          });
+                        },
+                      ),
                       opzioni("Status"),
                       opzioni("Category"),
                       opzioni("Category"),
+                    ] else ...[
+                      //cercaProdotto(),
                     ],
                   ],
                 ),
