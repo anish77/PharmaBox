@@ -83,6 +83,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       if (error.code == 'user-not-found') {
         message = "Nessun utente trovato con questa email";
       }
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
