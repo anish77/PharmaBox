@@ -37,7 +37,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
     });
   }
 
-  Widget opzioni(String title) {
+  Widget opzioni(String title, List<String> kFiltro) {
     return Column(
       children: [
         Row(
@@ -56,15 +56,12 @@ class _SelectedListPageState extends State<SelectedListPage> {
         Align(
           alignment: Alignment.topLeft,
           child: Wrap(
-            spacing: 8, // spazio orizzontale tra elementi
-            runSpacing: 8, // spazio verticale tra righe
-            children: [
-              ContainerOpzione(nomeOpione: "Warning 1"),
-              ContainerOpzione(nomeOpione: "Warning 1"),
-              ContainerOpzione(nomeOpione: "Warning 1"),
-              ContainerOpzione(nomeOpione: "Warning 1"),
-              ContainerOpzione(nomeOpione: "Warning 1"),
-            ],
+            spacing: 8, // spazio orizzontale
+            runSpacing: 8, // spazio verticale
+            children:
+                kFiltro
+                    .map((filtro) => ContainerOpzione(nomeOpione: filtro))
+                    .toList(),
           ),
         ),
         SizedBox(height: 18),
@@ -126,9 +123,9 @@ class _SelectedListPageState extends State<SelectedListPage> {
                           });
                         },
                       ),
-                      opzioni("Status"),
-                      opzioni("Category"),
-                      opzioni("Category"),
+                      opzioni("Status", kFiltri1),
+                      opzioni("Category", kFiltri2),
+                      opzioni("Category", kFiltri1),
                     ] else ...[
                       //cercaProdotto(),
                     ],
