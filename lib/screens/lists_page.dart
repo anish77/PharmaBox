@@ -103,15 +103,21 @@ class _ListsPageState extends State<ListsPage> {
               ),
             ),
             ListTile(
-             // leading: Icon(Icons.settings),
+              // leading: Icon(Icons.settings),
               title: Text('Opzione 1'),
               onTap: () => Navigator.pop(context),
             ),
-             ListTile(
-              title: Text('Log out', style: TextStyle( fontSize: 18,
-                  fontWeight: FontWeight.w500, color: kRed),),
+            ListTile(
+              title: Text(
+                'Log out',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: kRed,
+                ),
+              ),
               onTap: () {
-                 LogoutPopup().showLogout(context);
+                LogoutPopup().showLogout(context);
               },
             ),
           ],
@@ -167,10 +173,19 @@ class _ListsPageState extends State<ListsPage> {
                             final isSelected = selectedIndex == index;
                             return Dismissible(
                               key: Key(items[index]),
-                              direction:
-                                  DismissDirection
-                                      .endToStart, // swipe verso sinistra
+                              direction: DismissDirection.horizontal,
                               background: Container(
+                                alignment: Alignment.centerLeft,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                color: Colors.green,
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              secondaryBackground: Container(
                                 alignment: Alignment.centerRight,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
@@ -182,63 +197,112 @@ class _ListsPageState extends State<ListsPage> {
                                 ),
                               ),
                               confirmDismiss: (direction) async {
-                                // conferma
-                                return await showDialog(
-                                  context: context,
-                                  builder:
-                                      (context) => AlertDialog(
-                                        title: const Text(
-                                          "Conferma eliminazione",
-                                        ),
-                                        content: Text(
-                                          "Vuoi davvero cancellare la lista \"${items[index]}\"?",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            child: const Text("Annulla"),
-                                            onPressed:
-                                                () => Navigator.of(
-                                                  context,
-                                                ).pop(false),
+                                if (direction == DismissDirection.startToEnd) {
+                                  // Edit lista
+                                  final TextEditingController controller =
+                                      TextEditingController(text: items[index]);
+                                  final nuovoNome = await showDialog<String>(
+                                    context: context,
+                                    builder:
+                                        (context) => AlertDialog(
+                                          title: const Text(
+                                            "Modifica nome lista",
                                           ),
-                                          TextButton(
-                                            child: const Text("Elimina"),
-                                            onPressed: () {
-                                              if (context.mounted) {
-                                                Navigator.of(context).pop(true);
-                                              }
-                                            },
+                                          content: TextField(
+                                            controller: controller,
+                                            decoration: const InputDecoration(
+                                              labelText: "Nuovo nome",
+                                            ),
                                           ),
-                                        ],
-                                      ),
-                                );
+                                          actions: [
+                                            TextButton(
+                                              child: const Text("Annulla"),
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(null),
+                                            ),
+                                            TextButton(
+                                              child: const Text("Salva"),
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(controller.text.trim()),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+
+                                  if (nuovoNome != null &&
+                                      nuovoNome.isNotEmpty) {
+                                    final docRef = FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(uid);
+                                    final doc = await docRef.get();
+                                    if (doc.exists) {
+                                      final data = doc.data()!;
+                                      final liste =
+                                          List<Map<String, dynamic>>.from(
+                                            data['liste'] ?? [],
+                                          );
+                                      final indexLista = liste.indexWhere(
+                                        (l) => l['nomeLista'] == items[index],
+                                      );
+                                      if (indexLista >= 0) {
+                                        liste[indexLista]['nomeLista'] =
+                                            nuovoNome;
+                                        await docRef.update({'liste': liste});
+                                      }
+                                    }
+                                  }
+                                  return false; // importante: non chiudere il Dismissible
+                                }
+
+                                // Se swipe verso sinistra → conferma eliminazione
+                                if (direction == DismissDirection.endToStart) {
+                                  return await showDialog(
+                                    context: context,
+                                    builder:
+                                        (context) => AlertDialog(
+                                          title: const Text(
+                                            "Conferma eliminazione",
+                                          ),
+                                          content: Text(
+                                            'Vuoi davvero cancellare la lista "${items[index]}"?',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              child: const Text("Annulla"),
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(false),
+                                            ),
+                                            TextButton(
+                                              child: const Text("Elimina"),
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(true),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+                                }
+
+                                return false;
                               },
                               onDismissed: (direction) async {
-                                final nomeListaCancellata = items[index];
-                                await eliminaLista(nomeListaCancellata);
-
-                                if (!mounted) return;
-
-                                // usa scaffoldContext stabile
-                                ScaffoldMessenger.of(
-                                  // ignore: use_build_context_synchronously
-                                  scaffoldContext,
-                                ).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Lista "$nomeListaCancellata" eliminata',
+                                if (direction == DismissDirection.endToStart) {
+                                  await eliminaLista(items[index]);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Lista "${items[index]}" eliminata',
+                                      ),
                                     ),
-                                  ),
-                                );
-
-                                setState(() {
-                                  if (items.length == 1) {
-                                    selectedIndex = null;
-                                  } else if (selectedIndex != null &&
-                                      selectedIndex! >= items.length - 1) {
-                                    selectedIndex = items.length - 2;
-                                  }
-                                });
+                                  );
+                                }
                               },
                               child: ListTile(
                                 title: Text(items[index]),
