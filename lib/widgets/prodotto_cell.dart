@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/widgets/counter_button.dart';
 
 class ProdottoCell extends StatelessWidget {
   final Prodotto prodotto;
@@ -17,46 +19,59 @@ class ProdottoCell extends StatelessWidget {
     return Card(
       color: kBackGround,
       elevation: 0,
-
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Row(
+        padding: const EdgeInsets.only(
+          top: 10,
+          bottom: 10,
+          left: 12,
+          right: 12,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (!prodotto.consentito)
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: kRed,
-                            shape: BoxShape.circle,
+                      Row(
+                        children: [
+                          if (!prodotto.consentito)
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: kRed,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          if (!prodotto.consentito) const SizedBox(width: 8),
+                          Text(
+                            prodotto.titolo,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      if (!prodotto.consentito) const SizedBox(width: 8),
-                      Text(
-                        prodotto.titolo,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        ],
                       ),
+                      Text(prodotto.minsan),
                     ],
                   ),
-
-                  Text(prodotto.minsan),
-                  const SizedBox(height: 10),
-                  const Divider(thickness: 1, color: kBluScuro, height: 1),
-                ],
-              ),
+                ),
+                CounterButton(
+                  initialValue: prodotto.pezzi,
+                  onChanged: (value) {
+                    prodotto.pezzi = value;
+                    Carrello.instance.aggiungiProdotto(prodotto);
+                  },
+                ),
+              ],
             ),
-
-            //Spacer(),
-            //Text("Pz. ${prodotto.pezzi}"),
+            const SizedBox(height: 10),
+            const Divider(thickness: 1, color: kBluScuro, height: 1),
           ],
         ),
       ),
