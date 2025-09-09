@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
+import 'package:pharma_box/models/prodotto.dart';
 
 class GestioneProdotto {
   // Widget prodotto trovato
   Widget prodottoTrovato() {
+    // Creo il prodotto da aggiungere
+    final Prodotto prodotto = Prodotto(
+      titolo: 'Prodotto Oki',
+      minsan: 'Minsan 123456789',
+      imagePath: 'assets/noImage.png',
+      pezzi: 1,
+      consentito: false,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(top: 80, left: 10, right: 0),
       child: Column(
@@ -40,17 +51,17 @@ class GestioneProdotto {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "title Oki",
-                      style: TextStyle(
+                    Text(
+                      prodotto.titolo,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: kBluScuro,
                       ),
                       softWrap: true,
                     ),
-                    const Text(
-                      "subtitle",
+                    Text(
+                      prodotto.minsan,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.normal,
@@ -59,9 +70,12 @@ class GestioneProdotto {
                     ),
                     const SizedBox(height: 8),
                     CounterButton(
-                      initialValue: 1,
+                      initialValue: prodotto.pezzi,
                       onChanged: (value) {
                         print("Valore aggiornato: $value");
+                        prodotto.pezzi = value;
+                        // Aggiungi alla lista globale
+                        Carrello.instance.aggiungiProdotto(prodotto);
                       },
                     ),
                   ],

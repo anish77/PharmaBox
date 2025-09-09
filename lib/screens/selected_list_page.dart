@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/firebase/firebase_logic.dart';
+import 'package:pharma_box/screens/login_page.dart';
+import 'package:pharma_box/screens/product_details.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/gestione_prodotto.dart';
+import 'package:pharma_box/widgets/listaProdotti_inventario.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
 class SelectedListPage extends StatefulWidget {
@@ -82,55 +85,70 @@ class _SelectedListPageState extends State<SelectedListPage> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ToggleSwitch(
-                        minWidth: double.infinity,
-                        cornerRadius: 28.0,
-                        borderWidth: 1.0,
-                        fontSize: 16,
-                        initialLabelIndex: selectedIndex,
-                        activeBgColor: [kPrimary],
-                        activeFgColor: Colors.white,
-                        inactiveBgColor: kSecondary,
-                        inactiveFgColor: kBluScuro,
-                        totalSwitches: 3,
-                        labels: ['Scan', 'Cerca', 'Lista'],
-                        onToggle: (index) {
-                          setState(() {
-                            logger.i('switched to: $index');
-                            selectedIndex = index!;
-                          });
-                        },
-                      ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ToggleSwitch(
+                      minWidth: double.infinity,
+                      cornerRadius: 28.0,
+                      borderWidth: 1.0,
+                      fontSize: 16,
+                      initialLabelIndex: selectedIndex,
+                      activeBgColor: [kPrimary],
+                      activeFgColor: Colors.white,
+                      inactiveBgColor: kSecondary,
+                      inactiveFgColor: kBluScuro,
+                      totalSwitches: 3,
+                      labels: ['Scan', 'Cerca', 'Lista'],
+                      onToggle: (index) {
+                        setState(() {
+                          logger.i('switched to: $index');
+                          selectedIndex = index!;
+                        });
+                      },
                     ),
-                    const SizedBox(height: 18),
-                    if (selectedIndex == 0) ...[
-                      if (isAuthorized == true)
-                        GestioneProdotto().prodottoTrovato()
-                      else
-                        GestioneProdotto().nonAutorizzato(),
-                    ] else if (selectedIndex == 1) ...[
-                      GestioneProdotto().cercaProdotto(
-                        context: context,
-                        onChanged: (value) {
-                          setState(() {
-                            productToSearch = value;
-                          });
-                        },
-                      ),
-                      opzioni("Status", kFiltri1),
-                      opzioni("Category", kFiltri2),
-                      opzioni("Category", kFiltri1),
-                    ] else ...[
-                      //cercaProdotto(),
-                    ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        switch (selectedIndex) {
+                          case 0:
+                            return isAuthorized == true
+                                ? GestioneProdotto().prodottoTrovato()
+                                : GestioneProdotto().nonAutorizzato();
+                          case 1:
+                            return SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  GestioneProdotto().cercaProdotto(
+                                    context: context,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        productToSearch = value;
+                                      });
+                                    },
+                                  ),
+                                  opzioni("Status", kFiltri1),
+                                  opzioni("Category", kFiltri2),
+                                  opzioni("Category", kFiltri1),
+                                ],
+                              ),
+                            );
+                          case 2:
+                            return ListaProdottiInventario(
+                              titolo: widget.titolo,
+                              nrListe: widget.nrListe,
+                            );
+                          default:
+                            return const SizedBox();
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -150,7 +168,9 @@ class _SelectedListPageState extends State<SelectedListPage> {
                   titleColor: Colors.white,
                   backgroundColor: kPrimary,
                   onPressed: () {
-                    //TODO
+                    //  MaterialPageRoute(
+                    // builder: (ctx) => ProductDetails(title: widget.titolo),
+                    //  );
                   },
                 ),
               )
