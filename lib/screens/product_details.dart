@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/widgets/counter_button_large.dart';
 
 class ProductDetails extends StatefulWidget {
-  const ProductDetails({super.key, required this.title, required this.nrListe});
+  const ProductDetails({
+    super.key,
+    required this.title,
+    required this.nrListe,
+    required this.prodotto,
+  });
 
   final String title;
   final int nrListe;
+  final Prodotto prodotto;
+
   @override
   State<ProductDetails> createState() => _ProductDetailsState();
 }
 
 class _ProductDetailsState extends State<ProductDetails> {
-  // Creo il prodotto da aggiungere
-  final Prodotto prodotto = Prodotto(
-    titolo: 'Prodotto Oki',
-    minsan: 'Minsan 123456789',
-    imagePath: 'assets/noImage.png',
-    pezzi: 1,
-    consentito: false,
-  );
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,26 +27,24 @@ class _ProductDetailsState extends State<ProductDetails> {
         title: Text(widget.title),
         centerTitle: false,
         titleSpacing: 24,
+        backgroundColor: kBackGround,
       ),
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // immagine che prende quasi metà schermo
-            Expanded(
-              flex: 2, // più grande = prende più spazio
-              child: Image.asset(
-                kLogo,
-                fit: BoxFit.contain, 
-                width: double.infinity,
-              ),
+            // immagine sopra
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.3, // 30% schermo
+              width: double.infinity,
+              child: Image.asset(kLogo, fit: BoxFit.contain),
             ),
-            // parte bassa con i testi
+            const SizedBox(height: 16),
+
+            // parte scrollabile
             Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(18.0),
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -61,9 +59,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
+                        const Text(
                           kProdottoNonConsentito,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: kRed,
@@ -72,7 +70,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                       ],
                     ),
                     Text(
-                      prodotto.titolo,
+                      widget.prodotto.titolo,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -80,15 +78,57 @@ class _ProductDetailsState extends State<ProductDetails> {
                       ),
                     ),
                     Text(
-                      prodotto.minsan,
+                      widget.prodotto.minsan,
                       style: const TextStyle(fontSize: 16, color: kBluScuro),
                     ),
+                    const SizedBox(height: 8),
+                    const Divider(thickness: 1, color: kBluScuro),
+                    const SizedBox(height: 8),
+
+                    // sezioni descrizione
+                    _buildSection("Descrizione", widget.prodotto.description),
+                    _buildSection("Ingredienti", widget.prodotto.ingredients),
+                    _buildSection("Modo di uso", widget.prodotto.howToTake),
                   ],
                 ),
               ),
             ),
+
+            // bottone fisso in basso
+            Padding(
+              padding: const EdgeInsets.only(top: 24, bottom: 24),
+              child: CounterButtonLarge(
+                initialValue: widget.prodotto.pezzi,
+                onChanged: (value) {
+                  print("Valore aggiornato: $value");
+                  setState(() {
+                    widget.prodotto.pezzi = value;
+                  });
+                },
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: kBluScuro,
+            ),
+          ),
+          Text(content, style: const TextStyle(fontSize: 16, color: kBluScuro)),
+        ],
       ),
     );
   }
