@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button_large.dart';
 
 class ProductDetails extends StatefulWidget {
@@ -28,6 +29,12 @@ class _ProductDetailsState extends State<ProductDetails> {
         centerTitle: false,
         titleSpacing: 24,
         backgroundColor: kBackGround,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context, widget.prodotto);
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -36,7 +43,7 @@ class _ProductDetailsState extends State<ProductDetails> {
           children: [
             // immagine sopra
             SizedBox(
-              height: MediaQuery.of(context).size.height * 0.3, // 30% schermo
+              height: MediaQuery.of(context).size.height * 0.3,
               width: double.infinity,
               child: Image.asset(kLogo, fit: BoxFit.contain),
             ),
@@ -97,13 +104,20 @@ class _ProductDetailsState extends State<ProductDetails> {
             // bottone fisso in basso
             Padding(
               padding: const EdgeInsets.only(top: 24, bottom: 24),
-              child: CounterButtonLarge(
-                initialValue: widget.prodotto.pezzi,
-                onChanged: (value) {
-                  print("Valore aggiornato: $value");
-                  setState(() {
-                    widget.prodotto.pezzi = value;
-                  });
+              child: ValueListenableBuilder<int>(
+                valueListenable: widget.prodotto.pezzi,
+                builder: (context, value, _) {
+                  return CounterButtonLarge(
+                    key: ValueKey(value),  
+                    initialValue: value,
+                    onChanged: (newValue) {
+                      widget.prodotto.pezzi.value = newValue;
+                      Carrello.instance.aggiornaQuantita(
+                        widget.prodotto,
+                        newValue,
+                      );
+                    },
+                  );
                 },
               ),
             ),

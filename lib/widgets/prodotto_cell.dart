@@ -61,11 +61,18 @@ class ProdottoCell extends StatelessWidget {
                     ],
                   ),
                 ),
-                CounterButton(
-                  initialValue: prodotto.pezzi,
-                  onChanged: (value) {
-                    prodotto.pezzi = value;
-                    Carrello.instance.aggiungiProdotto(prodotto);
+                ValueListenableBuilder<int>(
+                  valueListenable: prodotto.pezzi,
+                  builder: (context, value, _) {
+                    return CounterButton(
+                      key: ValueKey(value),  
+                      initialValue: value,
+                      onChanged: (newValue) {
+                        prodotto.pezzi.value = newValue;
+                        Carrello.instance.aggiungiProdotto(prodotto);
+                        onQuantityChanged(newValue);
+                      },
+                    );
                   },
                 ),
               ],

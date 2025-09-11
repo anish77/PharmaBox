@@ -14,6 +14,12 @@ class GestioneProdotto {
       imagePath: 'assets/noImage.png',
       pezzi: 1,
       consentito: false,
+      description:
+          "Cardiavax™ is a combination therapy containing an HMG-CoA reductase inhibitor (atorvastatin) and a beta-adrenergic blocker (metoprolol).",
+      ingredients:
+          "Each tablet contains atorvastatin calcium (20 mg) and metoprolol tartrate (25 mg). Other ingredients: cellulose, lactose, magnesium stearate, coating agents.",
+      howToTake:
+          "Not for use in pregnancy or breastfeeding. \nMay cause dizziness, tiredness, or muscle pain. \nAvoid alcohol and grapefruit juice. \nUse with caution if you have liver or kidney problems. \nDo not stop suddenly without medical advice.",
     );
 
     return Padding(
@@ -69,13 +75,17 @@ class GestioneProdotto {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    CounterButton(
-                      initialValue: prodotto.pezzi,
-                      onChanged: (value) {
-                        print("Valore aggiornato: $value");
-                        prodotto.pezzi = value;
-                        // Aggiungi alla lista globale
-                        Carrello.instance.aggiungiProdotto(prodotto);
+                    ValueListenableBuilder<int>(
+                      valueListenable: prodotto.pezzi,
+                      builder: (context, value, _) {
+                        return CounterButton(
+                          initialValue: value,
+                          onChanged: (newValue) {
+                            prodotto.pezzi.value = newValue;
+                            Carrello.instance.aggiungiProdotto(prodotto);
+                            print("Valore aggiornato: $newValue");
+                          },
+                        );
                       },
                     ),
                   ],

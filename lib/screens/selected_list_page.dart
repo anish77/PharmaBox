@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:pharma_box/firebase/firebase_logic.dart';
-import 'package:pharma_box/screens/login_page.dart';
-import 'package:pharma_box/screens/product_details.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/gestione_prodotto.dart';
-import 'package:pharma_box/widgets/listaProdotti_inventario.dart';
+import 'package:pharma_box/screens/lista_prodotti_inventario.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
 class SelectedListPage extends StatefulWidget {
@@ -27,19 +24,18 @@ class _SelectedListPageState extends State<SelectedListPage> {
   var logger = Logger(printer: PrettyPrinter());
   var selectedIndex = 0;
   var productToSearch = '';
-  var uid_ble = '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B';
-  bool? isAuthorized;
+  //var uid_ble = '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B';
+  //bool? isAuthorized;
 
   @override
-  void initState() {
+  /* void initState() {
     super.initState();
     FirebaseLogic.instance.isUIDAuthorized(uid_ble).then((value) {
       setState(() {
         isAuthorized = value;
       });
     });
-  }
-
+  }*/
   Widget opzioni(String title, List<String> kFiltro) {
     return Column(
       children: [
@@ -116,9 +112,9 @@ class _SelectedListPageState extends State<SelectedListPage> {
                       builder: (context) {
                         switch (selectedIndex) {
                           case 0:
-                            return isAuthorized == true
-                                ? GestioneProdotto().prodottoTrovato()
-                                : GestioneProdotto().nonAutorizzato();
+                            return //isAuthorized == true ?
+                            GestioneProdotto().prodottoTrovato();
+                          //: GestioneProdotto().nonAutorizzato();
                           case 1:
                             return SingleChildScrollView(
                               child: Column(

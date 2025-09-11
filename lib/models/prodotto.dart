@@ -1,16 +1,23 @@
+import 'package:flutter/material.dart';
+
 class Prodotto {
   final String titolo;
   final String minsan;
   final String imagePath;
-  int pezzi;
+  final String description;
+  final String ingredients;
+  final String howToTake;
   final bool consentito;
-  //double prezzo;
+  final ValueNotifier<int> pezzi; // 👈 diventa osservabile
 
   Prodotto({
     required this.titolo,
     required this.minsan,
     required this.imagePath,
-    this.pezzi = 1,
+    required int pezzi,
     required this.consentito,
-  });
+    required this.description,
+    required this.ingredients,
+    required this.howToTake,
+  }) : pezzi = ValueNotifier<int>(pezzi);
 }
