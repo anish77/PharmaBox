@@ -1,12 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/main.dart';
+//import 'package:pharma_box/widgets/container_opzione.dart';
+import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:pharma_box/data/datacached.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../include/general_functions.dart';
+import 'package:pharma_box/include/ble_functions.dart';
 
 class Prodotto {
   final String codice;
@@ -36,7 +46,7 @@ List<Prodotto> _parseInnerProductsXml(String innerXml) {
   }).toList();
 }
 
-class SelectedListPage extends StatefulWidget {
+class SelectedListPage extends ConsumerStatefulWidget {
   const SelectedListPage({
     super.key,
     required this.titolo,
@@ -46,7 +56,7 @@ class SelectedListPage extends StatefulWidget {
   final int nrListe;
 
   @override
-  State<SelectedListPage> createState() => _SelectedListPageState();
+  ConsumerState<SelectedListPage> createState() => _SelectedListPageState();
 }
 
 class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
@@ -61,17 +71,19 @@ class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
 
   @override
   List<Widget>? buildActions(BuildContext context) => [
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () => showResults(context), // 👈 tasto lente avvia risultati
-        ),
-        if (query.isNotEmpty)
-          IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
-      ];
+    IconButton(
+      icon: const Icon(Icons.search),
+      onPressed: () => showResults(context), // 👈 tasto lente avvia risultati
+    ),
+    if (query.isNotEmpty)
+      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+  ];
 
   @override
-  Widget? buildLeading(BuildContext context) =>
-      IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => close(context, null));
+  Widget? buildLeading(BuildContext context) => IconButton(
+    icon: const Icon(Icons.arrow_back),
+    onPressed: () => close(context, null),
+  );
 
   @override
   Widget buildSuggestions(BuildContext context) {
@@ -95,7 +107,7 @@ class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
       return const Center(child: Text('Inserisci almeno 3 caratteri'));
     }
     return FutureBuilder<List<Prodotto>>(
-      key: ValueKey(q),       // forza il refresh quando cambia query
+      key: ValueKey(q), // forza il refresh quando cambia query
       future: onSearch(q),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
@@ -116,7 +128,11 @@ class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
             return ListTile(
               dense: true,
               title: Text(p.nome, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text(p.codice, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                p.codice,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               onTap: () => close(context, p),
             );
           },
@@ -126,7 +142,7 @@ class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
   }
 }
 
-class _SelectedListPageState extends State<SelectedListPage> {
+class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   var logger = Logger(printer: PrettyPrinter());
   var selectedIndex = 0;
   final _cercaProdottoKeyForm = GlobalKey<FormState>();
@@ -141,7 +157,81 @@ class _SelectedListPageState extends State<SelectedListPage> {
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
 
+  
+  
+
   int get _totaleQta => _qta.values.fold(0, (a, b) => a + b);
+  // initState non usa più ref.listen; listener spostato nel build
+
+  Widget cercaProdotto() {
+    return TextFormField(
+      controller: _searchCtrl,
+      decoration: InputDecoration(
+        labelText: kCercaProdotto,
+        labelStyle: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: kBluScuro),
+        enabledBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: kPrimary),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: kPrimary),
+        ),
+      ),
+      keyboardType: TextInputType.text,
+      autocorrect: false,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty || value.length < 3) {
+          return kMsgErroreCercaProdotto;
+        }
+        return null;
+      },
+      onFieldSubmitted: (q) => openSearch(q),
+
+      //onSubmitted: (q) => _openSearch(q),
+      onChanged: (value) {
+        setState(() {
+          //productToSearch = value;
+        });
+        //print(productToSearch);
+      },
+    );
+  }
+
+  Widget opzioni(String title) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: kBluScuro,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Align(
+          alignment: Alignment.topLeft,
+          child: Wrap(
+            spacing: 8, // spazio orizzontale tra elementi
+            runSpacing: 8, // spazio verticale tra righe
+            children: [
+              //ContainerOpzione(nomeOpione: "Warning 1"),
+              //ContainerOpzione(nomeOpione: "Warning 1"),
+              //ContainerOpzione(nomeOpione: "Warning 1"),
+              //ContainerOpzione(nomeOpione: "Warning 1"),
+              //ContainerOpzione(nomeOpione: "Warning 1"),
+            ],
+          ),
+        ),
+        SizedBox(height: 18),
+      ],
+    );
+  }
 
   // de-escape XML tipo "&lt;Prodotti&gt;...&lt;/Prodotti&gt;"
   String _xmlUnescape(String s) => s
@@ -312,20 +402,19 @@ class _SelectedListPageState extends State<SelectedListPage> {
     });
   }
 
-  Future<void> _openSearch(String q) async {
-  final Prodotto? scelto = await showSearch<Prodotto?>(
-    context: context,
-    delegate: ProdottiSearchDelegate(onSearch: _doSearch),
-    query: q.trim(), // 👈 usa il parametro nativo
-  );
+  Future<void> openSearch(String q) async {
+    final Prodotto? scelto = await showSearch<Prodotto?>(
+      context: context,
+      delegate: ProdottiSearchDelegate(onSearch: _doSearch),
+      query: q.trim(), // 👈 usa il parametro nativo
+    );
 
-  if (!mounted) return;
-  if (scelto != null) {
-    _aggiungi(scelto);
-    _searchCtrl.clear();
+    if (!mounted) return;
+    if (scelto != null) {
+      _aggiungi(scelto);
+      _searchCtrl.clear();
+    }
   }
-}
-
 
   void _rimuoviByIndex(int i) {
     final p = _selezionati[i];
@@ -338,210 +427,116 @@ class _SelectedListPageState extends State<SelectedListPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Listener agli eventi di barcode (registrato durante il build)
+    ref.listen<String?>(scannedBarcodeProvider, (prev, next) {
+      final code = next;
+      if (code == null || code.trim().isEmpty) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await openSearch(code);
+        ref.read(scannedBarcodeProvider.notifier).state = null;
+      });
+    });
+
+    final _bleScanning = ref.watch(bleScanningProvider);
+    final _bleStatus = ref.watch(bleStatusProvider);
+    
     return Scaffold(
       appBar: AppBar(
+        title: Text(widget.titolo),
+        centerTitle: false,
         titleSpacing: 0,
-        title: TextField(
-          controller: _searchCtrl,
-          decoration: const InputDecoration(
-            hintText: 'Cerca prodotto…',
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 12),
-          ),
-          textInputAction: TextInputAction.search,
-          onSubmitted: (q) => _openSearch(q), // 👈 apre la ricerca full-screen
-        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _openSearch(_searchCtrl.text),
+            tooltip:
+                _bleScanning ? 'Interrompi scansione' : 'Avvia scanner BLE',
+            icon: Icon(_bleScanning ? Icons.stop : Icons.bluetooth_searching),
+            onPressed:
+                _bleScanning
+                    ? () => FlutterBluePlus.stopScan()
+                    : () => bleStartScanAndListen(ref),
           ),
         ],
       ),
-
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // ===== LISTA INVENTARIO (SELEZIONATI) =====
-              Expanded(
-                child:
-                    _selezionati.isEmpty
-                        ? const Center(
-                          child: Text('Nessun prodotto selezionato'),
-                        )
-                        : ListView.builder(
-                          itemCount: _selezionati.length,
-                          itemBuilder: (context, i) {
-                            final p = _selezionati[i];
-                            final qty = _qta[p.codice] ?? 0;
-
-                            return Dismissible(
-                              key: ValueKey('sel-${p.codice}'),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                color: Colors.red,
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(right: 16),
-                                child: const Icon(
-                                  Icons.delete,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              onDismissed: (_) => _rimuoviByIndex(i),
-                              child: Card(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    children: [
-                                      // Codice: mai a capo
-                                      SizedBox(
-                                        width: 90,
-                                        child: Text(
-                                          p.codice,
-                                          maxLines: 1,
-                                          softWrap: false,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      // Nome (riga 1) + (eventuale categoria riga 2)
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              p.nome,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            // Text('Categoria…', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                          ],
-                                        ),
-                                      ),
-                                      // Selettore quantità compatto
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.remove,
-                                              size: 18,
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            onPressed: () {
-                                              setState(() {
-                                                final cur = _qta[p.codice] ?? 0;
-                                                final next =
-                                                    (cur > 0) ? cur - 1 : 0;
-                                                if (next <= 0) {
-                                                  _selezionati.removeAt(i);
-                                                  _codiciSelezionati.remove(
-                                                    p.codice,
-                                                  );
-                                                  _qta.remove(p.codice);
-                                                } else {
-                                                  _qta[p.codice] = next;
-                                                }
-                                              });
-                                            },
-                                          ),
-                                          Text('$qty'),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.add,
-                                              size: 18,
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            onPressed: () {
-                                              setState(() {
-                                                _qta[p.codice] =
-                                                    (_qta[p.codice] ?? 0) + 1;
-                                              });
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-              ),
-
-              // ===== RISULTATI DELLA RICERCA (mostrati solo dopo invio) =====
-              if (_risultati.isNotEmpty)
-                SizedBox(
-                  height: 220,
-                  child: ListView.builder(
-                    itemCount: _risultati.length,
-                    itemBuilder: (context, i) {
-                      final p = _risultati[i];
-                      final gia = _codiciSelezionati.contains(p.codice);
-                      return ListTile(
-                        dense: true,
-                        title: Text(
-                          p.nome,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          p.codice,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Icon(
-                          gia ? Icons.check_circle : Icons.add_circle_outline,
-                          color: gia ? Colors.green : null,
-                        ),
-                        onTap: () => _aggiungi(p),
-                      );
-                    },
-                  ),
-                ),
-
-              // ===== FOOTER TOTALE =====
-              Container(
-                width: double.infinity,
-                color: Colors.grey.shade200,
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  'Righe: ${_selezionati.length}  •  Quantità totali: $_totaleQta',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-
-          // Overlay loading (blocca tocchi)
-          if (_isLoading)
-            Positioned.fill(
-              child: AbsorbPointer(
-                absorbing: true,
-                child: Container(
-                  color: Colors.black.withOpacity(0.15),
-                  child: const Center(child: CircularProgressIndicator()),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ToggleSwitch(
+                        minWidth: double.infinity,
+                        cornerRadius: 28.0,
+                        borderWidth: 1.0,
+                        fontSize: 16,
+                        initialLabelIndex: selectedIndex,
+                        activeBgColor: [kPrimary],
+                        activeFgColor: Colors.white,
+                        inactiveBgColor: kSecondary,
+                        inactiveFgColor: kBluScuro,
+                        totalSwitches: 2,
+                        labels: ['Cerca', 'Opzioni'],
+                        onToggle: (index) {
+                          setState(() {
+                            logger.i('switched to: $index');
+                            selectedIndex = index!;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (selectedIndex == 0) ...[
+                      cercaProdotto(),
+                    ] else ...[
+                      //opzioni("Status"),
+                      //opzioni("Category"),
+                      //opzioni("Category"),
+                    ],
+                    // piccolo status BLE
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 12,
+                      ),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _bleStatus,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(
+          top: 18,
+          bottom: 45,
+          left: 24,
+          right: 24,
+        ),
+        child: // Bottone
+            CustomButton(
+          title: "Applica opzioni",
+          titleColor: Colors.white,
+          backgroundColor: kPrimary,
+          onPressed: () {
+            //TODO
+          },
+        ),
       ),
     );
   }
