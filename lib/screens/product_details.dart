@@ -138,6 +138,8 @@ class _ProductDetailsState extends State<ProductDetails> {
                         widget.prodotto.pezzi.value = 1;
                       }
                       Carrello.instance.aggiungiProdotto(widget.prodotto);
+                      // Torna indietro automaticamente dopo l'aggiunta
+                      Navigator.pop(context);
                     },
                   );
                 },

@@ -240,7 +240,11 @@ class _SelectedListPageState extends State<SelectedListPage> {
                                     opzioni(kFiltri2.title, kFiltri2.items),
                                     opzioni(kFiltri3.title, kFiltri3.items),
                                   ],
-                                  RisultatiRicerca(risultati: _searchResults),
+                                  RisultatiRicerca(
+                                    risultati: _searchResults,
+                                    listaTitolo: widget.titolo,
+                                    nrListe: widget.nrListe,
+                                  ),
                                 ],
                               ),
                             );
