@@ -62,6 +62,10 @@ const kFiltri2 = FilterGroup(
   title: 'Category',
   items: const ["warning2", "prova3", "blabla4"],
 );
+const kFiltri3 = FilterGroup(
+  title: 'Category2',
+  items: const ["warning23", "prova33", "blabla43"],
+);
 
 //titoli
 const kAddToList = 'Aggiungi';

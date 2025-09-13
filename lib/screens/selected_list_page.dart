@@ -32,8 +32,26 @@ class _SelectedListPageState extends State<SelectedListPage> {
   List<Prodotto> _searchResults = [];
   final Set<String> _selectedFilters = {};
   bool _hideUnselectedFilters = false;
+  bool _searchSubmitted = false;
   //var uid_ble = '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B';
   //bool? isAuthorized;
+
+  // Restituisce i filtri selezionati nell'ordine originale definito nelle costanti
+  List<String> _selectedInOriginalOrder() {
+    final seen = <String>{};
+    final ordered = <String>[];
+    void addItems(List<String> items) {
+      for (final it in items) {
+        if (seen.add(it)) ordered.add(it);
+      }
+    }
+
+    addItems(kFiltri1.items);
+    addItems(kFiltri2.items);
+    addItems(kFiltri3.items);
+    // se in futuro aggiungi altri gruppi, chiamali qui con addItems
+    return ordered.where((f) => _selectedFilters.contains(f)).toList();
+  }
 
   @override
   void initState() {
@@ -75,24 +93,28 @@ class _SelectedListPageState extends State<SelectedListPage> {
           child: Wrap(
             spacing: 8, // spazio orizzontale
             runSpacing: 8, // spazio verticale
-            children: kFiltro
-                .map(
-                  (filtro) => ContainerOpzione(
-                    nomeOpione: filtro,
-                    hideWhenUnselected: _hideUnselectedFilters,
-                    selected: _selectedFilters.contains(filtro),
-                    onSelectedChanged: (isSel) {
-                      setState(() {
-                        if (isSel) {
-                          _selectedFilters.add(filtro);
-                        } else {
-                          _selectedFilters.remove(filtro);
-                        }
-                      });
-                    },
-                  ),
-                )
-                .toList(),
+            children:
+                (_selectedFilters.isNotEmpty
+                        ? kFiltro.where((f) => !_selectedFilters.contains(f))
+                        : kFiltro)
+                    .map(
+                      (filtro) => ContainerOpzione(
+                        key: ValueKey('opt-' + filtro),
+                        nomeOpione: filtro,
+                        hideWhenUnselected: _hideUnselectedFilters,
+                        selected: _selectedFilters.contains(filtro),
+                        onSelectedChanged: (isSel) {
+                          setState(() {
+                            if (isSel) {
+                              _selectedFilters.add(filtro);
+                            } else {
+                              _selectedFilters.remove(filtro);
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
           ),
         ),
         SizedBox(height: 18),
@@ -139,8 +161,12 @@ class _SelectedListPageState extends State<SelectedListPage> {
                             productToSearch = '';
                             _searchController.text = '';
                             _searchResults = [];
-                            _hideUnselectedFilters = false; // mostra di nuovo i gruppi opzioni
-                            _selectedFilters.clear(); // deseleziona tutti i filtri
+                            _hideUnselectedFilters =
+                                false; // mostra di nuovo i gruppi opzioni
+                            _selectedFilters
+                                .clear(); // deseleziona tutti i filtri
+                            _searchSubmitted =
+                                false; // nascondi la riga selezionati
                           }
                         });
                       },
@@ -170,6 +196,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
                                         if (productToSearch.trim().isEmpty) {
                                           _hideUnselectedFilters = false;
                                           _selectedFilters.clear();
+                                          _searchSubmitted = false;
                                         }
                                       });
                                     },
@@ -178,11 +205,13 @@ class _SelectedListPageState extends State<SelectedListPage> {
                                     Align(
                                       alignment: Alignment.topLeft,
                                       child: Wrap(
+                                        alignment: WrapAlignment.start,
                                         spacing: 8,
                                         runSpacing: 8,
-                                        children: _selectedFilters
+                                        children: _selectedInOriginalOrder()
                                             .map(
                                               (f) => ContainerOpzione(
+                                                key: ValueKey('sel-' + f),
                                                 nomeOpione: f,
                                                 selected: true,
                                                 onSelectedChanged: (isSel) {
@@ -197,10 +226,11 @@ class _SelectedListPageState extends State<SelectedListPage> {
                                             .toList(),
                                       ),
                                     ),
-                                  if (!_hideUnselectedFilters || _selectedFilters.isEmpty) ...[
+                                  if (!_hideUnselectedFilters ||
+                                      _selectedFilters.isEmpty) ...[
                                     opzioni(kFiltri1.title, kFiltri1.items),
                                     opzioni(kFiltri2.title, kFiltri2.items),
-                                    opzioni(kFiltri1.title, kFiltri1.items),
+                                    opzioni(kFiltri3.title, kFiltri3.items),
                                   ],
                                   RisultatiRicerca(risultati: _searchResults),
                                 ],
@@ -244,6 +274,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
                         ),
                       ];
                       _hideUnselectedFilters = true;
+                      _searchSubmitted = true;
                     });
                   }
                 },
