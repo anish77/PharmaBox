@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/product_details.dart';
 import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/prodotto_cell.dart';
 import 'package:pharma_box/models/prodotto.dart';
 
@@ -15,7 +17,8 @@ class ListaProdottiInventario extends StatefulWidget {
   final int nrListe;
 
   @override
-  State<ListaProdottiInventario> createState() => _ListaProdottiInventarioState();
+  State<ListaProdottiInventario> createState() =>
+      _ListaProdottiInventarioState();
 }
 
 class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
@@ -31,9 +34,13 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
             valueListenable: Carrello.instance.prodotti,
             builder: (context, prodotti, _) {
               // Ordina alfabeticamente per titolo (case-insensitive)
-              final sorted = List<Prodotto>.from(prodotti)
-                ..sort((a, b) => a.titolo.toLowerCase().compareTo(b.titolo.toLowerCase()));
+              final sorted = List<Prodotto>.from(prodotti)..sort(
+                (a, b) =>
+                    a.titolo.toLowerCase().compareTo(b.titolo.toLowerCase()),
+              );
+              final bottomInset = MediaQuery.of(context).padding.bottom;
               return ListView.builder(
+                padding: EdgeInsets.only(bottom: bottomInset + 45),
                 itemCount: sorted.length,
                 itemBuilder: (context, index) {
                   final prodotto = sorted[index];
@@ -51,12 +58,13 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ProductDetails(
-                            title: prodotto.titolo,
-                            nrListe: widget.nrListe,
-                            prodotto: prodotto,
-                            popOnAdd: false,
-                          ),
+                          builder:
+                              (_) => ProductDetails(
+                                title: prodotto.titolo,
+                                nrListe: widget.nrListe,
+                                prodotto: prodotto,
+                                popOnAdd: false,
+                              ),
                         ),
                       );
                       if (mounted) setState(() => _highlightedIndex = null);
@@ -78,6 +86,25 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                     ),
                   );
                 },
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 24, bottom: 45),
+          child: ValueListenableBuilder<List<Prodotto>>(
+            valueListenable: Carrello.instance.prodotti,
+            builder: (context, prodotti, _) {
+              return CustomButton(
+                title: kScarica,
+                titleColor: kWhite,
+                backgroundColor: kPrimary,
+                onPressed:
+                    prodotti.isEmpty
+                        ? null
+                        : () {
+                          // azione solo se ci sono prodotti
+                        },
               );
             },
           ),

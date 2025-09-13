@@ -71,3 +71,4 @@ const kFiltri3 = FilterGroup(
 //titoli
 const kAddToList = 'Aggiungi';
 const kOpzioni = 'Cerca prodotto';
+const kScarica = 'Scarica file';
