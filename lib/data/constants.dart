@@ -56,15 +56,15 @@ class FilterGroup {
 
 const kFiltri1 = FilterGroup(
   title: 'Status',
-  items: const ["warning1", "prova2", "blabla"],
+  items: ["warning1", "prova2", "blabla"],
 );
 const kFiltri2 = FilterGroup(
   title: 'Category',
-  items: const ["warning2", "prova3", "blabla4"],
+  items: ["warning2", "prova3", "blabla4"],
 );
 const kFiltri3 = FilterGroup(
   title: 'Category2',
-  items: const ["warning23", "prova33", "blabla43"],
+  items: ["warning23", "prova33", "blabla43"],
 );
 
 //titoli

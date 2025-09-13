@@ -72,6 +72,17 @@ class _SelectedListPageState extends State<SelectedListPage> {
   }
 
   Widget opzioni(String title, List<String> kFiltro) {
+    // Calcola gli item visibili per questo gruppo (escludendo i già selezionati)
+    final List<String> itemsToShow = (_selectedFilters.isNotEmpty
+            ? kFiltro.where((f) => !_selectedFilters.contains(f))
+            : kFiltro)
+        .toList();
+
+    // Se il gruppo non ha più item da mostrare, nascondi l'intero blocco (titolo compreso)
+    if (itemsToShow.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       children: [
         if (!_hideUnselectedFilters)
@@ -93,16 +104,13 @@ class _SelectedListPageState extends State<SelectedListPage> {
           child: Wrap(
             spacing: 8, // spazio orizzontale
             runSpacing: 8, // spazio verticale
-            children:
-                (_selectedFilters.isNotEmpty
-                        ? kFiltro.where((f) => !_selectedFilters.contains(f))
-                        : kFiltro)
-                    .map(
-                      (filtro) => ContainerOpzione(
-                        key: ValueKey('opt-' + filtro),
-                        nomeOpione: filtro,
-                        hideWhenUnselected: _hideUnselectedFilters,
-                        selected: _selectedFilters.contains(filtro),
+            children: itemsToShow
+                .map(
+                  (filtro) => ContainerOpzione(
+                    key: ValueKey('opt-' + filtro),
+                    nomeOpione: filtro,
+                    hideWhenUnselected: _hideUnselectedFilters,
+                    selected: _selectedFilters.contains(filtro),
                         onSelectedChanged: (isSel) {
                           setState(() {
                             if (isSel) {
