@@ -45,7 +45,7 @@ class _CounterButtonState extends State<CounterButton> {
         GestureDetector(
           onTap: _decrement,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
             decoration: BoxDecoration(
               color: kSecondary,
               borderRadius: const BorderRadius.only(
@@ -63,7 +63,7 @@ class _CounterButtonState extends State<CounterButton> {
 
         // Counter
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
           decoration: BoxDecoration(
             color: kPrimary,
             border: Border.all(color: kPrimary, width: 1),
@@ -78,7 +78,7 @@ class _CounterButtonState extends State<CounterButton> {
         GestureDetector(
           onTap: _increment,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
             decoration: BoxDecoration(
               color: kSecondary,
               borderRadius: const BorderRadius.only(

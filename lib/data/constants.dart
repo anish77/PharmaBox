@@ -45,3 +45,7 @@ final kRegexPassword = RegExp(
 // reguisiti:
 final kRegexCell = RegExp(r'^(?:\+39)?3\d{9}$');
 final kRegexEmail = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
+//Filtri
+const kFiltri1 = ["warning1", "prova2", "blabla"];
+const kFiltri2 = ["warning2", "prova3", "blabla4"];
