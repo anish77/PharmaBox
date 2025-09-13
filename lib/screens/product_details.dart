@@ -11,11 +11,13 @@ class ProductDetails extends StatefulWidget {
     required this.title,
     required this.nrListe,
     required this.prodotto,
+    this.popOnAdd = false,
   });
 
   final String title;
   final int nrListe;
   final Prodotto prodotto;
+  final bool popOnAdd; // se true, torna indietro dopo "Aggiungi"
 
   @override
   State<ProductDetails> createState() => _ProductDetailsState();
@@ -138,8 +140,10 @@ class _ProductDetailsState extends State<ProductDetails> {
                         widget.prodotto.pezzi.value = 1;
                       }
                       Carrello.instance.aggiungiProdotto(widget.prodotto);
-                      // Torna indietro automaticamente dopo l'aggiunta
-                      Navigator.pop(context);
+                      // Torna indietro automaticamente solo se richiesto
+                      if (widget.popOnAdd) {
+                        Navigator.pop(context);
+                      }
                     },
                   );
                 },

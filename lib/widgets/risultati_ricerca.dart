@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/prodotto_cell.dart';
@@ -28,6 +27,10 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
   Widget build(BuildContext context) {
     if (widget.risultati.isEmpty) return const SizedBox.shrink();
 
+    // Ordina alfabeticamente per titolo (case-insensitive)
+    final sorted = List<Prodotto>.from(widget.risultati)
+      ..sort((a, b) => a.titolo.toLowerCase().compareTo(b.titolo.toLowerCase()));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -36,9 +39,9 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: widget.risultati.length,
+          itemCount: sorted.length,
           itemBuilder: (context, index) {
-            final prodotto = widget.risultati[index];
+            final prodotto = sorted[index];
             return ValueListenableBuilder<List<Prodotto>>(
               valueListenable: Carrello.instance.prodotti,
               builder: (context, lista, _) {
@@ -63,6 +66,7 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                           title: prodotto.titolo,
                           nrListe: widget.nrListe,
                           prodotto: prodotto,
+                          popOnAdd: true,
                         ),
                       ),
                     );

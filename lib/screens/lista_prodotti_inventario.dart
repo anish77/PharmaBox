@@ -30,10 +30,13 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
           child: ValueListenableBuilder<List<Prodotto>>(
             valueListenable: Carrello.instance.prodotti,
             builder: (context, prodotti, _) {
+              // Ordina alfabeticamente per titolo (case-insensitive)
+              final sorted = List<Prodotto>.from(prodotti)
+                ..sort((a, b) => a.titolo.toLowerCase().compareTo(b.titolo.toLowerCase()));
               return ListView.builder(
-                itemCount: prodotti.length,
+                itemCount: sorted.length,
                 itemBuilder: (context, index) {
-                  final prodotto = prodotti[index];
+                  final prodotto = sorted[index];
                   // print("lista prodotti - ${prodotto.titolo}");
                   return InkWell(
                     splashColor: Colors.transparent,
@@ -52,6 +55,7 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                             title: prodotto.titolo,
                             nrListe: widget.nrListe,
                             prodotto: prodotto,
+                            popOnAdd: false,
                           ),
                         ),
                       );
