@@ -48,11 +48,13 @@ class CercaProdottoField extends StatelessWidget {
 class CercaProdottoBottomBar extends StatelessWidget {
   final String query;
   final VoidCallback? onPressed;
+  final String title;
 
   const CercaProdottoBottomBar({
     super.key,
     required this.query,
     this.onPressed,
+    this.title = kOpzioni,
   });
 
   @override
@@ -76,9 +78,9 @@ class CercaProdottoBottomBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(32),
             ),
           ),
-          child: const Text(
-            kOpzioni,
-            style: TextStyle(
+          child: Text(
+            title,
+            style: const TextStyle(
               fontSize: 18,
               color: Colors.white,
               fontWeight: FontWeight.bold,

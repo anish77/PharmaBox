@@ -8,12 +8,14 @@ class ProdottoCell extends StatelessWidget {
   final Prodotto prodotto;
   final ValueChanged<int> onQuantityChanged;
   final bool selected;
+  final int? inListQty;
 
   const ProdottoCell({
     super.key,
     required this.prodotto,
     required this.onQuantityChanged,
     this.selected = false,
+    this.inListQty,
   });
 
   @override
@@ -60,23 +62,74 @@ class ProdottoCell extends StatelessWidget {
                         ],
                       ),
                       Text(prodotto.minsan),
+                      if ((inListQty ?? 0) > 0)
+                        Text(
+                          'In lista: ${inListQty!}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: kBluScuro,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                ValueListenableBuilder<int>(
-                  valueListenable: prodotto.pezzi,
-                  builder: (context, value, _) {
-                    return CounterButton(
-                      key: ValueKey(value),
-                      initialValue: value,
-                      onChanged: (newValue) {
-                        prodotto.pezzi.value = newValue;
-                        Carrello.instance.aggiungiProdotto(prodotto);
-                        onQuantityChanged(newValue);
-                      },
-                    );
-                  },
-                ),
+                if (inListQty != null)
+                  ((inListQty ?? 0) > 0
+                      ? CounterButton(
+                          key: ValueKey(inListQty),
+                          initialValue: inListQty ?? 0,
+                          onChanged: (newValue) {
+                            Carrello.instance.aggiornaQuantita(
+                              prodotto,
+                              newValue,
+                            );
+                            onQuantityChanged(newValue);
+                          },
+                        )
+                      : GestureDetector(
+                          onTap: () {
+                            if (prodotto.pezzi.value <= 0) {
+                              prodotto.pezzi.value = 1;
+                            }
+                            Carrello.instance.aggiungiProdotto(prodotto);
+                            onQuantityChanged(prodotto.pezzi.value);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: kPrimary,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: kPrimary, width: 1),
+                            ),
+                            child: const Text(
+                              kAddToList,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: kWhite,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ))
+                else
+                  ValueListenableBuilder<int>(
+                    valueListenable: prodotto.pezzi,
+                    builder: (context, value, _) {
+                      return CounterButton(
+                        key: ValueKey(value),
+                        initialValue: value,
+                        onChanged: (newValue) {
+                          prodotto.pezzi.value = newValue;
+                          Carrello.instance.aggiungiProdotto(prodotto);
+                          onQuantityChanged(newValue);
+                        },
+                      );
+                    },
+                  ),
               ],
             ),
             const SizedBox(height: 10),

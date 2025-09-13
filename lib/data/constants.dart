@@ -47,10 +47,22 @@ final kRegexPassword = RegExp(
 final kRegexCell = RegExp(r'^(?:\+39)?3\d{9}$');
 final kRegexEmail = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
 
-//Filtri
-const kFiltri1 = ["warning1", "prova2", "blabla"];
-const kFiltri2 = ["warning2", "prova3", "blabla4"];
+// Filtri
+class FilterGroup {
+  final String title;
+  final List<String> items;
+  const FilterGroup({required this.title, required this.items});
+}
+
+const kFiltri1 = FilterGroup(
+  title: 'Status',
+  items: const ["warning1", "prova2", "blabla"],
+);
+const kFiltri2 = FilterGroup(
+  title: 'Category',
+  items: const ["warning2", "prova3", "blabla4"],
+);
 
 //titoli
-const kAddToList = 'Aggiungi alla lista';
+const kAddToList = 'Aggiungi';
 const kOpzioni = 'Cerca prodotto';

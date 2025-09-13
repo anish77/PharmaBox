@@ -71,12 +71,25 @@ class Carrello {
       // Persisti su Firestore
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
-        FirebaseLogic.instance.aggiornaQuantitaItemLista(
-          uid: uid,
-          nomeLista: _listaCorrente,
-          minsan: prodotto.minsan,
-          quantity: newQuantity,
-        );
+        if (newQuantity <= 0) {
+          FirebaseLogic.instance.aggiornaQuantitaItemLista(
+            uid: uid,
+            nomeLista: _listaCorrente,
+            minsan: prodotto.minsan,
+            quantity: newQuantity,
+          );
+        } else {
+          // Usa upsert completo per garantire che il titolo resti salvato
+          FirebaseLogic.instance.upsertItemLista(
+            uid: uid,
+            nomeLista: _listaCorrente,
+            item: {
+              'minsan': prodotto.minsan,
+              'titolo': prodotto.titolo,
+              'quantity': newQuantity,
+            },
+          );
+        }
       }
     }
   }
@@ -94,8 +107,9 @@ class Carrello {
     );
     final prodottiCaricati = items.map((e) {
       final qty = (e['quantity'] ?? 0) as int;
+      final titolo = (e['titolo'] ?? e['title'] ?? e['name'] ?? e['nome'] ?? '') as String;
       return Prodotto(
-        titolo: (e['titolo'] ?? '') as String,
+        titolo: titolo.isNotEmpty ? titolo : (e['minsan'] ?? '') as String,
         minsan: (e['minsan'] ?? '') as String,
         imagePath: kNoImage,
         pezzi: qty,
