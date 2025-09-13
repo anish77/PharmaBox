@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/forgot_password.dart';
-import 'package:pharma_box/screens/lists_page.dart';
+import 'package:pharma_box/screens/crea_nuova_lista.dart';
 import 'package:pharma_box/screens/new_account_page.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/custom_text_form_field.dart';
@@ -40,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.push(
         // ignore: use_build_context_synchronously
         context,
-        MaterialPageRoute(builder: (ctx) => const ListsPage()),
+        MaterialPageRoute(builder: (ctx) => const CreaNuovaLista()),
       );
     } on FirebaseAuthException catch (error) {
       String message = 'Errore di autenticazione';

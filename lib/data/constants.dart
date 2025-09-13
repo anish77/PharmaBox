@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
 const kNoImage = 'assets/noImage.png';
+const kScanCode = 'assets/scanCode.png';
 const kNotAuthorized = 'assets/lock.png';
 
 //colors
@@ -14,6 +15,7 @@ const kWarning = Color(0xFFE59700);
 const kGreen = Color(0xFF0B8E63);
 const kRed = Color(0xFFC6180B);
 const kWhite = Color(0xFFFFFFFF);
+const kYellow = Color(0x33F8BB45);
 
 //messages
 const kNomeError = 'Il nome non deve essere vuoto';
@@ -46,6 +48,26 @@ final kRegexPassword = RegExp(
 final kRegexCell = RegExp(r'^(?:\+39)?3\d{9}$');
 final kRegexEmail = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
 
-//Filtri
-const kFiltri1 = ["warning1", "prova2", "blabla"];
-const kFiltri2 = ["warning2", "prova3", "blabla4"];
+// Filtri
+class FilterGroup {
+  final String title;
+  final List<String> items;
+  const FilterGroup({required this.title, required this.items});
+}
+
+const kFiltri1 = FilterGroup(
+  title: 'Status',
+  items: ["warning1", "prova2", "blabla"],
+);
+const kFiltri2 = FilterGroup(
+  title: 'Category',
+  items: ["warning2", "prova3", "blabla4"],
+);
+const kFiltri3 = FilterGroup(
+  title: 'Category2',
+  items: ["warning23", "prova33", "blabla43"],
+);
+
+//titoli
+const kAddToList = 'Aggiungi';
+const kOpzioni = 'Cerca prodotto';

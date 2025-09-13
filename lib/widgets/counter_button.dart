@@ -70,7 +70,7 @@ class _CounterButtonState extends State<CounterButton> {
           ),
           child: Text(
             '$_counter',
-            style: const TextStyle(fontSize: 18, color: kSecondary),
+            style: const TextStyle(fontSize: 18, color: kWhite),
           ),
         ),
 
