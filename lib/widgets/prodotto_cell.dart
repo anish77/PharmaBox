@@ -7,17 +7,19 @@ import 'package:pharma_box/widgets/counter_button.dart';
 class ProdottoCell extends StatelessWidget {
   final Prodotto prodotto;
   final ValueChanged<int> onQuantityChanged;
+  final bool selected;
 
   const ProdottoCell({
     super.key,
     required this.prodotto,
     required this.onQuantityChanged,
+    this.selected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: kBackGround,
+      color: selected ? kYellow : kBackGround,
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
@@ -65,7 +67,7 @@ class ProdottoCell extends StatelessWidget {
                   valueListenable: prodotto.pezzi,
                   builder: (context, value, _) {
                     return CounterButton(
-                      key: ValueKey(value),  
+                      key: ValueKey(value),
                       initialValue: value,
                       onChanged: (newValue) {
                         prodotto.pezzi.value = newValue;

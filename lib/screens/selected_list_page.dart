@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
-import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/gestione_prodotto.dart';
+import 'package:pharma_box/widgets/cerca_prodotto_field.dart';
 import 'package:pharma_box/screens/lista_prodotti_inventario.dart';
+import 'package:pharma_box/screens/product_details.dart';
+import 'package:pharma_box/models/prodotto.dart';
 import 'package:toggle_switch/toggle_switch.dart';
+import 'package:pharma_box/widgets/carrello.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SelectedListPage extends StatefulWidget {
   const SelectedListPage({
@@ -28,14 +32,15 @@ class _SelectedListPageState extends State<SelectedListPage> {
   //bool? isAuthorized;
 
   @override
-  /* void initState() {
+  void initState() {
     super.initState();
-    FirebaseLogic.instance.isUIDAuthorized(uid_ble).then((value) {
-      setState(() {
-        isAuthorized = value;
-      });
-    });
-  }*/
+    // Imposta e carica la lista corrente per questa pagina
+    Carrello.instance.usaLista(widget.titolo);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      Carrello.instance.caricaListaDaCloud(uid);
+    }
+  }
   Widget opzioni(String title, List<String> kFiltro) {
     return Column(
       children: [
@@ -119,8 +124,8 @@ class _SelectedListPageState extends State<SelectedListPage> {
                             return SingleChildScrollView(
                               child: Column(
                                 children: [
-                                  GestioneProdotto().cercaProdotto(
-                                    context: context,
+                                  CercaProdottoField(
+                                    initialValue: productToSearch,
                                     onChanged: (value) {
                                       setState(() {
                                         productToSearch = value;
@@ -150,27 +155,34 @@ class _SelectedListPageState extends State<SelectedListPage> {
           ],
         ),
       ),
-      bottomNavigationBar:
-          selectedIndex == 1
-              ? Padding(
-                padding: const EdgeInsets.only(
-                  top: 18,
-                  bottom: 45,
-                  left: 24,
-                  right: 24,
-                ),
-                child: CustomButton(
-                  title: "Applica opzioni",
-                  titleColor: Colors.white,
-                  backgroundColor: kPrimary,
-                  onPressed: () {
-                    //  MaterialPageRoute(
-                    // builder: (ctx) => ProductDetails(title: widget.titolo),
-                    //  );
-                  },
-                ),
-              )
-              : null,
+      bottomNavigationBar: selectedIndex == 1
+          ? CercaProdottoBottomBar(
+              query: productToSearch,
+              onPressed: () {
+                // Naviga a ProductDetails con il prodotto cercato (placeholder)
+                final prodotto = Prodotto(
+                  titolo: productToSearch,
+                  minsan: 'Minsan ${productToSearch.hashCode}',
+                  imagePath: kNoImage,
+                  pezzi: 1,
+                  consentito: false,
+                  description: '',
+                  ingredients: '',
+                  howToTake: '',
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProductDetails(
+                      title: prodotto.titolo,
+                      nrListe: widget.nrListe,
+                      prodotto: prodotto,
+                    ),
+                  ),
+                );
+              },
+            )
+          : null,
     );
   }
 }

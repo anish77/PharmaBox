@@ -62,4 +62,83 @@ class FirebaseLogic {
 
     await docRef.update({'liste': liste});
   }
+
+  // Nuove API basate su 'items' e 'minsan' come identificatore
+  Future<List<Map<String, dynamic>>> leggiItemsLista({
+    required String uid,
+    required String nomeLista,
+  }) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final doc = await docRef.get();
+    if (!doc.exists) return [];
+
+    final data = doc.data()!;
+    final liste = List<Map<String, dynamic>>.from(data['liste'] ?? []);
+    final indexLista = liste.indexWhere((l) => l['nomeLista'] == nomeLista);
+    if (indexLista < 0) return [];
+
+    return List<Map<String, dynamic>>.from(liste[indexLista]['items'] ?? []);
+  }
+
+  Future<void> upsertItemLista({
+    required String uid,
+    required String nomeLista,
+    required Map<String, dynamic> item,
+  }) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    final liste = List<Map<String, dynamic>>.from(data['liste'] ?? []);
+    final indexLista = liste.indexWhere((l) => l['nomeLista'] == nomeLista);
+    if (indexLista < 0) return;
+
+    final items = List<Map<String, dynamic>>.from(
+      liste[indexLista]['items'] ?? [],
+    );
+    final idx = items.indexWhere((e) => e['minsan'] == item['minsan']);
+    if (idx >= 0) {
+      items[idx] = {
+        ...items[idx],
+        ...item,
+      };
+    } else {
+      items.add(item);
+    }
+    liste[indexLista]['items'] = items;
+    await docRef.update({'liste': liste});
+  }
+
+  Future<void> aggiornaQuantitaItemLista({
+    required String uid,
+    required String nomeLista,
+    required String minsan,
+    required int quantity,
+  }) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    final liste = List<Map<String, dynamic>>.from(data['liste'] ?? []);
+    final indexLista = liste.indexWhere((l) => l['nomeLista'] == nomeLista);
+    if (indexLista < 0) return;
+
+    final items = List<Map<String, dynamic>>.from(
+      liste[indexLista]['items'] ?? [],
+    );
+    final idx = items.indexWhere((e) => e['minsan'] == minsan);
+    if (idx >= 0) {
+      if (quantity <= 0) {
+        items.removeAt(idx);
+      } else {
+        items[idx]['quantity'] = quantity;
+      }
+    } else if (quantity > 0) {
+      items.add({'minsan': minsan, 'quantity': quantity});
+    }
+    liste[indexLista]['items'] = items;
+    await docRef.update({'liste': liste});
+  }
 }

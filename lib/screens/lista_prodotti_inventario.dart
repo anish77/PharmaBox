@@ -4,7 +4,7 @@ import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/prodotto_cell.dart';
 import 'package:pharma_box/models/prodotto.dart';
 
-class ListaProdottiInventario extends StatelessWidget {
+class ListaProdottiInventario extends StatefulWidget {
   const ListaProdottiInventario({
     super.key,
     required this.titolo,
@@ -13,6 +13,13 @@ class ListaProdottiInventario extends StatelessWidget {
 
   final String titolo;
   final int nrListe;
+
+  @override
+  State<ListaProdottiInventario> createState() => _ListaProdottiInventarioState();
+}
+
+class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
+  int? _highlightedIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -29,24 +36,33 @@ class ListaProdottiInventario extends StatelessWidget {
                   final prodotto = prodotti[index];
                   // print("lista prodotti - ${prodotto.titolo}");
                   return InkWell(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    focusColor: Colors.transparent,
+                    splashFactory: NoSplash.splashFactory,
                     onTap: () async {
+                      setState(() => _highlightedIndex = index);
+                      // Mostra l'evidenziazione prima di navigare
+                      await Future.delayed(const Duration(milliseconds: 120));
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (_) => ProductDetails(
-                                title: prodotto.titolo,
-                                nrListe: nrListe,
-                                prodotto: prodotto,
-                              ),
+                          builder: (_) => ProductDetails(
+                            title: prodotto.titolo,
+                            nrListe: widget.nrListe,
+                            prodotto: prodotto,
+                          ),
                         ),
                       );
+                      if (mounted) setState(() => _highlightedIndex = null);
                     },
                     child: ValueListenableBuilder<int>(
                       valueListenable: prodotto.pezzi,
                       builder: (context, value, _) {
                         return ProdottoCell(
                           prodotto: prodotto,
+                          selected: _highlightedIndex == index,
                           onQuantityChanged: (newValue) {
                             Carrello.instance.aggiornaQuantita(
                               prodotto,

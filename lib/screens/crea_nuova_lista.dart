@@ -4,18 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/selected_list_page.dart';
+import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
 
-class ListsPage extends StatefulWidget {
-  const ListsPage({super.key});
+class CreaNuovaLista extends StatefulWidget {
+  const CreaNuovaLista({super.key});
 
   @override
-  State<ListsPage> createState() => _ListsPageState();
+  State<CreaNuovaLista> createState() => _CreaNuovaListaState();
 }
 
-class _ListsPageState extends State<ListsPage> {
+class _CreaNuovaListaState extends State<CreaNuovaLista> {
   var logger = Logger(printer: PrettyPrinter());
   int? selectedIndex;
   final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -310,10 +311,14 @@ class _ListsPageState extends State<ListsPage> {
                                     isSelected
                                         ? kSecondary.withValues(alpha: 0.3)
                                         : null,
-                                onTap: () {
+                                onTap: () async {
                                   setState(() {
                                     selectedIndex = index;
                                   });
+                                  // Imposta la lista corrente nel carrello
+                                  Carrello.instance.usaLista(items[index]);
+                                  // Carica prodotti salvati su Firestore per questa lista
+                                  await Carrello.instance.caricaListaDaCloud(uid);
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(

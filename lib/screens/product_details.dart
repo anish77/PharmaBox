@@ -3,6 +3,7 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button_large.dart';
+import 'package:pharma_box/widgets/custom_button.dart';
 
 class ProductDetails extends StatefulWidget {
   const ProductDetails({
@@ -104,18 +105,39 @@ class _ProductDetailsState extends State<ProductDetails> {
             // bottone fisso in basso
             Padding(
               padding: const EdgeInsets.only(top: 24, bottom: 24),
-              child: ValueListenableBuilder<int>(
-                valueListenable: widget.prodotto.pezzi,
-                builder: (context, value, _) {
-                  return CounterButtonLarge(
-                    key: ValueKey(value),  
-                    initialValue: value,
-                    onChanged: (newValue) {
-                      widget.prodotto.pezzi.value = newValue;
-                      Carrello.instance.aggiornaQuantita(
-                        widget.prodotto,
-                        newValue,
-                      );
+              child: ValueListenableBuilder<List<Prodotto>>(
+                valueListenable: Carrello.instance.prodotti,
+                builder: (context, prodotti, _) {
+                  final index = prodotti.indexWhere(
+                    (p) => p.minsan == widget.prodotto.minsan,
+                  );
+                  final isInList = index >= 0;
+
+                  if (isInList) {
+                    final currentQty = prodotti[index].pezzi.value;
+                    return CounterButtonLarge(
+                      key: ValueKey(currentQty),
+                      initialValue: currentQty,
+                      onChanged: (newValue) {
+                        // Aggiorna la quantità nel carrello
+                        Carrello.instance.aggiornaQuantita(
+                          prodotti[index],
+                          newValue,
+                        );
+                      },
+                    );
+                  }
+
+                  return CustomButton(
+                    title: kAddToList,
+                    titleColor: kWhite,
+                    backgroundColor: kPrimary,
+                    onPressed: () {
+                      // Se non presente, aggiunge con quantità almeno 1
+                      if (widget.prodotto.pezzi.value <= 0) {
+                        widget.prodotto.pezzi.value = 1;
+                      }
+                      Carrello.instance.aggiungiProdotto(widget.prodotto);
                     },
                   );
                 },

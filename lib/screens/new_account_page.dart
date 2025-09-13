@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:pharma_box/screens/lists_page.dart';
+import 'package:pharma_box/screens/crea_nuova_lista.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/custom_text_form_field.dart';
 
@@ -58,7 +58,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
       Navigator.pushReplacement(
         // ignore: use_build_context_synchronously
         context,
-        MaterialPageRoute(builder: (context) => const ListsPage()),
+        MaterialPageRoute(builder: (context) => const CreaNuovaLista()),
       );
     } on FirebaseAuthException catch (error, stack) {
       String message = 'Errore di registrazione';

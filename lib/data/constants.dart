@@ -14,6 +14,7 @@ const kWarning = Color(0xFFE59700);
 const kGreen = Color(0xFF0B8E63);
 const kRed = Color(0xFFC6180B);
 const kWhite = Color(0xFFFFFFFF);
+const kYellow = Color(0x33F8BB45);
 
 //messages
 const kNomeError = 'Il nome non deve essere vuoto';
@@ -49,3 +50,7 @@ final kRegexEmail = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
 //Filtri
 const kFiltri1 = ["warning1", "prova2", "blabla"];
 const kFiltri2 = ["warning2", "prova3", "blabla4"];
+
+//titoli
+const kAddToList = 'Aggiungi alla lista';
+const kOpzioni = 'Cerca prodotto';
