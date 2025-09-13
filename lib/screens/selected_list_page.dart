@@ -4,6 +4,7 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/screens/cerca_prodotto_field.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/gestione_prodotto.dart';
+import 'package:pharma_box/screens/scan_tab.dart';
 import 'package:pharma_box/screens/lista_prodotti_inventario.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:toggle_switch/toggle_switch.dart';
@@ -33,6 +34,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
   final Set<String> _selectedFilters = {};
   bool _hideUnselectedFilters = false;
   bool _searchSubmitted = false;
+  String? _lastSearchedQuery;
   //var uid_ble = '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B';
   //bool? isAuthorized;
 
@@ -175,6 +177,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
                                 .clear(); // deseleziona tutti i filtri
                             _searchSubmitted =
                                 false; // nascondi la riga selezionati
+                            _lastSearchedQuery = null; // reset query cercata
                           }
                         });
                       },
@@ -186,7 +189,7 @@ class _SelectedListPageState extends State<SelectedListPage> {
                       builder: (context) {
                         switch (selectedIndex) {
                           case 0:
-                            return GestioneProdotto().prodottoTrovato();
+                            return const ScanTab();
                           //: GestioneProdotto().nonAutorizzato();
                           case 1:
                             return SingleChildScrollView(
@@ -205,6 +208,14 @@ class _SelectedListPageState extends State<SelectedListPage> {
                                           _hideUnselectedFilters = false;
                                           _selectedFilters.clear();
                                           _searchSubmitted = false;
+                                          _lastSearchedQuery = null;
+                                        } else {
+                                          // Riabilita il bottone se il testo differisce dall'ultima ricerca
+                                          if (_lastSearchedQuery != null &&
+                                              productToSearch.trim() !=
+                                                  _lastSearchedQuery) {
+                                            _searchSubmitted = false;
+                                          }
                                         }
                                       });
                                     },
@@ -265,33 +276,37 @@ class _SelectedListPageState extends State<SelectedListPage> {
           ],
         ),
       ),
-      bottomNavigationBar:
-          selectedIndex == 1
-              ? CercaProdottoBottomBar(
-                title: kCercaProdotto,
-                query: productToSearch,
-                onPressed: () {
-                  if (productToSearch.trim().length >= 3) {
-                    setState(() {
-                      _searchResults = [
-                        Prodotto(
-                          titolo: productToSearch,
-                          minsan: 'Minsan ${productToSearch.hashCode}',
-                          imagePath: kNoImage,
-                          pezzi: 1,
-                          consentito: false,
-                          description: '',
-                          ingredients: '',
-                          howToTake: '',
-                        ),
-                      ];
-                      _hideUnselectedFilters = true;
-                      _searchSubmitted = true;
-                    });
-                  }
-                },
-              )
-              : null,
+      bottomNavigationBar: selectedIndex == 1
+          ? CercaProdottoBottomBar(
+              title: kCercaProdotto,
+              query: productToSearch,
+              onPressed: (
+                        productToSearch.trim().length >= 3 &&
+                        (_lastSearchedQuery == null ||
+                            productToSearch.trim() != _lastSearchedQuery)
+                      )
+                  ? () {
+                      setState(() {
+                        _searchResults = [
+                          Prodotto(
+                            titolo: productToSearch,
+                            minsan: 'Minsan ${productToSearch.hashCode}',
+                            imagePath: kNoImage,
+                            pezzi: 1,
+                            consentito: false,
+                            description: '',
+                            ingredients: '',
+                            howToTake: '',
+                          ),
+                        ];
+                        _hideUnselectedFilters = true;
+                        _searchSubmitted = true;
+                        _lastSearchedQuery = productToSearch.trim();
+                      });
+                    }
+                  : null,
+            )
+          : null,
     );
   }
 }
