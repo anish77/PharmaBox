@@ -1,0 +1,14 @@
+name = "pharmabox-r2-ingest"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+[[r2_buckets]]
+binding = "PROD_IMAGES"
+bucket_name = "prod-images"
+
+[vars]
+# Imposta qui il dominio CDN pubblico collegato al bucket R2
+CDN_BASE_URL = "https://www.doublecore.it"
+# Opzionale: chiave API semplice per chiamate dal client
+API_KEY = "doublecore"
+

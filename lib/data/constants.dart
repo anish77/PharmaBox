@@ -15,6 +15,18 @@ const kPasswordError = 'Password must be at least 6 characters long';
 const kCercaProdotto = 'Cerca prodotto';
 const kMsgErroreCercaProdotto =
     'Inserisci un valore da cercare che abbia almeno 3 caratteri';
+
+// API endpoints
+const kFarmadatiEndpoint =
+    'http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc';
+
+// Cloudflare R2 integration (configura questi valori nel tuo ambiente)
+// Dominio pubblico (CDN) collegato al bucket R2 "prod-images"
+const kR2CdnBaseUrl = 'https://www.doublecore.it';
+// Endpoint del Worker per l'ingest (POST /ingest)
+const kR2IngestEndpoint = 'https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest';
+// Opzionale: una API key semplice allineata con il Worker (header x-api-key)
+const kR2ApiKey = 'doublecore';
 /*const kLoginSuccess = 'Login successful!';
 const kLoginError = 'Login failed. Please try again.';
 const kSignUpSuccess = 'Sign up successful!';

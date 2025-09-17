@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:pharma_box/data/constants.dart';
+
 /// 32^5 = 33.554.432
 final int _nNumero32Start = 33554432;
 
@@ -60,4 +64,36 @@ String _numericToAlpha(int value) {
     nNumero32 = nNumero32 ~/ 32;
   }
   return sb.toString();
+}
+
+
+/// Invia una richiesta al Worker Cloudflare per scaricare e archiviare
+/// l'immagine del prodotto su R2 a partire da un URL sorgente.
+/// Ritorna l'URL pubblico (CDN) se disponibile, altrimenti null.
+Future<String?> r2IngestImageByUrl({
+  required String minsan,
+  required String imageUrl,
+}) async {
+  if (kR2IngestEndpoint.isEmpty) return null;
+  try {
+    final resp = await http
+        .post(
+          Uri.parse(kR2IngestEndpoint),
+          headers: {
+            'content-type': 'application/json',
+            if (kR2ApiKey.isNotEmpty) 'x-api-key': kR2ApiKey,
+          },
+          body: jsonEncode({
+            'ean': minsan,
+            'imageUrl': imageUrl,
+          }),
+        )
+        .timeout(const Duration(seconds: 12));
+    if (resp.statusCode != 200) return null;
+    final data = jsonDecode(resp.body) as Map<String, dynamic>;
+    if (data['ok'] == true && data['origUrl'] is String) {
+      return data['origUrl'] as String;
+    }
+  } catch (errore) { print(errore); }
+  return null;
 }
