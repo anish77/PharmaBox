@@ -49,6 +49,7 @@ flutter:
     - assets/noImage.png
     - assets/lock.png
     - assets/scanCode.png
+    - assets/bluetooth.png
  
 
   # An image asset can refer to one or more resolution-specific "variants", see
