@@ -45,5 +45,10 @@
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
   	<string>L'app necessita l'accesso alla rete locale per la comunicazione durante il debug</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+<string>L'app usa il Bluetooth per connettersi a dispositivi esterni.</string>
+
+<key>NSBluetoothPeripheralUsageDescription</key>
+<string>L'app usa il Bluetooth per connettersi a dispositivi esterni.</string>
 </dict>
 </plist>

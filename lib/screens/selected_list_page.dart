@@ -18,32 +18,59 @@ import 'package:permission_handler/permission_handler.dart';
 import '../include/general_functions.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 
+enum SearchKind { prodotti, ean, lottiInvendibili, immagine }
+
+enum DatasetKind { tr001, tdz }
+
 class Prodotto {
   final String codice;
-  final String nome;
-  final String tipo_prodotto;
+  final String? nome;
+  final String? tipo_prodotto;
+  final String? immagine;
   Prodotto({
     required this.codice,
-    required this.nome,
-    required this.tipo_prodotto,
+    this.nome,
+    this.tipo_prodotto,
+    this.immagine,
   });
 }
 
-List<Prodotto> _parseInnerProductsXml(String innerXml) {
+List<Prodotto> _parseInnerProductsXml(
+  String innerXml,
+  DatasetKind dataSetSchema,
+) {
   final innerDoc = xml.XmlDocument.parse(innerXml);
-
-  // se l'XML ha un root <Prodotti> con figli <Prodotto>...
   final prodotti = innerDoc.findAllElements('Product');
-  return prodotti.map((p) {
-    final codice = p.getElement('FDI_0001')?.text.trim() ?? '';
-    final nome = p.getElement('FDI_0004')?.text.trim() ?? '';
-    final tipo_prodotto =
-        CategoriaMapper.getDescrizione(
-          p.getElement('FDI_0008')?.text.trim() ?? '',
-        ) ??
-        '';
-    return Prodotto(codice: codice, nome: nome, tipo_prodotto: tipo_prodotto);
-  }).toList();
+
+  switch (dataSetSchema) {
+    case DatasetKind.tr001:
+
+      // se l'XML ha un root <Prodotti> con figli <Prodotto>...
+
+      return prodotti.map((p) {
+        final codice = p.getElement('FDI_0001')?.text.trim() ?? '';
+        final nome = p.getElement('FDI_0004')?.text.trim() ?? '';
+        final tipo_prodotto =
+            CategoriaMapper.getDescrizione(
+              p.getElement('FDI_0008')?.text.trim() ?? '',
+            ) ??
+            '';
+        return Prodotto(
+          codice: codice,
+          nome: nome,
+          tipo_prodotto: tipo_prodotto,
+        );
+      }).toList();
+    case DatasetKind.tdz:
+      // se l'XML ha un root <Prodotti> con figli <Prodotto>...
+
+      return prodotti.map((p) {
+        final codice = p.getElement('FDI_T218')?.text.trim() ?? '';
+        final immagine = p.getElement('FDI_T438')?.text.trim() ?? '';
+
+        return Prodotto(codice: codice, immagine: immagine);
+      }).toList();
+  }
 }
 
 class SelectedListPage extends ConsumerStatefulWidget {
@@ -120,6 +147,15 @@ class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
         if (results.isEmpty) {
           return const Center(child: Text('Nessun risultato'));
         }
+        if (results.length == 1) {
+          // Un solo risultato: selezionalo automaticamente
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (Navigator.of(context).mounted) {
+              close(context, results.first);
+            }
+          });
+          return const SizedBox.shrink();
+        }
         return ListView.separated(
           itemCount: results.length,
           separatorBuilder: (_, __) => const Divider(height: 1),
@@ -127,7 +163,11 @@ class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
             final p = results[i];
             return ListTile(
               dense: true,
-              title: Text(p.nome, maxLines: 1, overflow: TextOverflow.ellipsis),
+              title: Text(
+                p.nome ?? "",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
                 p.codice,
                 maxLines: 1,
@@ -156,9 +196,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
-
-  
-  
 
   int get _totaleQta => _qta.values.fold(0, (a, b) => a + b);
   // initState non usa più ref.listen; listener spostato nel build
@@ -347,23 +384,103 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     return utf8.decode(resp.bodyBytes); // risposta come XML string
   }
 
-  String buildSearchXml(String query) {
-    final cCampo = int.tryParse(query) != null ? 'FDI_0001' : 'FDI_0004';
-    return '''
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.farmadati.it" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:fdiw="http://schemas.datacontract.org/2004/07/FDIWebServices">
+  String buildSearchXml(String query, {SearchKind kind = SearchKind.prodotti}) {
+    switch (kind) {
+      case SearchKind.prodotti:
+        final cCampo = int.tryParse(query) != null ? 'FDI_0001' : 'FDI_0004';
+        return '''
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.farmadati.it" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:fdiw="http://schemas.datacontract.org/2004/07/FDIWebServices">
+        <soapenv:Header/>
+        <soapenv:Body>
+            <web:ExecuteQuery>
+              <web:Username>BDF203348XC</web:Username>
+              <web:Password>epxD67iZR</web:Password>
+              <web:CodiceSetDati>TR001</web:CodiceSetDati>
+              <web:CampiDaEstrarre>
+                  <arr:string>ALL</arr:string>
+              </web:CampiDaEstrarre>
+              
+          <web:Filtri>            
+                  <fdiw:Filter>               
+                    <fdiw:Key>$cCampo</fdiw:Key>               
+                    <fdiw:Operator>CONTIENE</fdiw:Operator>               
+                    <fdiw:Value>$query</fdiw:Value>
+                  </fdiw:Filter>
+              </web:Filtri>
+              <web:PageN>1</web:PageN>
+              <web:PagingN>100</web:PagingN>
+            </web:ExecuteQuery>
+        </soapenv:Body>
+      </soapenv:Envelope>
+      ''';
+      case SearchKind.ean:
+        return '''
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.farmadati.it" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:fdiw="http://schemas.datacontract.org/2004/07/FDIWebServices">
+        <soapenv:Header/>
+        <soapenv:Body>
+            <web:ExecuteQuery>
+              <web:Username>BDF203348XC</web:Username>
+              <web:Password>epxD67iZR</web:Password>
+              <web:CodiceSetDati>TR016</web:CodiceSetDati>
+              <web:CampiDaEstrarre>
+                  <arr:string>ALL</arr:string>
+              </web:CampiDaEstrarre>
+              
+          <web:Filtri>            
+                  <fdiw:Filter>               
+                    <fdiw:Key>FDI_0002</fdiw:Key>               
+                    <fdiw:Operator>CONTIENE</fdiw:Operator>               
+                    <fdiw:Value>$query</fdiw:Value>
+                  </fdiw:Filter>
+              </web:Filtri>
+              <web:PageN>1</web:PageN>
+              <web:PagingN>100</web:PagingN>
+            </web:ExecuteQuery>
+        </soapenv:Body>
+      </soapenv:Envelope>
+      ''';
+      case SearchKind.lottiInvendibili:
+        return '''
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.farmadati.it" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:fdiw="http://schemas.datacontract.org/2004/07/FDIWebServices">
+        <soapenv:Header/>
+        <soapenv:Body>
+            <web:ExecuteQuery>
+              <web:Username>BDF203348XC</web:Username>
+              <web:Password>epxD67iZR</web:Password>
+              <web:CodiceSetDati>TR_LOTTI_INV</web:CodiceSetDati>
+              <web:CampiDaEstrarre>
+                  <arr:string>ALL</arr:string>
+              </web:CampiDaEstrarre>
+              
+          <web:Filtri>            
+                  <fdiw:Filter>               
+                    <fdiw:Key>FDI_0001</fdiw:Key>               
+                    <fdiw:Operator>CONTIENE</fdiw:Operator>               
+                    <fdiw:Value>$query</fdiw:Value>
+                  </fdiw:Filter>
+              </web:Filtri>
+              <web:PageN>1</web:PageN>
+              <web:PagingN>100</web:PagingN>
+            </web:ExecuteQuery>
+        </soapenv:Body>
+      </soapenv:Envelope>
+      ''';
+      case SearchKind.immagine:
+        return '''
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.farmadati.it" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:fdiw="http://schemas.datacontract.org/2004/07/FDIWebServices">
    <soapenv:Header/>
    <soapenv:Body>
       <web:ExecuteQuery>
          <web:Username>BDF203348XC</web:Username>
          <web:Password>epxD67iZR</web:Password>
-         <web:CodiceSetDati>TR001</web:CodiceSetDati>
+         <web:CodiceSetDati>TDZ</web:CodiceSetDati>
          <web:CampiDaEstrarre>
             <arr:string>ALL</arr:string>
          </web:CampiDaEstrarre>
          
 		<web:Filtri>            
             <fdiw:Filter>               
-               <fdiw:Key>$cCampo</fdiw:Key>               
+               <fdiw:Key>FDI_T218</fdiw:Key>               
                <fdiw:Operator>CONTIENE</fdiw:Operator>               
                <fdiw:Value>$query</fdiw:Value>
             </fdiw:Filter>
@@ -373,40 +490,125 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       </web:ExecuteQuery>
    </soapenv:Body>
 </soapenv:Envelope>
-''';
+        ''';
+    }
+  }
+
+  Future<void> _getOrPutImage(String minsan) async {
+    
+    String xmlBodyImage = buildSearchXml(
+      minsan,
+      kind: SearchKind.immagine,
+    );
+
+    String xmlResp2 = await _postXml(kFarmadatiEndpoint, xmlBodyImage);
+
+    String? inner2 = _extractInnerXmlFromSoap(xmlResp2);
+
+    if (inner2 != null && inner2 != "EMPTY") {
+      String imagefilename =
+          _parseInnerProductsXml(inner2, DatasetKind.tdz).first.immagine ?? "";
+      String imageurl =
+          "https://ws.farmadati.it/WS_DOC/GetDoc.aspx?accesskey=epxD67iZR&tipodoc=Z&nomefile=$imagefilename";
+
+      String? cdnUrl = await r2IngestImageByUrl(
+        minsan: _parseInnerProductsXml(inner2, DatasetKind.tdz).first.codice,
+        imageUrl: imageurl,
+      );
+      print( cdnUrl);
+    }
   }
 
   Future<List<Prodotto>> _doSearch(String q) async {
     try {
-      final xmlBody = buildSearchXml(q);
-      final xmlResp = await _postXml(
-        'http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc',
-        xmlBody,
-      );
+      if (q.length > 6 && RegExp(r'^[0-9]+$').hasMatch(q)) {
+        String xmlEanBody = buildSearchXml(q, kind: SearchKind.ean);
+        String eanList = await _postXml(kFarmadatiEndpoint, xmlEanBody);
+        String? inner = _extractInnerXmlFromSoap(eanList);
+        if (inner == null) return [];
+        List<Prodotto> listaEan = _parseInnerProductsXml(
+          inner,
+          DatasetKind.tr001,
+        );
+
+        List<Prodotto> Minsan = [];
+
+        for (var prodotto in listaEan) {
+          String xmlBody = buildSearchXml(
+            prodotto.codice,
+            kind: SearchKind.prodotti,
+          );
+          String xmlResp = await _postXml(kFarmadatiEndpoint, xmlBody);
+          String? inner = _extractInnerXmlFromSoap(xmlResp);
+          if (inner != null) {
+            Minsan.add(_parseInnerProductsXml(inner, DatasetKind.tr001).first);
+
+            _getOrPutImage(_parseInnerProductsXml(inner, DatasetKind.tr001).first.codice);
+          }
+        }
+        logger.i(Minsan.length);
+        return Minsan;
+      }
+      final xmlBody = buildSearchXml(q, kind: SearchKind.prodotti);
+      final xmlResp = await _postXml(kFarmadatiEndpoint, xmlBody);
       final inner = _extractInnerXmlFromSoap(xmlResp);
       if (inner == null) return [];
-      return _parseInnerProductsXml(inner);
-    } catch (_) {
+      _getOrPutImage(_parseInnerProductsXml(inner, DatasetKind.tr001).first.codice);
+      return _parseInnerProductsXml(inner, DatasetKind.tr001);
+    } catch (errore) {
+      print(errore);
       return [];
     }
   }
 
   void _aggiungi(Prodotto p) {
-    if (_codiciSelezionati.contains(p.codice)) return;
     setState(() {
-      _selezionati.add(p);
-      _codiciSelezionati.add(p.codice);
-      _qta[p.codice] = 1;
+      if (_codiciSelezionati.contains(p.codice)) {
+        // già presente: incrementa la quantità
+        _qta[p.codice] = (_qta[p.codice] ?? 0) + 1;
+      } else {
+        // nuovo prodotto selezionato
+        _selezionati.add(p);
+        _codiciSelezionati.add(p.codice);
+        _qta[p.codice] = 1;
+      }
       _risultati = []; // facoltativo: pulisci risultati
       _searchCtrl.clear(); // facoltativo: svuota barra
     });
   }
 
   Future<void> openSearch(String q) async {
+    final query = q.trim();
+    if (query.length < 3) {
+      // opzionale: feedback minimo
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inserisci almeno 3 caratteri')),
+      );
+      return;
+    }
+
+    try {
+      final prelim = await _doSearch(query);
+      if (!mounted) return;
+      if (prelim.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Nessun risultato')));
+        return;
+      }
+      if (prelim.length == 1) {
+        _aggiungi(prelim.first);
+        _searchCtrl.clear();
+        return; // evita di aprire la UI
+      }
+    } catch (_) {
+      // in caso di errore rete, degrada su UI di ricerca per eventuale retry
+    }
+
     final Prodotto? scelto = await showSearch<Prodotto?>(
       context: context,
       delegate: ProdottiSearchDelegate(onSearch: _doSearch),
-      query: q.trim(), // 👈 usa il parametro nativo
+      query: query, // 👈 usa il parametro nativo
     );
 
     if (!mounted) return;
@@ -425,6 +627,115 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     });
   }
 
+  void _svuotaSelezionati() {
+    setState(() {
+      _selezionati.clear();
+      _codiciSelezionati.clear();
+      _qta.clear();
+    });
+  }
+
+  void _incQta(String codice) {
+    setState(() {
+      _qta[codice] = (_qta[codice] ?? 0) + 1;
+    });
+  }
+
+  void _decQta(String codice) {
+    setState(() {
+      final cur = _qta[codice] ?? 0;
+      if (cur > 1) {
+        _qta[codice] = cur - 1;
+      }
+    });
+  }
+
+  Widget _buildSelezionatiList() {
+    if (_selezionati.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Nessun prodotto selezionato',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Selezionati (${_selezionati.length}) · Totale pezzi: $_totaleQta',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: kBluScuro,
+              ),
+            ),
+            TextButton(
+              onPressed: _svuotaSelezionati,
+              child: const Text('Svuota'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _selezionati.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, i) {
+            final p = _selezionati[i];
+            final q = _qta[p.codice] ?? 0;
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 0,
+                vertical: 4,
+              ),
+              title: Text(
+                p.nome ?? "",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                '${p.codice}${p.tipo_prodotto!.isNotEmpty ? ' • ${p.tipo_prodotto}' : ''}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: () => _decQta(p.codice),
+                    tooltip: 'Diminuisci',
+                  ),
+                  Text(
+                    '$q',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () => _incQta(p.codice),
+                    tooltip: 'Aumenta',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _rimuoviByIndex(i),
+                    tooltip: 'Rimuovi',
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Listener agli eventi di barcode (registrato durante il build)
@@ -440,7 +751,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
     final _bleScanning = ref.watch(bleScanningProvider);
     final _bleStatus = ref.watch(bleStatusProvider);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.titolo),
@@ -514,6 +825,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    _buildSelezionatiList(),
                   ],
                 ),
               ),
@@ -521,6 +834,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
           ],
         ),
       ),
+
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(
           top: 18,
