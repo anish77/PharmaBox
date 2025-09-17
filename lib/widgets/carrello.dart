@@ -19,10 +19,7 @@ class Carrello {
 
   /// Restituisce il ValueNotifier della lista corrente
   ValueNotifier<List<Prodotto>> get prodotti {
-    _liste.putIfAbsent(
-      _listaCorrente,
-      () => ValueNotifier<List<Prodotto>>([]),
-    );
+    _liste.putIfAbsent(_listaCorrente, () => ValueNotifier<List<Prodotto>>([]));
     return _liste[_listaCorrente]!;
   }
 
@@ -41,13 +38,14 @@ class Carrello {
     // Persisti su Firestore
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      final qty = list.firstWhere((p) => p.minsan == prodotto.minsan).pezzi.value;
+      final qty =
+          list.firstWhere((p) => p.minsan == prodotto.minsan).pezzi.value;
       FirebaseLogic.instance.upsertItemLista(
         uid: uid,
         nomeLista: _listaCorrente,
         item: {
           'minsan': prodotto.minsan,
-          'titolo': prodotto.titolo,
+          'titolo': prodotto.nome,
           'quantity': qty,
           // opzionale: altri campi utili
         },
@@ -85,7 +83,7 @@ class Carrello {
             nomeLista: _listaCorrente,
             item: {
               'minsan': prodotto.minsan,
-              'titolo': prodotto.titolo,
+              'titolo': prodotto.nome,
               'quantity': newQuantity,
             },
           );
@@ -105,20 +103,24 @@ class Carrello {
       uid: uid,
       nomeLista: _listaCorrente,
     );
-    final prodottiCaricati = items.map((e) {
-      final qty = (e['quantity'] ?? 0) as int;
-      final titolo = (e['titolo'] ?? e['title'] ?? e['name'] ?? e['nome'] ?? '') as String;
-      return Prodotto(
-        titolo: titolo.isNotEmpty ? titolo : (e['minsan'] ?? '') as String,
-        minsan: (e['minsan'] ?? '') as String,
-        imagePath: kNoImage,
-        pezzi: qty,
-        consentito: false,
-        description: '',
-        ingredients: '',
-        howToTake: '',
-      );
-    }).toList();
+    final prodottiCaricati =
+        items.map((e) {
+          final qty = (e['quantity'] ?? 0) as int;
+          final titolo =
+              (e['titolo'] ?? e['title'] ?? e['name'] ?? e['nome'] ?? '')
+                  as String;
+          return Prodotto(
+            nome: titolo.isNotEmpty ? titolo : (e['minsan'] ?? '') as String,
+            minsan: (e['minsan'] ?? '') as String,
+            immagine: kNoImage,
+            pezzi: qty,
+            consentito: false,
+            description: '',
+            ingredients: '',
+            howToTake: '',
+            codice: '',
+          );
+        }).toList();
     sostituisciProdottiCorrenti(prodottiCaricati);
   }
 }

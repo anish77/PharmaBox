@@ -80,7 +80,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                       ],
                     ),
                     Text(
-                      widget.prodotto.titolo,
+                      widget.prodotto.nome,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

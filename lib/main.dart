@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:pharma_box/screens/login_page.dart';
+import 'package:pharma_box/firebase/firebase_options.dart';
+import 'package:pharma_box/view/login_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final bleScanningProvider = StateProvider<bool>((ref) => false);
+final bleStatusProvider = StateProvider<String>((ref) => "");
+// Stato dell'ultimo barcode acquisito dal BLE (event-based)
+final scannedBarcodeProvider = StateProvider<String?>((ref) => null);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,13 +25,12 @@ class MyApp extends StatelessWidget {
       title: 'Great Places',
       home: LoginPage(),
       theme: ThemeData(
-        
         scaffoldBackgroundColor: kBackGround, // Sfondo globale
-        appBarTheme: const AppBarTheme(       // Tema globale per le AppBar
-        backgroundColor: kBackGround,
-        foregroundColor: kPrimary,
-       //surfaceTintColor: kPrimary,
-    ),
+        appBarTheme: const AppBarTheme(
+          // Tema globale per le AppBar
+          backgroundColor: kBackGround,
+          foregroundColor: kPrimary,
+        ),
       ),
     );
   }

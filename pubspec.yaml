@@ -18,13 +18,17 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   google_fonts: ^6.2.1
-  firebase_core: ^4.0.0
+  firebase_core: ^4.1.0
   firebase_auth: ^6.0.0
   logger: ^2.6.1
   toggle_switch: ^2.3.0
   cloud_firestore: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   flutter_blue_plus: ^1.35.5
+  http: ^1.5.0
+  permission_handler: ^12.0.1
+  xml: ^6.6.1
+  flutter_bloc: ^9.1.1
 
 dev_dependencies:
   flutter_test:

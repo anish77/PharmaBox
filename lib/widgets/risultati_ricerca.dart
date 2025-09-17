@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/prodotto_cell.dart';
-import 'package:pharma_box/screens/product_details.dart';
+import 'package:pharma_box/view/product_details.dart';
 
 class RisultatiRicerca extends StatefulWidget {
   final List<Prodotto> risultati;
@@ -29,7 +29,7 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
 
     // Ordina alfabeticamente per titolo (case-insensitive)
     final sorted = List<Prodotto>.from(widget.risultati)
-      ..sort((a, b) => a.titolo.toLowerCase().compareTo(b.titolo.toLowerCase()));
+      ..sort((a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,7 +63,7 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ProductDetails(
-                          title: prodotto.titolo,
+                          title: prodotto.nome,
                           nrListe: widget.nrListe,
                           prodotto: prodotto,
                           popOnAdd: true,

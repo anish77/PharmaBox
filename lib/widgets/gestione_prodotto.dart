@@ -9,9 +9,9 @@ class GestioneProdotto {
   Widget prodottoTrovato() {
     // Creo il prodotto da aggiungere
     final Prodotto prodotto = Prodotto(
-      titolo: 'Prodotto Oki',
+      nome: 'Prodotto Oki',
       minsan: 'Minsan 123456789',
-      imagePath: 'assets/noImage.png',
+      immagine: 'assets/noImage.png',
       pezzi: 1,
       consentito: false,
       description:
@@ -20,6 +20,7 @@ class GestioneProdotto {
           "Each tablet contains atorvastatin calcium (20 mg) and metoprolol tartrate (25 mg). Other ingredients: cellulose, lactose, magnesium stearate, coating agents.",
       howToTake:
           "Not for use in pregnancy or breastfeeding. \nMay cause dizziness, tiredness, or muscle pain. \nAvoid alcohol and grapefruit juice. \nUse with caution if you have liver or kidney problems. \nDo not stop suddenly without medical advice.",
+      codice: '1234567',
     );
 
     return Padding(
@@ -58,7 +59,7 @@ class GestioneProdotto {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      prodotto.titolo,
+                      prodotto.nome,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

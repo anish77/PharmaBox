@@ -53,7 +53,7 @@ class ProdottoCell extends StatelessWidget {
                             ),
                           if (!prodotto.consentito) const SizedBox(width: 8),
                           Text(
-                            prodotto.titolo,
+                            prodotto.nome,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

@@ -1,5 +1,8 @@
 import 'package:flutter/widgets.dart';
 
+const kFarmadatiUsername = 'BDF203348XC';
+const kFarmadatiPassword = 'epxD67iZR';
+
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
 const kNoImage = 'assets/noImage.png';
@@ -73,3 +76,22 @@ const kFiltri3 = FilterGroup(
 const kAddToList = 'Aggiungi';
 const kOpzioni = 'Cerca prodotto';
 const kScarica = 'Scarica file';
+
+
+// API endpoints
+const kFarmadatiEndpoint =
+    'http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc';
+
+// Cloudflare R2 integration (configura questi valori nel tuo ambiente)
+// Dominio pubblico (CDN) collegato al bucket R2 "prod-images"
+const kR2CdnBaseUrl = 'https://www.doublecore.it';
+// Endpoint del Worker per l'ingest (POST /ingest)
+const kR2IngestEndpoint = 'https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest';
+// Opzionale: una API key semplice allineata con il Worker (header x-api-key)
+const kR2ApiKey = 'doublecore';
+const kFarmadatiSoapHeaders = {
+  'Content-Type': 'text/xml; charset=utf-8',
+  'Accept': 'application/xml',
+  'SOAPAction':
+      'http://webservices.farmadati.it/FarmadatiItaliaWebServicesM1/ExecuteQuery',
+};
