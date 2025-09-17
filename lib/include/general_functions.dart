@@ -66,7 +66,6 @@ String _numericToAlpha(int value) {
   return sb.toString();
 }
 
-
 /// Invia una richiesta al Worker Cloudflare per scaricare e archiviare
 /// l'immagine del prodotto su R2 a partire da un URL sorgente.
 /// Ritorna l'URL pubblico (CDN) se disponibile, altrimenti null.
@@ -83,10 +82,7 @@ Future<String?> r2IngestImageByUrl({
             'content-type': 'application/json',
             if (kR2ApiKey.isNotEmpty) 'x-api-key': kR2ApiKey,
           },
-          body: jsonEncode({
-            'ean': minsan,
-            'imageUrl': imageUrl,
-          }),
+          body: jsonEncode({'ean': minsan, 'imageUrl': imageUrl}),
         )
         .timeout(const Duration(seconds: 12));
     if (resp.statusCode != 200) return null;
@@ -94,6 +90,8 @@ Future<String?> r2IngestImageByUrl({
     if (data['ok'] == true && data['origUrl'] is String) {
       return data['origUrl'] as String;
     }
-  } catch (errore) { print(errore); }
+  } catch (errore) {
+    print(errore);
+  }
   return null;
 }

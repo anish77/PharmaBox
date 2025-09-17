@@ -1,25 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/logic/_soap_config.dart';
 import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
-import 'package:pharma_box/view/scan_tab.dart';
+import 'package:pharma_box/widgets/scan_tab.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
-import 'package:pharma_box/widgets/prodotti_search_delegate.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:pharma_box/data/datacached.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../include/general_functions.dart';
-import 'package:pharma_box/include/ble_functions.dart';
 
 enum DatasetKind { tr001, tdz }
 
@@ -37,6 +36,7 @@ List<Prodotto> _parseInnerProductsXml(
 
       return prodotti.map((p) {
         final codice = p.getElement('FDI_0001')?.text.trim() ?? '';
+        final minsan = p.getElement('FDI_0002')?.text.trim();
         final nome = p.getElement('FDI_0004')?.text.trim() ?? '';
         final tipo_prodotto =
             CategoriaMapper.getDescrizione(
@@ -47,7 +47,7 @@ List<Prodotto> _parseInnerProductsXml(
           codice: codice,
           nome: nome,
           tipo_prodotto: tipo_prodotto,
-          minsan: '',
+          minsan: (minsan != null && minsan.isNotEmpty) ? minsan : codice,
           immagine: '',
           pezzi: 1,
           consentito: true,
@@ -67,7 +67,7 @@ List<Prodotto> _parseInnerProductsXml(
           codice: codice,
           immagine: immagine,
           nome: '',
-          minsan: '',
+          minsan: codice,
           pezzi: 1,
           consentito: true,
           description: '',
@@ -95,9 +95,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   var logger = Logger(printer: PrettyPrinter());
   var selectedIndex = 0;
   var productToSearch = '';
-  final _cercaProdottoKeyForm = GlobalKey<FormState>();
-  String _query = '';
-  bool _isLoading = false;
   List<Prodotto> _risultati = [];
   // lista selezionata dall’utente (inventario da comporre)
   final List<Prodotto> _selezionati = [];
@@ -335,31 +332,40 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     try {
       final prelim = await _doSearch(query);
       if (!mounted) return;
+
       if (prelim.isEmpty) {
+        setState(() {
+          _risultati = [];
+          _hideUnselectedFilters = true;
+          _searchSubmitted = true;
+          _lastSearchedQuery = query;
+        });
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Nessun risultato')));
         return;
       }
+
       if (prelim.length == 1) {
         _aggiungi(prelim.first);
         _searchCtrl.clear();
-        return; // evita di aprire la UI
+        setState(() {
+          _risultati = [];
+          _hideUnselectedFilters = true;
+          _searchSubmitted = true;
+          _lastSearchedQuery = query;
+        });
+        return;
       }
+
+      setState(() {
+        _risultati = prelim;
+        _hideUnselectedFilters = true;
+        _searchSubmitted = true;
+        _lastSearchedQuery = query;
+      });
     } catch (_) {
       // in caso di errore rete, degrada su UI di ricerca per eventuale retry
-    }
-
-    final Prodotto? scelto = await showSearch<Prodotto?>(
-      context: context,
-      delegate: ProdottiSearchDelegate(onSearch: _doSearch),
-      query: query, // 👈 usa il parametro nativo
-    );
-
-    if (!mounted) return;
-    if (scelto != null) {
-      _aggiungi(scelto);
-      _searchCtrl.clear();
     }
   }
 
@@ -563,8 +569,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         title: Text(widget.titolo),
         centerTitle: false,
         titleSpacing: 0,
-        actions: [
-          /*  IconButton(
+        /*  actions: [
+            IconButton(
             tooltip:
                 _bleScanning ? 'Interrompi scansione' : 'Avvia scanner BLE',
             icon: Icon(_bleScanning ? Icons.stop : Icons.bluetooth_searching),
@@ -572,8 +578,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                 _bleScanning
                     ? () => FlutterBluePlus.stopScan()
                     : () => bleStartScanAndListen(ref),
-          ),*/
-        ],
+          ),
+        ],*/
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -624,7 +630,15 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                       builder: (context) {
                         switch (selectedIndex) {
                           case 0:
-                            return const ScanTab();
+                            return ScanTab(
+                              isScanning: _bleScanning,
+                              statusLabel: _bleStatus,
+                              onToggleScan:
+                                  _bleScanning
+                                      ? () => FlutterBluePlus.stopScan()
+                                      : () => bleStartScanAndListen(ref),
+                            );
+
                           //: GestioneProdotto().nonAutorizzato();
                           case 1:
                             return SingleChildScrollView(

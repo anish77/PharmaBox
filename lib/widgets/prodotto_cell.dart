@@ -35,12 +35,14 @@ class ProdottoCell extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (!prodotto.consentito)
                             Container(
@@ -52,19 +54,30 @@ class ProdottoCell extends StatelessWidget {
                               ),
                             ),
                           if (!prodotto.consentito) const SizedBox(width: 8),
-                          Text(
-                            prodotto.nome,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              prodotto.nome,
+                              maxLines: 2,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      Text(prodotto.minsan),
+
+                      Text(
+                        prodotto.codice,
+                        maxLines: 1,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       if ((inListQty ?? 0) > 0)
                         Text(
-                          'In lista: ${inListQty!}',
+                          prodotto.minsan,
                           style: const TextStyle(
                             fontSize: 12,
                             color: kBluScuro,
@@ -74,65 +87,52 @@ class ProdottoCell extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (inListQty != null)
-                  ((inListQty ?? 0) > 0
-                      ? CounterButton(
-                          key: ValueKey(inListQty),
-                          initialValue: inListQty ?? 0,
-                          onChanged: (newValue) {
-                            Carrello.instance.aggiornaQuantita(
-                              prodotto,
-                              newValue,
-                            );
-                            onQuantityChanged(newValue);
-                          },
-                        )
-                      : GestureDetector(
-                          onTap: () {
-                            if (prodotto.pezzi.value <= 0) {
-                              prodotto.pezzi.value = 1;
-                            }
-                            Carrello.instance.aggiungiProdotto(prodotto);
-                            onQuantityChanged(prodotto.pezzi.value);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: kPrimary,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: kPrimary, width: 1),
-                            ),
-                            child: const Text(
-                              kAddToList,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: kWhite,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ))
-                else
-                  ValueListenableBuilder<int>(
-                    valueListenable: prodotto.pezzi,
-                    builder: (context, value, _) {
-                      return CounterButton(
-                        key: ValueKey(value),
-                        initialValue: value,
-                        onChanged: (newValue) {
-                          prodotto.pezzi.value = newValue;
-                          Carrello.instance.aggiungiProdotto(prodotto);
-                          onQuantityChanged(newValue);
-                        },
+                const SizedBox(width: 24),
+                if ((inListQty ?? 0) > 0)
+                  CounterButton(
+                    key: ValueKey('list-${prodotto.minsan}'),
+                    initialValue: inListQty ?? 0,
+                    onChanged: (newValue) {
+                      Carrello.instance.aggiornaQuantita(
+                        prodotto,
+                        newValue,
                       );
+                      onQuantityChanged(newValue);
                     },
+                  )
+                else
+                  GestureDetector(
+                    onTap: () {
+                      final currentNotifier = prodotto.pezzi;
+                      final newValue = currentNotifier.value > 0
+                          ? currentNotifier.value
+                          : 1;
+                      currentNotifier.value = newValue;
+                      Carrello.instance.aggiungiProdotto(prodotto);
+                      onQuantityChanged(newValue);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: kPrimary,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: kPrimary, width: 1),
+                      ),
+                      child: const Text(
+                        kAddToList,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: kWhite,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),
-            const SizedBox(height: 10),
             const Divider(thickness: 1, color: kBluScuro, height: 1),
           ],
         ),

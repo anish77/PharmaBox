@@ -75,6 +75,7 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                       builder: (context, value, _) {
                         return ProdottoCell(
                           prodotto: prodotto,
+                          inListQty: value,
                           selected: _highlightedIndex == index,
                           onQuantityChanged: (newValue) {
                             Carrello.instance.aggiornaQuantita(
