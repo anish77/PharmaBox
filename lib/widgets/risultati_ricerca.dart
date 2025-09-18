@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/prodotto_cell.dart';
@@ -35,6 +36,14 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 8),
+        Text(
+          '${sorted.length} risultati',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: kBluScuro,
+          ),
+        ),
         const SizedBox(height: 8),
         ListView.builder(
           shrinkWrap: true,
@@ -63,12 +72,13 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                       // ignore: use_build_context_synchronously
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ProductDetails(
-                          title: prodotto.nome,
-                          nrListe: widget.nrListe,
-                          prodotto: prodotto,
-                          popOnAdd: true,
-                        ),
+                        builder:
+                            (_) => ProductDetails(
+                              title: prodotto.nome,
+                              nrListe: widget.nrListe,
+                              prodotto: prodotto,
+                              popOnAdd: true,
+                            ),
                       ),
                     );
                     if (mounted) setState(() => _highlightedIndex = null);

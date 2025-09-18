@@ -18,14 +18,15 @@ class CercaProdottoField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
+      padding: EdgeInsets.only(bottom: bottomPadding, top: 10),
       child: TextFormField(
         initialValue: controller == null ? initialValue : null,
         controller: controller,
         decoration: InputDecoration(
           labelText: kCercaProdotto,
-          labelStyle:
-              Theme.of(context).textTheme.bodyMedium?.copyWith(color: kBluScuro),
+          labelStyle: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: kBluScuro),
           enabledBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: kPrimary),
           ),
@@ -63,12 +64,7 @@ class CercaProdottoBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isValid = query.trim().length >= 3;
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 18,
-        bottom: 45,
-        left: 24,
-        right: 24,
-      ),
+      padding: const EdgeInsets.only(top: 18, bottom: 45, left: 24, right: 24),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(

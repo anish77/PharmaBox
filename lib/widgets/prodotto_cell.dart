@@ -4,6 +4,16 @@ import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
 
+const double _titleFontSize = 14.0;
+const double _titleLineHeight = 1.3;
+const double _twoLineTitleHeight = _titleFontSize * _titleLineHeight * 2;
+const TextStyle _titleStyle = TextStyle(
+  fontSize: _titleFontSize,
+  fontWeight: FontWeight.bold,
+  height: _titleLineHeight,
+  color: kBluScuro,
+);
+
 class ProdottoCell extends StatelessWidget {
   final Prodotto prodotto;
   final ValueChanged<int> onQuantityChanged;
@@ -30,7 +40,7 @@ class ProdottoCell extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -56,14 +66,16 @@ class ProdottoCell extends StatelessWidget {
                             ),
                           if (!prodotto.consentito) const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              prodotto.nome,
-                              maxLines: 2,
-                              softWrap: true,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: _twoLineTitleHeight,
+                              ),
+                              child: Text(
+                                prodotto.nome,
+                                maxLines: 2,
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                style: _titleStyle,
                               ),
                             ),
                           ),
@@ -75,6 +87,7 @@ class ProdottoCell extends StatelessWidget {
                         maxLines: 1,
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: kBluScuro),
                       ),
                     ],
                   ),
@@ -147,7 +160,7 @@ class ProdottoCell extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             const Divider(thickness: 1, color: kBluScuro, height: 1),
           ],
         ),
