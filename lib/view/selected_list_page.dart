@@ -13,6 +13,7 @@ import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
 import 'package:pharma_box/widgets/scan_tab.dart';
+import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:toggle_switch/toggle_switch.dart';
@@ -104,6 +105,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   bool _hideUnselectedFilters = false;
   bool _searchSubmitted = false;
   String? _lastSearchedQuery;
+  bool _isSearching = false;
 
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
@@ -329,6 +331,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       return;
     }
 
+    setState(() {
+      _isSearching = true;
+    });
+
     try {
       final prelim = await _doSearch(query);
       if (!mounted) return;
@@ -366,6 +372,12 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       });
     } catch (_) {
       // in caso di errore rete, degrada su UI di ricerca per eventuale retry
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
     }
   }
 
@@ -564,183 +576,202 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     final _bleScanning = ref.watch(bleScanningProvider);
     final _bleStatus = ref.watch(bleStatusProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.titolo),
-        centerTitle: false,
-        titleSpacing: 0,
-        /*  actions: [
-            IconButton(
-            tooltip:
-                _bleScanning ? 'Interrompi scansione' : 'Avvia scanner BLE',
-            icon: Icon(_bleScanning ? Icons.stop : Icons.bluetooth_searching),
-            onPressed:
-                _bleScanning
-                    ? () => FlutterBluePlus.stopScan()
-                    : () => bleStartScanAndListen(ref),
-          ),
-        ],*/
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          children: [
-            Expanded(
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ToggleSwitch(
-                      minWidth: double.infinity,
-                      cornerRadius: 28.0,
-                      borderWidth: 1.0,
-                      fontSize: 16,
-                      initialLabelIndex: selectedIndex,
-                      activeBgColor: [kPrimary],
-                      activeFgColor: Colors.white,
-                      inactiveBgColor: kSecondary,
-                      inactiveFgColor: kBluScuro,
-                      totalSwitches: 3,
-                      labels: ['Scan', 'Cerca', 'Lista'],
-                      onToggle: (index) {
-                        setState(() {
-                          logger.i('switched to: $index');
-                          selectedIndex = index!;
-                          // Se torni alla tab "Cerca" (1), ripristina lo stato iniziale della ricerca
-                          if (selectedIndex == 1) {
-                            productToSearch = '';
-                            _searchCtrl.text = '';
-                            _risultati = [];
-                            _hideUnselectedFilters =
-                                false; // mostra di nuovo i gruppi opzioni
-                            _selectedFilters
-                                .clear(); // deseleziona tutti i filtri
-                            _searchSubmitted =
-                                false; // nascondi la riga selezionati
-                            _lastSearchedQuery = null; // reset query cercata
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        switch (selectedIndex) {
-                          case 0:
-                            return ScanTab(
-                              isScanning: _bleScanning,
-                              statusLabel: _bleStatus,
-                              onToggleScan:
-                                  _bleScanning
-                                      ? () => FlutterBluePlus.stopScan()
-                                      : () => bleStartScanAndListen(ref),
-                            );
-
-                          //: GestioneProdotto().nonAutorizzato();
-                          case 1:
-                            return SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  CercaProdottoField(
-                                    initialValue: productToSearch,
-                                    controller: _searchCtrl,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        productToSearch = value;
-                                        // Non mostrare risultati automaticamente mentre si digita
-                                        // Svuota i risultati finché non si preme il bottone "Cerca"
-                                        _risultati = [];
-                                        if (productToSearch.trim().isEmpty) {
-                                          _hideUnselectedFilters = false;
-                                          _selectedFilters.clear();
-                                          _searchSubmitted = false;
-                                          _lastSearchedQuery = null;
-                                        } else {
-                                          // Riabilita il bottone se il testo differisce dall'ultima ricerca
-                                          if (_lastSearchedQuery != null &&
-                                              productToSearch.trim() !=
-                                                  _lastSearchedQuery) {
-                                            _searchSubmitted = false;
-                                          }
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  if (_selectedFilters.isNotEmpty)
-                                    Align(
-                                      alignment: Alignment.topLeft,
-                                      child: Wrap(
-                                        alignment: WrapAlignment.start,
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children:
-                                            _selectedInOriginalOrder()
-                                                .map(
-                                                  (f) => ContainerOpzione(
-                                                    key: ValueKey('sel-' + f),
-                                                    nomeOpione: f,
-                                                    selected: true,
-                                                    onSelectedChanged: (isSel) {
-                                                      if (!isSel) {
-                                                        setState(() {
-                                                          _selectedFilters
-                                                              .remove(f);
-                                                        });
-                                                      }
-                                                    },
-                                                  ),
-                                                )
-                                                .toList(),
-                                      ),
-                                    ),
-                                  if (!_hideUnselectedFilters ||
-                                      _selectedFilters.isEmpty) ...[
-                                    opzioni(kFiltri1.title, kFiltri1.items),
-                                    opzioni(kFiltri2.title, kFiltri2.items),
-                                    opzioni(kFiltri3.title, kFiltri3.items),
-                                  ],
-                                  RisultatiRicerca(
-                                    risultati: _risultati,
-                                    listaTitolo: widget.titolo,
-                                    nrListe: widget.nrListe,
-                                  ),
-                                ],
-                              ),
-                            );
-                          case 2:
-                            return ListaProdottiInventario(
-                              titolo: widget.titolo,
-                              nrListe: widget.nrListe,
-                            );
-                          default:
-                            return const SizedBox();
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      bottomNavigationBar:
-          selectedIndex == 1
-              ? CercaProdottoBottomBar(
-                title: kCercaProdotto,
-                query: productToSearch,
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: Text(widget.titolo),
+            centerTitle: false,
+            titleSpacing: 0,
+            /*  actions: [
+                IconButton(
+                tooltip:
+                    _bleScanning ? 'Interrompi scansione' : 'Avvia scanner BLE',
+                icon:
+                    Icon(_bleScanning ? Icons.stop : Icons.bluetooth_searching),
                 onPressed:
-                    (productToSearch.trim().length >= 3 &&
-                            (_lastSearchedQuery == null ||
-                                productToSearch.trim() != _lastSearchedQuery))
-                        ? () => openSearch(productToSearch.trim())
-                        : null,
-              )
-              : null,
+                    _bleScanning
+                        ? () => FlutterBluePlus.stopScan()
+                        : () => bleStartScanAndListen(ref),
+              ),
+            ],*/
+          ),
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ToggleSwitch(
+                          minWidth: double.infinity,
+                          cornerRadius: 28.0,
+                          borderWidth: 1.0,
+                          fontSize: 16,
+                          initialLabelIndex: selectedIndex,
+                          activeBgColor: [kPrimary],
+                          activeFgColor: Colors.white,
+                          inactiveBgColor: kSecondary,
+                          inactiveFgColor: kBluScuro,
+                          totalSwitches: 3,
+                          labels: ['Scan', 'Cerca', 'Lista'],
+                          onToggle: (index) {
+                            setState(() {
+                              logger.i('switched to: $index');
+                              selectedIndex = index!;
+                              // Se torni alla tab "Cerca" (1), ripristina lo stato iniziale della ricerca
+                              if (selectedIndex == 1) {
+                                productToSearch = '';
+                                _searchCtrl.text = '';
+                                _risultati = [];
+                                _hideUnselectedFilters =
+                                    false; // mostra di nuovo i gruppi opzioni
+                                _selectedFilters
+                                    .clear(); // deseleziona tutti i filtri
+                                _searchSubmitted =
+                                    false; // nascondi la riga selezionati
+                                _lastSearchedQuery =
+                                    null; // reset query cercata
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Expanded(
+                        child: Builder(
+                          builder: (context) {
+                            switch (selectedIndex) {
+                              case 0:
+                                return ScanTab(
+                                  isScanning: _bleScanning,
+                                  statusLabel: _bleStatus,
+                                  onToggleScan:
+                                      _bleScanning
+                                          ? () => FlutterBluePlus.stopScan()
+                                          : () => bleStartScanAndListen(ref),
+                                );
+
+                              //: GestioneProdotto().nonAutorizzato();
+                              case 1:
+                                return SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      CercaProdottoField(
+                                        initialValue: productToSearch,
+                                        controller: _searchCtrl,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            productToSearch = value;
+                                            // Non mostrare risultati automaticamente mentre si digita
+                                            // Svuota i risultati finché non si preme il bottone "Cerca"
+                                            _risultati = [];
+                                            if (productToSearch
+                                                .trim()
+                                                .isEmpty) {
+                                              _hideUnselectedFilters = false;
+                                              _selectedFilters.clear();
+                                              _searchSubmitted = false;
+                                              _lastSearchedQuery = null;
+                                            } else {
+                                              // Riabilita il bottone se il testo differisce dall'ultima ricerca
+                                              if (_lastSearchedQuery != null &&
+                                                  productToSearch.trim() !=
+                                                      _lastSearchedQuery) {
+                                                _searchSubmitted = false;
+                                              }
+                                            }
+                                          });
+                                        },
+                                      ),
+                                      if (_selectedFilters.isNotEmpty)
+                                        Align(
+                                          alignment: Alignment.topLeft,
+                                          child: Wrap(
+                                            alignment: WrapAlignment.start,
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            children:
+                                                _selectedInOriginalOrder()
+                                                    .map(
+                                                      (f) => ContainerOpzione(
+                                                        key: ValueKey(
+                                                          'sel-' + f,
+                                                        ),
+                                                        nomeOpione: f,
+                                                        selected: true,
+                                                        onSelectedChanged: (
+                                                          isSel,
+                                                        ) {
+                                                          if (!isSel) {
+                                                            setState(() {
+                                                              _selectedFilters
+                                                                  .remove(f);
+                                                            });
+                                                          }
+                                                        },
+                                                      ),
+                                                    )
+                                                    .toList(),
+                                          ),
+                                        ),
+                                      if (!_hideUnselectedFilters ||
+                                          _selectedFilters.isEmpty) ...[
+                                        opzioni(kFiltri1.title, kFiltri1.items),
+                                        opzioni(kFiltri2.title, kFiltri2.items),
+                                        opzioni(kFiltri3.title, kFiltri3.items),
+                                      ],
+                                      RisultatiRicerca(
+                                        risultati: _risultati,
+                                        listaTitolo: widget.titolo,
+                                        nrListe: widget.nrListe,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              case 2:
+                                return ListaProdottiInventario(
+                                  titolo: widget.titolo,
+                                  nrListe: widget.nrListe,
+                                );
+                              default:
+                                return const SizedBox();
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          bottomNavigationBar:
+              selectedIndex == 1
+                  ? CercaProdottoBottomBar(
+                    title: kCercaProdotto,
+                    query: productToSearch,
+                    onPressed:
+                        (productToSearch.trim().length >= 3 &&
+                                (_lastSearchedQuery == null ||
+                                    productToSearch.trim() !=
+                                        _lastSearchedQuery) &&
+                                !_isSearching)
+                            ? () => openSearch(productToSearch.trim())
+                            : null,
+                  )
+                  : null,
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            ignoring: !_isSearching,
+            child: FullScreenLoader(isLoading: _isSearching),
+          ),
+        ),
+      ],
     );
   }
 }
