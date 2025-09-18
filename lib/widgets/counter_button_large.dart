@@ -20,7 +20,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
     _counter = widget.initialValue;
   }
 
-   @override
+  @override
   void didUpdateWidget(covariant CounterButtonLarge oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialValue != widget.initialValue) {
@@ -56,7 +56,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
           child: GestureDetector(
             onTap: _decrement,
             child: Container(
-              height: 48, 
+              height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: kSecondary,
@@ -77,7 +77,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
         // Counter
         Expanded(
           child: Container(
-            height: 48, 
+            height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: kPrimary,
@@ -85,7 +85,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
             ),
             child: Text(
               '$_counter',
-              style: const TextStyle(fontSize: 18, color: kSecondary),
+              style: const TextStyle(fontSize: 18, color: kWhite),
             ),
           ),
         ),
@@ -95,7 +95,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
           child: GestureDetector(
             onTap: _increment,
             child: Container(
-              height: 48, 
+              height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: kSecondary,

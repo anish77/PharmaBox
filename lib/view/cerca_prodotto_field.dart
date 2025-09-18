@@ -5,18 +5,20 @@ class CercaProdottoField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final String? initialValue;
   final TextEditingController? controller;
+  final double bottomPadding;
 
   const CercaProdottoField({
     super.key,
     required this.onChanged,
     this.initialValue,
     this.controller,
+    this.bottomPadding = 20,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: TextFormField(
         initialValue: controller == null ? initialValue : null,
         controller: controller,

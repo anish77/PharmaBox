@@ -20,19 +20,19 @@ class ProdottoCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mostraQuantita = (inListQty ?? 0) > 0;
+
+    const actionWidth = 120.0;
+    const actionHeight = 40.0;
+
     return Card(
       color: selected ? kYellow : kBackGround,
       elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.only(
-          top: 10,
-          bottom: 10,
-          left: 12,
-          right: 12,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,6 +40,7 @@ class ProdottoCell extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,71 +69,85 @@ class ProdottoCell extends StatelessWidget {
                           ),
                         ],
                       ),
-
+                      const SizedBox(height: 4),
                       Text(
                         prodotto.codice,
                         maxLines: 1,
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if ((inListQty ?? 0) > 0)
-                        Text(
-                          prodotto.minsan,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: kBluScuro,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 24),
-                if ((inListQty ?? 0) > 0)
-                  CounterButton(
-                    key: ValueKey('list-${prodotto.minsan}'),
-                    initialValue: inListQty ?? 0,
-                    onChanged: (newValue) {
-                      Carrello.instance.aggiornaQuantita(
-                        prodotto,
-                        newValue,
-                      );
-                      onQuantityChanged(newValue);
-                    },
-                  )
-                else
-                  GestureDetector(
-                    onTap: () {
-                      final currentNotifier = prodotto.pezzi;
-                      final newValue = currentNotifier.value > 0
-                          ? currentNotifier.value
-                          : 1;
-                      currentNotifier.value = newValue;
-                      Carrello.instance.aggiungiProdotto(prodotto);
-                      onQuantityChanged(newValue);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: kPrimary,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: kPrimary, width: 1),
-                      ),
-                      child: const Text(
-                        kAddToList,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: kWhite,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                const SizedBox(width: 16),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: SizedBox(
+                    width: actionWidth,
+                    child:
+                        mostraQuantita
+                            ? CounterButton(
+                              key: ValueKey('list-${prodotto.minsan}'),
+                              initialValue: inListQty ?? 0,
+                              height: actionHeight,
+                              width: actionWidth,
+                              onChanged: (newValue) {
+                                Carrello.instance.aggiornaQuantita(
+                                  prodotto,
+                                  newValue,
+                                );
+                                onQuantityChanged(newValue);
+                              },
+                            )
+                            : GestureDetector(
+                              onTap: () {
+                                final currentNotifier = prodotto.pezzi;
+                                final newValue =
+                                    currentNotifier.value > 0
+                                        ? currentNotifier.value
+                                        : 1;
+                                currentNotifier.value = newValue;
+                                Carrello.instance.aggiungiProdotto(prodotto);
+                                onQuantityChanged(newValue);
+                              },
+                              child: SizedBox(
+                                height: actionHeight,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: kPrimary,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: kPrimary,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 6,
+                                      ),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          kAddToList,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: kWhite,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                   ),
+                ),
               ],
             ),
+            const SizedBox(height: 4),
             const Divider(thickness: 1, color: kBluScuro, height: 1),
           ],
         ),

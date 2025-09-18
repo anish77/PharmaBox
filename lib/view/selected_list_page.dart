@@ -474,92 +474,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     );
   }
 
-  Widget _buildSelezionatiList() {
-    if (_selezionati.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'Nessun prodotto selezionato',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Selezionati (${_selezionati.length}) · Totale pezzi: $_totaleQta',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: kBluScuro,
-              ),
-            ),
-            TextButton(
-              onPressed: _svuotaSelezionati,
-              child: const Text('Svuota'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _selezionati.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, i) {
-            final p = _selezionati[i];
-            final q = _qta[p.codice] ?? 0;
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 0,
-                vertical: 4,
-              ),
-              title: Text(
-                p.nome ?? "",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                '${p.codice}${p.tipo_prodotto!.isNotEmpty ? ' • ${p.tipo_prodotto}' : ''}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: () => _decQta(p.codice),
-                    tooltip: 'Diminuisci',
-                  ),
-                  Text(
-                    '$q',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: () => _incQta(p.codice),
-                    tooltip: 'Aumenta',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _rimuoviByIndex(i),
-                    tooltip: 'Rimuovi',
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // Listener agli eventi di barcode (registrato durante il build)
@@ -657,6 +571,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
                               //: GestioneProdotto().nonAutorizzato();
                               case 1:
+                                final showFilterGroups =
+                                    !_hideUnselectedFilters ||
+                                    _selectedFilters.isNotEmpty;
+
                                 return SingleChildScrollView(
                                   child: Column(
                                     children: [
@@ -718,8 +636,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                     .toList(),
                                           ),
                                         ),
-                                      if (!_hideUnselectedFilters ||
-                                          _selectedFilters.isEmpty) ...[
+                                      if (showFilterGroups) ...[
                                         opzioni(kFiltri1.title, kFiltri1.items),
                                         opzioni(kFiltri2.title, kFiltri2.items),
                                         opzioni(kFiltri3.title, kFiltri3.items),
