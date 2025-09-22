@@ -37,6 +37,7 @@ const kForgotPassword =
 // Errori
 const kProdottoNonConsentito = 'Severe worning';
 const kUtenteNonAutorizzato = 'Utente non autorizzato, invia un email a xxxx ';
+const kMembershipEmail = 'annycvasniuc@yahoo.com'; //'info@pharmabox.com';
 
 // Password sicura
 // Requisiti:
@@ -76,7 +77,8 @@ const kFiltri3 = FilterGroup(
 const kAddToList = 'Aggiungi';
 const kOpzioni = 'Cerca prodotto';
 const kScarica = 'Scarica file';
-
+const kDisponibileMembri = 'Disponibile solo per i membri.';
+const kDiventaMembro = 'Diventa membro';
 
 // API endpoints
 const kFarmadatiEndpoint =
@@ -86,7 +88,8 @@ const kFarmadatiEndpoint =
 // Dominio pubblico (CDN) collegato al bucket R2 "prod-images"
 const kR2CdnBaseUrl = 'https://www.doublecore.it';
 // Endpoint del Worker per l'ingest (POST /ingest)
-const kR2IngestEndpoint = 'https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest';
+const kR2IngestEndpoint =
+    'https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest';
 // Opzionale: una API key semplice allineata con il Worker (header x-api-key)
 const kR2ApiKey = 'doublecore';
 const kFarmadatiSoapHeaders = {

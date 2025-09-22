@@ -3,11 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/view/invite_friend_page.dart';
+import 'package:pharma_box/view/invite_progress_page.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CreaNuovaLista extends StatefulWidget {
   const CreaNuovaLista({super.key});
@@ -17,51 +20,100 @@ class CreaNuovaLista extends StatefulWidget {
 }
 
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
-  var logger = Logger(printer: PrettyPrinter());
+  final Logger _logger = Logger(printer: PrettyPrinter());
   int? selectedIndex;
-  final uid = FirebaseAuth.instance.currentUser!.uid;
+
+  String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  Future<void> _openContactEmail() async {
+    const subject = 'Richiesta assistenza PharmaBox';
+    const body = 'Ciao, avrei bisogno di supporto con la mia esperienza.';
+
+    final Uri mailUri = Uri(
+      scheme: 'mailto',
+      path: kMembershipEmail,
+      queryParameters: {'subject': subject, 'body': body},
+    );
+
+    if (await canLaunchUrl(mailUri)) {
+      final launched = await launchUrl(
+        mailUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (launched || !mounted) return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Impossibile aprire l\'app email.')),
+    );
+  }
 
   Stream<List<String>> getListeStream() {
+    final uid = _currentUid;
+    if (uid == null) {
+      _logger.w('getListeStream invoked without authenticated user');
+      return Stream<List<String>>.value(const []);
+    }
+
     return FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .snapshots()
         .map((doc) {
-          if (!doc.exists) return [];
+          if (!doc.exists) return <String>[];
           final data = doc.data();
-          final liste = data?['liste'] ?? [];
-          return List<String>.from(liste.map((l) => l['nomeLista']));
+          final rawListe = data?['liste'] ?? [];
+          final liste = List<Map<String, dynamic>>.from(rawListe);
+          return List<String>.from(
+            liste
+                .map((l) => (l['nomeLista'] ?? '') as String)
+                .where((nome) => nome.isNotEmpty),
+          );
         });
   }
 
   Future<void> eliminaLista(String nomeLista) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = _currentUid;
+    if (uid == null) {
+      _logger.w('eliminaLista invoked without authenticated user');
+      return;
+    }
+
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
     if (!doc.exists) return;
 
     final data = doc.data();
-    final liste = data?['liste'] ?? [];
+    final rawListe = data?['liste'] ?? [];
+    final liste = List<Map<String, dynamic>>.from(rawListe);
 
-    // Trova la lista da cancellare
     final listaDaEliminare = liste.firstWhere(
       (l) => l['nomeLista'] == nomeLista,
-      orElse: () => null,
+      orElse: () => <String, dynamic>{},
     );
 
-    if (listaDaEliminare != null) {
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'liste': FieldValue.arrayRemove([listaDaEliminare]),
-      });
-    }
+    if (listaDaEliminare.isEmpty) return;
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'liste': FieldValue.arrayRemove([listaDaEliminare]),
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false, // niente icona automatica a sinistra
+        leading:
+            canPop
+                ? IconButton(
+                  icon: const Icon(Icons.arrow_back, color: kPrimary),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                )
+                : null,
         title: Padding(
           padding: const EdgeInsets.only(left: 8),
           child: Row(
@@ -104,11 +156,40 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ),
             ),
             ListTile(
-              // leading: Icon(Icons.settings),
-              title: Text('Opzione 1'),
-              onTap: () => Navigator.pop(context),
+              leading: const Icon(Icons.group_add, color: kPrimary),
+              title: const Text('Invita un amico'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) =>
+                            const InviteFriendPage(referralCode: '123'),
+                  ),
+                );
+              },
             ),
             ListTile(
+              leading: const Icon(Icons.leaderboard, color: kPrimary),
+              title: const Text('Stato inviti'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) =>
+                            const InviteProgressPage(invitedFriends: 3),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.mail_outline, color: kPrimary),
+              title: const Text('Contattaci'),
+              onTap: _openContactEmail,
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout, color: kRed),
               title: Text(
                 'Log out',
                 style: TextStyle(
@@ -167,6 +248,12 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       stream: getListeStream(),
                       builder: (context, snapshot) {
                         final items = snapshot.data ?? [];
+
+                        if (items.isEmpty) {
+                          return const Center(
+                            child: Text('Nessuna lista disponibile'),
+                          );
+                        }
 
                         return ListView.builder(
                           itemCount: items.length,
@@ -236,9 +323,22 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
                                   if (nuovoNome != null &&
                                       nuovoNome.isNotEmpty) {
+                                    final currentUid = _currentUid;
+                                    if (currentUid == null) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Effettua il login per modificare le liste',
+                                          ),
+                                        ),
+                                      );
+                                      return false;
+                                    }
                                     final docRef = FirebaseFirestore.instance
                                         .collection('users')
-                                        .doc(uid);
+                                        .doc(currentUid);
                                     final doc = await docRef.get();
                                     if (doc.exists) {
                                       final data = doc.data()!;
@@ -318,7 +418,20 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                   // Imposta la lista corrente nel carrello
                                   Carrello.instance.usaLista(items[index]);
                                   // Carica prodotti salvati su Firestore per questa lista
-                                  await Carrello.instance.caricaListaDaCloud(uid);
+                                  final uid = _currentUid;
+                                  if (uid != null) {
+                                    await Carrello.instance.caricaListaDaCloud(
+                                      uid,
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Effettua il login per sincronizzare la lista',
+                                        ),
+                                      ),
+                                    );
+                                  }
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(

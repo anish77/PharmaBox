@@ -6,11 +6,18 @@ class FirebaseLogic {
   FirebaseLogic._privateConstructor();
   static final FirebaseLogic instance = FirebaseLogic._privateConstructor();
 
-  final _logger = Logger(printer: PrettyPrinter());
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
+  final Logger _logger = Logger(printer: PrettyPrinter());
+
+  String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
 
   Future<bool> isUIDAuthorized(String uidBle) async {
     try {
+      final uid = _currentUid;
+      if (uid == null) {
+        _logger.w('isUIDAuthorized invoked without authenticated user');
+        return false;
+      }
+
       final doc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
