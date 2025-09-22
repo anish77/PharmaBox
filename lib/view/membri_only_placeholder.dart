@@ -1,34 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:pharma_box/logic/open_email.dart';
 
-class MembersOnlyPlaceholder extends StatelessWidget {
+class MembersOnlyPlaceholder extends StatefulWidget {
   const MembersOnlyPlaceholder({super.key});
-  Future<void> _askForMembership(BuildContext context) async {
-    const subject = 'Richiesta accesso membri';
-    const body = 'Ciao, vorrei diventare membro di PharmaBox.';
 
-    final uri = Uri.parse(
-      'mailto:$kMembershipEmail'
-      '?subject=${Uri.encodeComponent(subject)}'
-      '&body=${Uri.encodeComponent(body)}',
-    );
+  @override
+  State<MembersOnlyPlaceholder> createState() => _MembersOnlyPlaceholderState();
+}
 
-    if (await canLaunchUrl(uri)) {
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (launched || !context.mounted) return;
-    }
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Impossibile aprire l\'app email.')),
-    );
-    debugPrint('canLaunch: ${await canLaunchUrl(uri)}');
-  }
-
+class _MembersOnlyPlaceholderState extends State<MembersOnlyPlaceholder> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,7 +31,11 @@ class MembersOnlyPlaceholder extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             TextButton(
-              onPressed: () => _askForMembership(context),
+              onPressed: OpenEmail().contattaci(
+                context,
+                kAccessoMembri,
+                kDiventareMembro,
+              ),
               style: TextButton.styleFrom(
                 foregroundColor: kBluScuro,
                 textStyle: const TextStyle(

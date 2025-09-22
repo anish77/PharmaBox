@@ -36,8 +36,13 @@ const kForgotPassword =
     'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
 // Errori
 const kProdottoNonConsentito = 'Severe worning';
-const kUtenteNonAutorizzato = 'Utente non autorizzato, invia un email a xxxx ';
+const kUtenteNonAutorizzato =
+    'Utente non autorizzato, invia un email a $kMembershipEmail';
 const kMembershipEmail = 'annycvasniuc@yahoo.com'; //'info@pharmabox.com';
+const kAccessoMembri = 'Richiesta accesso membri';
+const kDiventareMembro = 'Ciao, vorrei diventare membro di PharmaBox.';
+const kRichiestaAssistenza = 'Richiesta assistenza PharmaBox';
+const kSupporto = 'Ciao, avrei bisogno di supporto con la mia esperienza.';
 
 // Password sicura
 // Requisiti:

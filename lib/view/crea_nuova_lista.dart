@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/invite_friend_page.dart';
 import 'package:pharma_box/view/invite_progress_page.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
@@ -10,7 +11,6 @@ import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class CreaNuovaLista extends StatefulWidget {
   const CreaNuovaLista({super.key});
@@ -24,30 +24,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   int? selectedIndex;
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
-
-  Future<void> _openContactEmail() async {
-    const subject = 'Richiesta assistenza PharmaBox';
-    const body = 'Ciao, avrei bisogno di supporto con la mia esperienza.';
-
-    final Uri mailUri = Uri(
-      scheme: 'mailto',
-      path: kMembershipEmail,
-      queryParameters: {'subject': subject, 'body': body},
-    );
-
-    if (await canLaunchUrl(mailUri)) {
-      final launched = await launchUrl(
-        mailUri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (launched || !mounted) return;
-    }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Impossibile aprire l\'app email.')),
-    );
-  }
 
   Stream<List<String>> getListeStream() {
     final uid = _currentUid;
@@ -199,7 +175,14 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 'Contattaci',
                 style: TextStyle(color: kBluScuro),
               ),
-              onTap: _openContactEmail,
+              onTap: OpenEmail().contattaci(
+                context,
+                kRichiestaAssistenza,
+                kSupporto,
+                fallbackMessage:
+                    "Impossibile aprire l'app email.\nContattaci all'indirizzo: $kMembershipEmail",
+                onFailure: () => Navigator.of(context).maybePop(),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.logout, color: kRed),
