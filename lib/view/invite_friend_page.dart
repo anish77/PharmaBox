@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
+import 'package:share_plus/share_plus.dart';
 
 class InviteFriendPage extends StatelessWidget {
   final String referralCode;
@@ -138,12 +138,18 @@ class InviteFriendPage extends StatelessWidget {
               ),
             ),
             CustomButton(
-              title: 'Invita ora',
+              title: 'Condividi ora',
               titleColor: Colors.white,
               backgroundColor: kPrimary,
-              onPressed: () {},
+              onPressed: () {
+                final message =
+                    'Registrati su $kAppName e usa il mio codice $referralCode per ricevere lo sconto!';
+                SharePlus.instance.share(
+                  ShareParams(text: message, subject: kAppName),
+                );
+              },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 45),
           ],
         ),
       ),
