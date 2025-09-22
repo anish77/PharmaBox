@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,7 @@ import 'package:pharma_box/widgets/scan_tab.dart';
 import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
+import 'package:pharma_box/widgets/gestione_prodotto.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:pharma_box/data/datacached.dart';
@@ -106,9 +109,51 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   bool _searchSubmitted = false;
   String? _lastSearchedQuery;
   bool _isSearching = false;
+  bool _isFidelityLoading = true;
+  bool _isFidelizzato = false;
 
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
+  final GestioneProdotto _gestioneProdotto = GestioneProdotto();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFidelityStatus();
+  }
+
+  Future<void> _loadFidelityStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _isFidelityLoading = false;
+        _isFidelizzato = false;
+      });
+      return;
+    }
+
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+      final data = snapshot.data();
+      final fidelizzato = (data?['fidelizzato'] ?? false) as bool;
+      if (!mounted) return;
+      setState(() {
+        _isFidelityLoading = false;
+        _isFidelizzato = fidelizzato;
+      });
+    } catch (e, stack) {
+      logger.e('Errore nel recuperare stato fidelity: $e', stackTrace: stack);
+      if (!mounted) return;
+      setState(() {
+        _isFidelityLoading = false;
+        _isFidelizzato = false;
+      });
+    }
+  }
 
   // Restituisce i filtri selezionati nell'ordine originale definito nelle costanti
   List<String> _selectedInOriginalOrder() {
@@ -560,6 +605,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                           builder: (context) {
                             switch (selectedIndex) {
                               case 0:
+                                if (_isFidelityLoading) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+                                if (!_isFidelizzato) {
+                                  return _gestioneProdotto.nonAutorizzato();
+                                }
                                 return ScanTab(
                                   isScanning: _bleScanning,
                                   statusLabel: _bleStatus,

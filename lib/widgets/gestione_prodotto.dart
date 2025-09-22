@@ -134,21 +134,23 @@ class GestioneProdotto {
 
   Widget nonAutorizzato() {
     return Padding(
-      padding: const EdgeInsets.only(top: 80),
+      padding: const EdgeInsets.only(top: 80, left: 24, right: 24),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Image.asset(
             kNotAuthorized,
-            height: 100,
-            width: 100,
+            height: 120,
+            width: 120,
             color: kBluScuro,
           ),
+          const SizedBox(height: 16),
           Text(
             kUtenteNonAutorizzato,
-            style: TextStyle(
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.normal,
+              fontWeight: FontWeight.w500,
               color: kBluScuro,
             ),
           ),

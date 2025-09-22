@@ -35,18 +35,26 @@ class _NewAccountPageState extends State<NewAccountPage> {
         password: _enteredPassword,
       );
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-            'firstName': _enteredFirstName,
-            'lastName': _enteredLastName,
-            'email': _enteredEmail,
-            'phoneNumber': _enteredPhoneNumber,
-            'uid': userCredential.user!.uid,
-            'password': _enteredPassword,
-            'liste': [],
-          });
+      final uid = userCredential.user!.uid;
+      final firestore = FirebaseFirestore.instance;
+
+      await firestore.collection('users').doc(uid).set({
+        'firstName': _enteredFirstName,
+        'lastName': _enteredLastName,
+        'email': _enteredEmail,
+        'phoneNumber': _enteredPhoneNumber,
+        'uid': uid,
+        'password': _enteredPassword,
+        'liste': [],
+        'fidelizzato': false,
+      });
+
+      // viene aggiunto in questa lista solo per sapere quanti clienti ci sono, non serve a niente questa collection
+      final fidelityRef = firestore.collection('fidelity').doc(uid);
+      final fidelitySnapshot = await fidelityRef.get();
+      if (!fidelitySnapshot.exists) {
+        await fidelityRef.set({'fidelizzato': false});
+      }
 
       logger.i('Account created: $userCredential');
       logger.i('Password: $_enteredPassword');
