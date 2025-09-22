@@ -85,6 +85,13 @@ const kScarica = 'Scarica file';
 const kDisponibileMembri = 'Disponibile solo per i membri.';
 const kDiventaMembro = 'Diventa membro';
 
+//InviteFriendPage
+const kInvitaAmico = 'Invita un amico';
+const kSconto = 'Ottieni fino a 100% di sconto sul prossimo abbonamento!';
+const kLinkRiferimento = 'Condividi il tuo link di riferimento';
+const kInvitaAmici = 'Invita amici a registrarsi';
+const kGuadagna = 'Per ogni amico invitato guadagna 10% di sconto ';
+
 // API endpoints
 const kFarmadatiEndpoint =
     'http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc';
