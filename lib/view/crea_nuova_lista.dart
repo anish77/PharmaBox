@@ -152,12 +152,19 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               decoration: BoxDecoration(color: kPrimary),
               child: Text(
                 'Menu',
-                style: TextStyle(color: Colors.white, fontSize: 20),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.group_add, color: kPrimary),
-              title: const Text('Invita un amico'),
+              title: const Text(
+                'Invita un amico',
+                style: TextStyle(color: kBluScuro),
+              ),
               onTap: () {
                 Navigator.push(
                   context,
@@ -171,7 +178,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             ),
             ListTile(
               leading: const Icon(Icons.leaderboard, color: kPrimary),
-              title: const Text('Stato inviti'),
+              title: const Text(
+                'Stato inviti',
+                style: TextStyle(color: kBluScuro),
+              ),
               onTap: () {
                 Navigator.push(
                   context,
@@ -185,7 +195,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             ),
             ListTile(
               leading: const Icon(Icons.mail_outline, color: kPrimary),
-              title: const Text('Contattaci'),
+              title: const Text(
+                'Contattaci',
+                style: TextStyle(color: kBluScuro),
+              ),
               onTap: _openContactEmail,
             ),
             ListTile(
