@@ -3,7 +3,7 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
 import 'package:pharma_box/models/prodotto.dart';
-import 'package:pharma_box/widgets/custom_button.dart';
+import 'package:pharma_box/widgets/non_autorizzato.dart';
 
 class GestioneProdotto {
   // Widget prodotto trovato
@@ -134,41 +134,6 @@ class GestioneProdotto {
   }
 
   Widget nonAutorizzato() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 40, 0, 45),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Image.asset(
-            kNotAuthorized,
-            height: 120,
-            width: 120,
-            color: kBluScuro,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            kUtenteNonAutorizzato,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: kBluScuro,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            "Piano annuale 199€/anno",
-            style: TextStyle(color: kBluScuro, fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          CustomButton(
-            title: 'Diventa membro',
-            titleColor: Colors.white,
-            backgroundColor: kPrimary,
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
+    return const NonAutorizzato();
   }
 }
