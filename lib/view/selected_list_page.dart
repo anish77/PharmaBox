@@ -550,8 +550,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             iconTheme: const IconThemeData(color: kBluScuro),
             centerTitle: false,
             titleSpacing: 0,
-            /*  actions: [
-                IconButton(
+            actions: [
+              /*   IconButton(
                 tooltip:
                     _bleScanning ? 'Interrompi scansione' : 'Avvia scanner BLE',
                 icon:
@@ -560,8 +560,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                     _bleScanning
                         ? () => FlutterBluePlus.stopScan()
                         : () => bleStartScanAndListen(ref),
-              ),
-            ],*/
+              ),*/
+            ],
           ),
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -591,7 +591,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                               selectedIndex = index!;
                               // Se torni alla tab "Cerca" (1), ripristina lo stato iniziale della ricerca
                               if (selectedIndex == 1) {
-                                productToSearch = '';
+                                /*  productToSearch = '';
                                 _searchCtrl.text = '';
                                 _risultati = [];
                                 _hideUnselectedFilters =
@@ -601,7 +601,11 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                 _searchSubmitted =
                                     false; // nascondi la riga selezionati
                                 _lastSearchedQuery =
-                                    null; // reset query cercata
+                                    null; // reset query cercata*/
+
+                                _bleScanning
+                                    ? () => FlutterBluePlus.stopScan()
+                                    : () => bleStartScanAndListen(ref);
                               }
                             });
                           },

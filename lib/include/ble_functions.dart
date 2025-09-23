@@ -124,7 +124,7 @@ String _bleDecode(List<int> bytes) {
 Future<void> bleStartScanAndListen(WidgetRef ref) async {
   await _bleEnsurePerms();
   final ok = await ensureBleReady();
-  bool bleScanning = ref.watch(bleScanningProvider);
+  final bool bleScanning = ref.read(bleScanningProvider);
   /*
   if (!ok && mounted) {
     ScaffoldMessenger.of(
@@ -178,7 +178,7 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
 
   // quando finisce lo scan (per timeout)
   FlutterBluePlus.isScanning.where((v) => v == false).first.then((_) {
-    if (ref.watch(bleScanningProvider)) {
+    if (ref.read(bleScanningProvider)) {
       ref.read(bleScanningProvider.notifier).state = false;
       ref.read(bleStatusProvider.notifier).state = "Nessun dispositivo trovato";
     }

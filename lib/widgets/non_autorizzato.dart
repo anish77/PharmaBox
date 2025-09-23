@@ -69,10 +69,10 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
               ),
               border: _buildBorder(color: kPrimary),
               enabledBorder: _effectiveBorder(),
-              focusedBorder: _effectiveBorder(width: 2),
+              focusedBorder: _effectiveBorder(width: 1),
               suffixIcon:
                   _couponValid
-                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      ? const Icon(Icons.check_circle, color: kGreen)
                       : null,
             ),
           ),
@@ -82,7 +82,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
               child: Text(
                 _couponMessage!,
                 style: TextStyle(
-                  color: _couponValid ? Colors.green : Colors.red,
+                  color: _couponValid ? kGreen : kRed,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -92,7 +92,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
             _buildPriceLabel(),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontSize: 16,
-              color: _couponValid ? Colors.green : kBluScuro,
+              color: _couponValid ? kGreen : kBluScuro,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -100,7 +100,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
           const SizedBox(height: 16),
           CustomButton(
             title: 'Diventa membro',
-            titleColor: Colors.white,
+            titleColor: kWhite,
             backgroundColor: kPrimary,
             onPressed: () => _handleSubscription(context),
           ),
@@ -114,9 +114,9 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
 
     final hasCode = _couponController.text.trim().isNotEmpty;
     if (hasCode && !_couponValid) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Il buono non è corretto.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Il codice non è corretto.')),
+      );
       return;
     }
 
@@ -157,7 +157,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
     } else {
       setState(() {
         _couponValid = false;
-        _couponMessage = 'Il buono non è corretto';
+        _couponMessage = 'Il codice non è corretto';
       });
     }
   }
@@ -172,9 +172,9 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   OutlineInputBorder _effectiveBorder({double width = 1}) {
     final Color color;
     if (_couponValid) {
-      color = Colors.green;
+      color = kGreen;
     } else if (_couponMessage != null) {
-      color = Colors.red;
+      color = kRed;
     } else {
       color = kPrimary;
     }
