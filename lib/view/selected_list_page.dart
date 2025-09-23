@@ -39,12 +39,12 @@ List<Prodotto> _parseInnerProductsXml(
       // se l'XML ha un root <Prodotti> con figli <Prodotto>...
 
       return prodotti.map((p) {
-        final codice = p.getElement('FDI_0001')?.text.trim() ?? '';
-        final minsan = p.getElement('FDI_0002')?.text.trim();
-        final nome = p.getElement('FDI_0004')?.text.trim() ?? '';
+        final codice = p.getElement('FDI_0001')?.innerText.trim() ?? '';
+        final minsan = p.getElement('FDI_0002')?.innerText.trim();
+        final nome = p.getElement('FDI_0004')?.innerText.trim() ?? '';
         final tipo_prodotto =
             CategoriaMapper.getDescrizione(
-              p.getElement('FDI_0008')?.text.trim() ?? '',
+              p.getElement('FDI_0008')?.innerText.trim() ?? '',
             ) ??
             '';
         return Prodotto(
@@ -64,8 +64,8 @@ List<Prodotto> _parseInnerProductsXml(
       // se l'XML ha un root <Prodotti> con figli <Prodotto>...
 
       return prodotti.map((p) {
-        final codice = p.getElement('FDI_T218')?.text.trim() ?? '';
-        final immagine = p.getElement('FDI_T438')?.text.trim() ?? '';
+        final codice = p.getElement('FDI_T218')?.innerText.trim() ?? '';
+        final immagine = p.getElement('FDI_T438')?.innerText.trim() ?? '';
 
         return Prodotto(
           codice: codice,
