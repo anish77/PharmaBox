@@ -93,6 +93,7 @@ class InvitaUnAmicoPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: kBluScuro
                       ),
                       textAlign: TextAlign.center,
                     ),
