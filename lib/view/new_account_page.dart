@@ -37,6 +37,9 @@ class _NewAccountPageState extends State<NewAccountPage> {
 
       final uid = userCredential.user!.uid;
       final firestore = FirebaseFirestore.instance;
+      final expirationDate = DateTime(
+        1970,
+      ); //--> Data espirata cosi deve fare l'upgrade
 
       await firestore.collection('users').doc(uid).set({
         'firstName': _enteredFirstName,
@@ -47,6 +50,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
         'password': _enteredPassword,
         'liste': [],
         'isActive': false,
+        'expirationDate': Timestamp.fromDate(expirationDate),
       });
 
       // viene aggiunto in questa lista solo per sapere quanti clienti ci sono, non serve a niente questa collection
