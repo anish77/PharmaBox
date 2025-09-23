@@ -37,7 +37,7 @@ const kForgotPassword =
 // Errori
 const kProdottoNonConsentito = 'Severe worning';
 const kUtenteNonAutorizzato =
-    'Questa sezione è riservata ai membri. Accedi o attiva l’abbonamento per continuare.';
+    'Questa sezione è riservata ai membri. Attiva l’abbonamento per continuare.';
 const kMembershipEmail = 'annycvasniuc@yahoo.com'; //'info@pharmabox.com';
 const kAccessoMembri = 'Richiesta accesso membri';
 const kDiventareMembro = 'Ciao, vorrei diventare membro di PharmaBox.';

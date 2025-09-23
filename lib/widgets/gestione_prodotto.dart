@@ -135,7 +135,7 @@ class GestioneProdotto {
 
   Widget nonAutorizzato() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 45),
+      padding: const EdgeInsets.fromLTRB(0, 40, 0, 45),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
