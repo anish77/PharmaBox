@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 const kAbbonamento = 199;
+const kBuonoSconto = "123SCONTO";
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
 
