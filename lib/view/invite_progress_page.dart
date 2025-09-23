@@ -64,7 +64,7 @@ class InviteProgressPage extends StatelessWidget {
             Text(
               invitedFriends == 0
                   ? "Non hai ancora invitato nessuno"
-                  : "Hai invitato $invitedFriends amico${invitedFriends > 1 ? 'i' : ''}",
+                  : "Hai invitato $invitedFriends amic${invitedFriends == 1 ? 'o' : 'i'}",
               style: const TextStyle(fontSize: 18),
             ),
 

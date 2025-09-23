@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/logic/open_email.dart';
-import 'package:pharma_box/view/invite_friend_page.dart';
+import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/view/invite_progress_page.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/widgets/carrello.dart';
@@ -146,8 +146,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   context,
                   MaterialPageRoute(
                     builder:
-                        (context) =>
-                            const InviteFriendPage(referralCode: '123'),
+                        (context) => const StatoAmiciPage(referralCode: '123'),
                   ),
                 );
               },
@@ -164,7 +163,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   MaterialPageRoute(
                     builder:
                         (context) =>
-                            const InviteProgressPage(invitedFriends: 3),
+                            const InviteProgressPage(invitedFriends: 0),
                   ),
                 );
               },

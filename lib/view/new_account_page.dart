@@ -46,14 +46,14 @@ class _NewAccountPageState extends State<NewAccountPage> {
         'uid': uid,
         'password': _enteredPassword,
         'liste': [],
-        'fidelizzato': false,
+        'isActive': false,
       });
 
       // viene aggiunto in questa lista solo per sapere quanti clienti ci sono, non serve a niente questa collection
       final fidelityRef = firestore.collection('fidelity').doc(uid);
       final fidelitySnapshot = await fidelityRef.get();
       if (!fidelitySnapshot.exists) {
-        await fidelityRef.set({'fidelizzato': false});
+        await fidelityRef.set({'isActive': false});
       }
 
       logger.i('Account created: $userCredential');

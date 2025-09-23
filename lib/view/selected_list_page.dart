@@ -110,7 +110,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   String? _lastSearchedQuery;
   bool _isSearching = false;
   bool _isFidelityLoading = true;
-  bool _isFidelizzato = false;
+  bool _isAccountActive = false;
 
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
@@ -127,7 +127,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     if (user == null) {
       setState(() {
         _isFidelityLoading = false;
-        _isFidelizzato = false;
+        _isAccountActive = false;
       });
       return;
     }
@@ -139,18 +139,18 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
               .doc(user.uid)
               .get();
       final data = snapshot.data();
-      final fidelizzato = (data?['fidelizzato'] ?? false) as bool;
+      final isActive = (data?['isActive'] ?? false) as bool;
       if (!mounted) return;
       setState(() {
         _isFidelityLoading = false;
-        _isFidelizzato = fidelizzato;
+        _isAccountActive = isActive;
       });
     } catch (e, stack) {
       logger.e('Errore nel recuperare stato fidelity: $e', stackTrace: stack);
       if (!mounted) return;
       setState(() {
         _isFidelityLoading = false;
-        _isFidelizzato = false;
+        _isAccountActive = false;
       });
     }
   }
@@ -610,7 +610,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     child: CircularProgressIndicator(),
                                   );
                                 }
-                                if (!_isFidelizzato) {
+                                if (!_isAccountActive) {
                                   return _gestioneProdotto.nonAutorizzato();
                                 }
                                 return ScanTab(

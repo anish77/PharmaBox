@@ -3,10 +3,10 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:share_plus/share_plus.dart';
 
-class InviteFriendPage extends StatelessWidget {
+class StatoAmiciPage extends StatelessWidget {
   final String referralCode;
 
-  const InviteFriendPage({super.key, required this.referralCode});
+  const StatoAmiciPage({super.key, required this.referralCode});
 
   Widget _buildStep({
     required Widget indicator,
