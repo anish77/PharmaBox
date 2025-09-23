@@ -539,7 +539,15 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       children: [
         Scaffold(
           appBar: AppBar(
-            title: Text(widget.titolo),
+            title: Text(
+              widget.titolo,
+              style: TextStyle(
+                color: kBluScuro,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            iconTheme: const IconThemeData(color: kBluScuro),
             centerTitle: false,
             titleSpacing: 0,
             /*  actions: [
