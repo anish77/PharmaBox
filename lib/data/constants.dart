@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 const kAbbonamento = 199;
 const kBuonoSconto10 = "SCONTO di 10%";
+const kSconto10 = 0.10;
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
 
