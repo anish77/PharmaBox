@@ -4,18 +4,18 @@ import 'package:pharma_box/data/constants.dart';
 
 class StatoInvitiPage extends StatelessWidget {
   final int invitedFriends; // numero di amici invitati
-  final int totalFriendsNeeded; // per esempio 5 amici per avere 100% gratis
+  final int totalFriendsNeeded; // per esempio 10 amici per avere 100% gratis
 
   const StatoInvitiPage({
     super.key,
     required this.invitedFriends,
-    this.totalFriendsNeeded = 5,
+    this.totalFriendsNeeded = 10,
   });
 
   @override
   Widget build(BuildContext context) {
     // Calcolo dello sconto
-    final double discountPerFriend = 0.20; // 20% per amico
+    final double discountPerFriend = kSconto10; // 10% per amico
     double discount = invitedFriends * discountPerFriend;
     if (discount > 1) discount = 1; // massimo 100%
 
