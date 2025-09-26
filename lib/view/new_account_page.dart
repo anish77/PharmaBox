@@ -36,6 +36,10 @@ class _NewAccountPageState extends State<NewAccountPage> {
       );
 
       final uid = userCredential.user!.uid;
+      final codiceInvito = uid.substring(
+        10,
+        16,
+      ); // dalla posizione 11 fino a 16
       final firestore = FirebaseFirestore.instance;
       final expirationDate = DateTime(
         1970,
@@ -51,17 +55,10 @@ class _NewAccountPageState extends State<NewAccountPage> {
         'liste': [],
         'isActive': false,
         'expirationDate': Timestamp.fromDate(expirationDate),
+        'codiceInvito': codiceInvito,
       });
 
-      // viene aggiunto in questa lista solo per sapere quanti clienti ci sono, non serve a niente questa collection
-      final fidelityRef = firestore.collection('fidelity').doc(uid);
-      final fidelitySnapshot = await fidelityRef.get();
-      if (!fidelitySnapshot.exists) {
-        await fidelityRef.set({'isActive': false});
-      }
-
       logger.i('Account created: $userCredential');
-      logger.i('Password: $_enteredPassword');
       logger.i(
         'info: ${userCredential.user!.uid}, $_enteredEmail, $_enteredFirstName, $_enteredLastName, $_enteredPhoneNumber',
       );

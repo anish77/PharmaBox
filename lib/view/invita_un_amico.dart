@@ -93,7 +93,7 @@ class InvitaUnAmicoPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: kBluScuro
+                        color: kBluScuro,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -156,7 +156,7 @@ class InvitaUnAmicoPage extends StatelessWidget {
               backgroundColor: kPrimary,
               onPressed: () {
                 final message =
-                    'Registrati su $kAppName e usa il mio codice $referralCode per ricevere lo sconto!';
+                    'Registrati su $kAppName e usa il mio codice $referralCode per ricevere lo $kBuonoSconto10 !';
                 SharePlus.instance.share(
                   ShareParams(text: message, subject: kAppName),
                 );

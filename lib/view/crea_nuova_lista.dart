@@ -24,6 +24,38 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   int? selectedIndex;
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
+  String referralCode = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _caricaReferralCode();
+  }
+
+  Future<void> _caricaReferralCode() async {
+    final uid = _currentUid;
+    if (uid == null) {
+      _logger.w('_caricaReferralCode invoked without authenticated user');
+      return;
+    }
+
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data();
+      final rawCode = data?['codiceInvito'];
+      final codice = rawCode is String ? rawCode : rawCode?.toString() ?? '';
+
+      if (!mounted) return;
+      setState(() {
+        referralCode = codice;
+      });
+    } catch (errore, stackTrace) {
+      _logger.e('Errore nel recuperare il codice invito, $errore, $stackTrace');
+    }
+  }
 
   Stream<List<String>> getListeStream() {
     final uid = _currentUid;
@@ -147,7 +179,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   MaterialPageRoute(
                     builder:
                         (context) =>
-                            const InvitaUnAmicoPage(referralCode: '123'),
+                            InvitaUnAmicoPage(referralCode: referralCode),
                   ),
                 );
               },
