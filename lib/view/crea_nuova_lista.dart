@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
   String referralCode = "";
+  int nrAmiciInvitati = 0;
 
   @override
   void initState() {
@@ -46,11 +49,13 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
       final data = snapshot.data();
       final rawCode = data?['codiceInvito'];
+      final rowCodeAmici = data?['nrAmiciInvitati'];
       final codice = rawCode is String ? rawCode : rawCode?.toString() ?? '';
 
       if (!mounted) return;
       setState(() {
         referralCode = codice;
+        nrAmiciInvitati = rowCodeAmici;
       });
     } catch (errore, stackTrace) {
       _logger.e('Errore nel recuperare il codice invito, $errore, $stackTrace');
@@ -195,7 +200,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   context,
                   MaterialPageRoute(
                     builder:
-                        (context) => const StatoInvitiPage(invitedFriends: 0),
+                        (context) =>
+                            StatoInvitiPage(invitedFriends: nrAmiciInvitati),
                   ),
                 );
               },
