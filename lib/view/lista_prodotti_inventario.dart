@@ -115,7 +115,7 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                 ),
               ),
               pw.SizedBox(height: 16),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 headers: ['Nome prodotto', 'Minsan', 'Pezzi'],
                 data:
                     items
@@ -173,7 +173,9 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
 
     final xFile = XFile(file.path, mimeType: mimeType, name: filename);
 
-    await Share.shareXFiles([xFile]);
+    await SharePlus.instance.share(
+      ShareParams(files: [xFile], subject: widget.titolo),
+    );
   }
 
   @override
