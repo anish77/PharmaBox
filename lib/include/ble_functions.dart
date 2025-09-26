@@ -4,11 +4,13 @@ import 'dart:io';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/web.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pharma_box/main.dart';
 import '../include/general_functions.dart';
 // rimuoviamo la dipendenza diretta dalla pagina UI per evitare cicli di import
 
+var logger = Logger(printer: PrettyPrinter());
 Future<bool> ensureBleReady() async {
   // 1. Permessi
   final statuses =
@@ -151,8 +153,8 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
       //logger.i(results.length);
       for (final r in results) {
         // 👉 Se conosci il nome del tuo scanner, filtra:
-        // if (r.device.platformName != 'NOME_TUO_SCANNER') continue;
-        //logger.i(r.advertisementData);
+        //if (r.device.platformName != 'NOME_TUO_SCANNER') continue;
+        logger.i(r.device);
 
         //if (r.device.remoteId.str != '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B')
         if (r.device.platformName != 'BarCode Scanner BLE') continue;
@@ -201,8 +203,8 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
   // check serial
   final serial = await readSerialNumber(dev);
 
-  //logger.i("SERIALE:");
-  //logger.i(serial);
+  logger.i("SERIALE:");
+  logger.i(serial);
 
   //setState(() => _bleStatus = 'Discover services…');
   ref.read(bleStatusProvider.notifier).state = "Discovering services...";
