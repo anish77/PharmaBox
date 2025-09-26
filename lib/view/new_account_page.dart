@@ -36,10 +36,8 @@ class _NewAccountPageState extends State<NewAccountPage> {
       );
 
       final uid = userCredential.user!.uid;
-      final codiceInvito = uid.substring(
-        10,
-        16,
-      ); // dalla posizione 11 fino a 16
+      final codiceInvito =
+          uid.substring(10, 16).toUpperCase(); // dalla posizione 11 fino a 16
       final firestore = FirebaseFirestore.instance;
       final expirationDate = DateTime(
         1970,

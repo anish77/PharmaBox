@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
@@ -10,7 +11,6 @@ class NonAutorizzato extends StatefulWidget {
 }
 
 class _NonAutorizzatoState extends State<NonAutorizzato> {
-  static const String _validCoupon = '123SCONTO';
   static const double _discountPercent = 0.10;
 
   final TextEditingController _couponController = TextEditingController();
@@ -58,11 +58,13 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
                 });
               }
             },
-            onSubmitted: _validateCoupon,
+            onSubmitted: (value) {
+              _validateCoupon(value);
+            },
             decoration: InputDecoration(
-              labelText: 'Inserisci il buono sconto',
+              labelText: 'Inserisci il codice invito',
               labelStyle: const TextStyle(color: kBluScuro),
-              hintText: 'Codice buono',
+              hintText: 'Codice invito',
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
@@ -110,7 +112,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   }
 
   Future<void> _handleSubscription(BuildContext context) async {
-    _validateCoupon(_couponController.text);
+    await _validateCoupon(_couponController.text);
 
     final hasCode = _couponController.text.trim().isNotEmpty;
     if (hasCode && !_couponValid) {
@@ -135,9 +137,12 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
     await _showPaymentOptions(context);
   }
 
-  void _validateCoupon(String value) {
-    final code = value.trim().toUpperCase();
-    if (code.isEmpty) {
+  Future<void> _validateCoupon(String value) async {
+    final rawInput = value.trim();
+    final upperInput = rawInput.toUpperCase();
+    final lowerInput = rawInput.toLowerCase();
+
+    if (rawInput.isEmpty) {
       setState(() {
         _couponValid = false;
         _couponMessage = null;
@@ -145,19 +150,51 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       return;
     }
 
-    if (code == _validCoupon) {
-      setState(() {
-        _couponValid = true;
-        _couponMessage = 'Buono applicato (-10%)';
-        _couponController.value = _couponController.value.copyWith(
-          text: code,
-          selection: TextSelection.collapsed(offset: code.length),
-        );
-      });
-    } else {
+    try {
+      final users = FirebaseFirestore.instance.collection('users');
+
+      QuerySnapshot<Map<String, dynamic>> query =
+          await users.where('codiceInvito', isEqualTo: rawInput).limit(1).get();
+
+      if (query.docs.isEmpty && upperInput != rawInput) {
+        query =
+            await users
+                .where('codiceInvito', isEqualTo: upperInput)
+                .limit(1)
+                .get();
+      }
+
+      if (query.docs.isEmpty &&
+          lowerInput != rawInput &&
+          lowerInput != upperInput) {
+        query =
+            await users
+                .where('codiceInvito', isEqualTo: lowerInput)
+                .limit(1)
+                .get();
+      }
+
+      final isValid = query.docs.isNotEmpty;
+
+      if (isValid) {
+        setState(() {
+          _couponValid = true;
+          _couponMessage = 'Buono applicato (-10%)';
+          _couponController.value = _couponController.value.copyWith(
+            text: upperInput,
+            selection: TextSelection.collapsed(offset: upperInput.length),
+          );
+        });
+      } else {
+        setState(() {
+          _couponValid = false;
+          _couponMessage = 'Il codice non è corretto';
+        });
+      }
+    } catch (errore) {
       setState(() {
         _couponValid = false;
-        _couponMessage = 'Il codice non è corretto';
+        _couponMessage = 'Errore nella verifica, riprova.';
       });
     }
   }
