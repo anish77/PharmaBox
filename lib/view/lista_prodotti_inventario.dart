@@ -24,7 +24,6 @@ class ListaProdottiInventario extends StatefulWidget {
 class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
   int? _highlightedIndex;
 
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -36,8 +35,7 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
             builder: (context, prodotti, _) {
               // Ordina alfabeticamente per titolo (case-insensitive)
               final sorted = List<Prodotto>.from(prodotti)..sort(
-                (a, b) =>
-                    a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+                (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
               );
               final bottomInset = MediaQuery.of(context).padding.bottom;
               return ListView.builder(
@@ -102,7 +100,9 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                 titleColor: kWhite,
                 backgroundColor: kPrimary,
                 onPressed:
-                    () {}, //prodotti.isEmpty ? null : () => _showExportSheet(context),
+                    prodotti.isEmpty
+                        ? null
+                        : () {}, 
               );
             },
           ),
