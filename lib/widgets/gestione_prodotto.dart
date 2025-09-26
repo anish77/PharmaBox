@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
@@ -6,6 +7,7 @@ import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/non_autorizzato.dart';
 
 class GestioneProdotto {
+  var logger = Logger(printer: PrettyPrinter());
   // Widget prodotto trovato
   Widget prodottoTrovato() {
     // Creo il prodotto da aggiungere
@@ -85,7 +87,7 @@ class GestioneProdotto {
                           onChanged: (newValue) {
                             prodotto.pezzi.value = newValue;
                             Carrello.instance.aggiungiProdotto(prodotto);
-                            print("Valore aggiornato: $newValue");
+                            logger.i("Valore aggiornato: $newValue");
                           },
                         );
                       },

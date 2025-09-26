@@ -24,6 +24,7 @@ import 'package:xml/xml.dart' as xml;
 import 'package:pharma_box/data/datacached.dart';
 import '../include/general_functions.dart';
 
+var logger = Logger(printer: PrettyPrinter());
 enum DatasetKind { tr001, tdz }
 
 List<Prodotto> _parseInnerProductsXml(
@@ -300,7 +301,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         minsan: _parseInnerProductsXml(inner2, DatasetKind.tdz).first.codice,
         imageUrl: imageurl,
       );
-      print(cdnUrl);
+      logger.i(cdnUrl);
     }
   }
 
@@ -345,7 +346,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       );
       return _parseInnerProductsXml(inner, DatasetKind.tr001);
     } catch (errore) {
-      print(errore);
+      logger.e(errore);
       return [];
     }
   }

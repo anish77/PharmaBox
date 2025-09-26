@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 
+var logger = Logger(printer: PrettyPrinter());
 /// 32^5 = 33.554.432
 final int _nNumero32Start = 33554432;
 
@@ -91,7 +93,7 @@ Future<String?> r2IngestImageByUrl({
       return data['origUrl'] as String;
     }
   } catch (errore) {
-    print(errore);
+    logger.e(errore);
   }
   return null;
 }
