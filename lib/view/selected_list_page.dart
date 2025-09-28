@@ -24,63 +24,9 @@ import 'package:xml/xml.dart' as xml;
 import 'package:pharma_box/data/datacached.dart';
 import '../include/general_functions.dart';
 
-enum DatasetKind { tr001, tdz }
 
-List<Prodotto> _parseInnerProductsXml(
-  String innerXml,
-  DatasetKind dataSetSchema,
-) {
-  final innerDoc = xml.XmlDocument.parse(innerXml);
-  final prodotti = innerDoc.findAllElements('Product');
 
-  switch (dataSetSchema) {
-    case DatasetKind.tr001:
 
-      // se l'XML ha un root <Prodotti> con figli <Prodotto>...
-
-      return prodotti.map((p) {
-        final codice = p.getElement('FDI_0001')?.innerText.trim() ?? '';
-        final minsan = p.getElement('FDI_0002')?.innerText.trim();
-        final nome = p.getElement('FDI_0004')?.innerText.trim() ?? '';
-        final tipo_prodotto =
-            CategoriaMapper.getDescrizione(
-              p.getElement('FDI_0008')?.innerText.trim() ?? '',
-            ) ??
-            '';
-        return Prodotto(
-          codice: codice,
-          nome: nome,
-          tipo_prodotto: tipo_prodotto,
-          minsan: (minsan != null && minsan.isNotEmpty) ? minsan : codice,
-          immagine: '',
-          pezzi: 1,
-          consentito: true,
-          description: '',
-          ingredients: '',
-          howToTake: '',
-        );
-      }).toList();
-    case DatasetKind.tdz:
-      // se l'XML ha un root <Prodotti> con figli <Prodotto>...
-
-      return prodotti.map((p) {
-        final codice = p.getElement('FDI_T218')?.innerText.trim() ?? '';
-        final immagine = p.getElement('FDI_T438')?.innerText.trim() ?? '';
-
-        return Prodotto(
-          codice: codice,
-          immagine: immagine,
-          nome: '',
-          minsan: codice,
-          pezzi: 1,
-          consentito: true,
-          description: '',
-          ingredients: '',
-          howToTake: '',
-        );
-      }).toList();
-  }
-}
 
 class SelectedListPage extends ConsumerStatefulWidget {
   const SelectedListPage({
@@ -173,182 +119,9 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   }
 
   int get _totaleQta => _qta.values.fold(0, (a, b) => a + b);
-  // initState non usa più ref.listen; listener spostato nel build
-  // de-escape XML tipo "&lt;Prodotti&gt;...&lt;/Prodotti&gt;"
-  String _xmlUnescape(String s) => s
-      .replaceAll('&lt;', '<')
-      .replaceAll('&gt;', '>')
-      .replaceAll('&amp;', '&')
-      .replaceAll('&quot;', '"')
-      .replaceAll('&apos;', "'");
+  
 
-  // prova a trovare il <soap:Body> (SOAP 1.1 o 1.2)
-  xml.XmlElement? _findSoapBody(xml.XmlDocument doc) {
-    final body11 = doc.findAllElements(
-      'Body',
-      namespace: 'http://schemas.xmlsoap.org/soap/envelope/',
-    );
-    if (body11.isNotEmpty) return body11.first;
-
-    final body12 = doc.findAllElements(
-      'Body',
-      namespace: 'http://www.w3.org/2003/05/soap-envelope',
-    );
-    if (body12.isNotEmpty) return body12.first;
-
-    // fallback senza namespace (non standard ma utile in test)
-    final any = doc.findAllElements('Body');
-    return any.isNotEmpty ? any.first : null;
-  }
-
-  /// Estrae la stringa XML annidata:
-  /// - Se c’è CDATA: prende il contenuto cdata
-  /// - Se è escapato: fa unescape
-  /// - Se l’XML è direttamente annidato come sotto-elementi, restituisce l’outerXML di quel nodo
-  String? _extractInnerXmlFromSoap(String soapXml) {
-    final doc = xml.XmlDocument.parse(soapXml);
-    final body = _findSoapBody(doc);
-    if (body == null) return null;
-
-    // Cerca un nodo "Result" o "Response" che tipicamente contiene l'XML annidato
-    final candidates =
-        body.descendants
-            .whereType<xml.XmlElement>()
-            .where((e) => e.name.local.endsWith('OutputValue'))
-            .toList();
-
-    if (candidates.isEmpty) {
-      // fallback: prendi il primo figlio del Body
-      final first = body.children.whereType<xml.XmlElement>().toList();
-      if (first.isEmpty) return null;
-      // se ha CDATA o testo con &lt;...&gt; lo gestiamo sotto
-      final text =
-          first.first.descendants
-              .whereType<xml.XmlText>()
-              .map((t) => t.text)
-              .join()
-              .trim();
-      if (text.contains('<') || text.contains('&lt;')) {
-        return text.contains('&lt;') ? _xmlUnescape(text) : text;
-      }
-      // altrimenti potremmo avere già XML annidato come elementi: prendi l'outer XML del sottoalbero
-      return first.first.toXmlString();
-    }
-
-    final node = candidates.first;
-
-    // 1) CDATA?
-    final cdataText =
-        node.children
-            .whereType<xml.XmlCDATA>()
-            .map((c) => c.text.trim())
-            .join();
-    if (cdataText.isNotEmpty) return cdataText;
-
-    // 2) Testo escapato?
-    final text =
-        node.descendants
-            .whereType<xml.XmlText>()
-            .map((t) => t.text)
-            .join()
-            .trim();
-    if (text.isNotEmpty) {
-      return text.contains('&lt;') ? _xmlUnescape(text) : text;
-    }
-
-    // 3) XML direttamente annidato come elementi
-    final firstChildElem = node.children.whereType<xml.XmlElement>().toList();
-    if (firstChildElem.isNotEmpty) {
-      // restituisce l'outer xml del sottoalbero
-      return firstChildElem.first.toXmlString();
-    }
-
-    return null;
-  }
-
-  Future<String> _postXml(String endpoint, String xmlBody) async {
-    final uri = Uri.parse(endpoint);
-    final resp = await http
-        .post(
-          uri,
-          headers: kFarmadatiSoapHeaders,
-          body: xmlBody, // assicuri UTF-8
-        )
-        .timeout(const Duration(seconds: 12));
-
-    if (resp.statusCode != 200) {
-      throw Exception('HTTP ${resp.statusCode}: ${resp.body}');
-    }
-    logger.i(utf8.decode(resp.bodyBytes));
-    return utf8.decode(resp.bodyBytes); // risposta come XML string
-  }
-
-  Future<void> _getOrPutImage(String minsan) async {
-    String xmlBodyImage = buildSearchXml(minsan, kind: SearchKind.immagine);
-
-    String xmlResp2 = await _postXml(kFarmadatiEndpoint, xmlBodyImage);
-
-    String? inner2 = _extractInnerXmlFromSoap(xmlResp2);
-
-    if (inner2 != null && inner2 != "EMPTY") {
-      String imagefilename =
-          _parseInnerProductsXml(inner2, DatasetKind.tdz).first.immagine ?? "";
-      String imageurl =
-          "https://ws.farmadati.it/WS_DOC/GetDoc.aspx?accesskey=epxD67iZR&tipodoc=Z&nomefile=$imagefilename";
-
-      String? cdnUrl = await r2IngestImageByUrl(
-        minsan: _parseInnerProductsXml(inner2, DatasetKind.tdz).first.codice,
-        imageUrl: imageurl,
-      );
-      print(cdnUrl);
-    }
-  }
-
-  Future<List<Prodotto>> _doSearch(String q) async {
-    try {
-      if (q.length > 6 && RegExp(r'^[0-9]+$').hasMatch(q)) {
-        String xmlEanBody = buildSearchXml(q, kind: SearchKind.ean);
-        String eanList = await _postXml(kFarmadatiEndpoint, xmlEanBody);
-        String? inner = _extractInnerXmlFromSoap(eanList);
-        if (inner == null) return [];
-        List<Prodotto> listaEan = _parseInnerProductsXml(
-          inner,
-          DatasetKind.tr001,
-        );
-
-        List<Prodotto> Minsan = [];
-
-        for (var prodotto in listaEan) {
-          String xmlBody = buildSearchXml(
-            prodotto.codice,
-            kind: SearchKind.prodotti,
-          );
-          String xmlResp = await _postXml(kFarmadatiEndpoint, xmlBody);
-          String? inner = _extractInnerXmlFromSoap(xmlResp);
-          if (inner != null) {
-            Minsan.add(_parseInnerProductsXml(inner, DatasetKind.tr001).first);
-
-            _getOrPutImage(
-              _parseInnerProductsXml(inner, DatasetKind.tr001).first.codice,
-            );
-          }
-        }
-        logger.i(Minsan.length);
-        return Minsan;
-      }
-      final xmlBody = buildSearchXml(q, kind: SearchKind.prodotti);
-      final xmlResp = await _postXml(kFarmadatiEndpoint, xmlBody);
-      final inner = _extractInnerXmlFromSoap(xmlResp);
-      if (inner == null) return [];
-      _getOrPutImage(
-        _parseInnerProductsXml(inner, DatasetKind.tr001).first.codice,
-      );
-      return _parseInnerProductsXml(inner, DatasetKind.tr001);
-    } catch (errore) {
-      print(errore);
-      return [];
-    }
-  }
+  
 
   void _aggiungi(Prodotto p) {
     setState(() {
@@ -381,7 +154,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     });
 
     try {
-      final prelim = await _doSearch(query);
+      final prelim = await doSearch(query);
       if (!mounted) return;
 
       if (prelim.isEmpty) {

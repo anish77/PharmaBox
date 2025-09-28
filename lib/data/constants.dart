@@ -37,7 +37,7 @@ const kForgotPasswordTitle = 'Password dimenticata';
 const kForgotPassword =
     'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
 // Errori
-const kProdottoNonConsentito = 'Severe worning';
+const kProdottoNonConsentito = 'Severe warning';
 const kUtenteNonAutorizzato =
     'Questa sezione è riservata ai membri. Attiva l’abbonamento per continuare.';
 const kMembershipEmail = 'annycvasniuc@yahoo.com'; //'info@pharmabox.com';
@@ -100,7 +100,7 @@ const kFarmadatiEndpoint =
 
 // Cloudflare R2 integration (configura questi valori nel tuo ambiente)
 // Dominio pubblico (CDN) collegato al bucket R2 "prod-images"
-const kR2CdnBaseUrl = 'https://www.doublecore.it';
+const kR2CdnBaseUrl = 'https://doublecore.it';
 // Endpoint del Worker per l'ingest (POST /ingest)
 const kR2IngestEndpoint =
     'https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest';
@@ -112,3 +112,9 @@ const kFarmadatiSoapHeaders = {
   'SOAPAction':
       'http://webservices.farmadati.it/FarmadatiItaliaWebServicesM1/ExecuteQuery',
 };
+
+
+const kBugiardinoMonografieBase = 'http://api.doublecore.it/pdf_html';
+const kBugiardinoUploadEndpoint = 'http://api.doublecore.it/uploader.php';
+
+enum DatasetKind { tr001, tdz, tdf, td1 }
