@@ -44,6 +44,12 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/app_icon_512x512.png
+  adaptive_icon_background: "#ffffff" # colore sfondo per Android
+  adaptive_icon_foreground: assets/app_icon_512x512.png
 # The following section is specific to Flutter packages.
 flutter:
 
@@ -59,6 +65,7 @@ flutter:
     - assets/lock.png
     - assets/scanCode.png
     - assets/bluetooth.png
+    - assets/app_icon_512x512.png
  
 
   # An image asset can refer to one or more resolution-specific "variants", see
