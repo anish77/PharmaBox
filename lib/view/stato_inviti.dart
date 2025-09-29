@@ -41,6 +41,8 @@ class StatoInvitiPage extends StatelessWidget {
         final double percentToPay = toPay.clamp(0.0, 1.0).toDouble();
         final bool canPop = Navigator.of(context).canPop();
 
+        final showsCongratulation = percentToPay <= 0.0;
+
         return Scaffold(
           appBar: AppBar(
             leading:
@@ -60,6 +62,7 @@ class StatoInvitiPage extends StatelessWidget {
             ),
             centerTitle: false,
             iconTheme: const IconThemeData(color: kBluScuro),
+            backgroundColor: kBackGround,
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -67,22 +70,38 @@ class StatoInvitiPage extends StatelessWidget {
               children: [
                 const SizedBox(height: 30),
 
-                // Cerchio di progresso
-                CircularPercentIndicator(
-                  radius: 100.0,
-                  lineWidth: 16.0,
-                  percent: percentToPay,
-                  center: Text(
-                    "${(percentToPay * 100).toInt()}%",
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                if (showsCongratulation)
+                  Column(
+                    children: [
+                      Image.asset(kCongratulazioni, height: 250, width: 250),
+                      SizedBox(height: 12),
+                      Text(
+                        'Congratulazioni! \nHai ricevuto un abbonamento in omaggio.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: kBluScuro,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  CircularPercentIndicator(
+                    radius: 100.0,
+                    lineWidth: 16.0,
+                    percent: percentToPay,
+                    center: Text(
+                      "${(percentToPay * 100).toInt()}%",
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                    progressColor: kPrimary,
+                    backgroundColor: Colors.deepPurple.shade100,
+                    circularStrokeCap: CircularStrokeCap.round,
                   ),
-                  progressColor: kPrimary,
-                  backgroundColor: Colors.deepPurple.shade100,
-                  circularStrokeCap: CircularStrokeCap.round,
-                ),
 
                 const SizedBox(height: 20),
 
@@ -119,12 +138,12 @@ class StatoInvitiPage extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Messaggio motivazionale
-                Text(
-                  "Invita altri amici per ridurre ancora il costo dell’abbonamento!",
-                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                  textAlign: TextAlign.center,
-                ),
+                if (!showsCongratulation)
+                  Text(
+                    "Invita altri amici per ridurre ancora il costo dell’abbonamento!",
+                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                    textAlign: TextAlign.center,
+                  ),
 
                 const SizedBox(height: 20),
               ],

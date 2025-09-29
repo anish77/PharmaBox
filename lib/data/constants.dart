@@ -12,6 +12,7 @@ const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
 const kNotAuthorized = 'assets/lock.png';
+const kCongratulazioni = 'assets/congratulazioni.png';
 
 //colors
 const kPrimary = Color(0xFF5D5FEF);
