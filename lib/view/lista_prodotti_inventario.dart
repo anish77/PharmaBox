@@ -50,7 +50,8 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
         .map(
           (prodotto) => _ExportEntry(
             name: prodotto.nome,
-            minsan: prodotto.minsan,
+            minsan:
+                prodotto.codice.isNotEmpty ? prodotto.codice : prodotto.minsan,
             quantity: prodotto.pezzi.value,
           ),
         )

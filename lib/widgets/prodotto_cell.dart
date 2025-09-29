@@ -31,6 +31,8 @@ class ProdottoCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mostraQuantita = (inListQty ?? 0) > 0;
+    final codiceDaMostrare =
+        prodotto.codice.isNotEmpty ? prodotto.codice : prodotto.minsan;
 
     const actionWidth = 120.0;
     const actionHeight = 40.0;
@@ -53,7 +55,7 @@ class ProdottoCell extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           if (!prodotto.consentito)
                             Container(
@@ -82,12 +84,17 @@ class ProdottoCell extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        prodotto.codice,
-                        maxLines: 1,
-                        softWrap: true,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: kBluScuro),
+                      Row(
+                        children: [
+                          if (!prodotto.consentito) const SizedBox(width: 18),
+                          Text(
+                            codiceDaMostrare,
+                            maxLines: 1,
+                            softWrap: true,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: kBluScuro),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -101,7 +108,9 @@ class ProdottoCell extends StatelessWidget {
                         mostraQuantita
                             ? CounterButton(
                               // Include la quantità nella key per forzare il rebuild quando cambia esternamente
-                              key: ValueKey('list-${prodotto.minsan}-${inListQty ?? 0}'),
+                              key: ValueKey(
+                                'list-${prodotto.minsan}-${inListQty ?? 0}',
+                              ),
                               initialValue: inListQty ?? 0,
                               height: actionHeight,
                               width: actionWidth,
