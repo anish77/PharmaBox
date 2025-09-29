@@ -199,46 +199,42 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                 itemBuilder: (context, index) {
                   final prodotto = sorted[index];
                   // print("lista prodotti - ${prodotto.titolo}");
-                  return InkWell(
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    hoverColor: Colors.transparent,
-                    focusColor: Colors.transparent,
-                    splashFactory: NoSplash.splashFactory,
-                    onTap: () async {
-                      setState(() => _highlightedIndex = index);
-                      // Mostra l'evidenziazione prima di navigare
-                      await Future.delayed(const Duration(milliseconds: 120));
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => ProductDetails(
-                                title: prodotto.nome,
-                                nrListe: widget.nrListe,
-                                prodotto: prodotto,
-                                popOnAdd: false,
-                              ),
-                        ),
+                  return ValueListenableBuilder<int>(
+                    valueListenable: prodotto.pezzi,
+                    builder: (context, value, _) {
+                      return ProdottoCell(
+                        prodotto: prodotto,
+                        inListQty: value,
+                        selected: _highlightedIndex == index,
+                        onQuantityChanged: (newValue) {
+                          Carrello.instance.aggiornaQuantita(
+                            prodotto,
+                            newValue,
+                          );
+                        },
+                        onInfoTap: () async {
+                          setState(() => _highlightedIndex = index);
+                          await Future.delayed(
+                            const Duration(milliseconds: 120),
+                          );
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => ProductDetails(
+                                    title: prodotto.nome,
+                                    nrListe: widget.nrListe,
+                                    prodotto: prodotto,
+                                    popOnAdd: false,
+                                  ),
+                            ),
+                          );
+                          if (mounted) {
+                            setState(() => _highlightedIndex = null);
+                          }
+                        },
                       );
-                      if (mounted) setState(() => _highlightedIndex = null);
                     },
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: prodotto.pezzi,
-                      builder: (context, value, _) {
-                        return ProdottoCell(
-                          prodotto: prodotto,
-                          inListQty: value,
-                          selected: _highlightedIndex == index,
-                          onQuantityChanged: (newValue) {
-                            Carrello.instance.aggiornaQuantita(
-                              prodotto,
-                              newValue,
-                            );
-                          },
-                        );
-                      },
-                    ),
                   );
                 },
               );

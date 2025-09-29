@@ -19,6 +19,7 @@ class ProdottoCell extends StatelessWidget {
   final ValueChanged<int> onQuantityChanged;
   final bool selected;
   final int? inListQty;
+  final VoidCallback? onInfoTap;
 
   const ProdottoCell({
     super.key,
@@ -26,6 +27,7 @@ class ProdottoCell extends StatelessWidget {
     required this.onQuantityChanged,
     this.selected = false,
     this.inListQty,
+    this.onInfoTap,
   });
 
   @override
@@ -50,53 +52,61 @@ class ProdottoCell extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          if (!prodotto.consentito)
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                color: kRed,
-                                shape: BoxShape.circle,
+                  child: InkWell(
+                    onTap: onInfoTap,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    focusColor: Colors.transparent,
+                    splashFactory: NoSplash.splashFactory,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (!prodotto.consentito)
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: kRed,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            if (!prodotto.consentito) const SizedBox(width: 8),
+                            Expanded(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minHeight: _twoLineTitleHeight,
+                                ),
+                                child: Text(
+                                  prodotto.nome,
+                                  maxLines: 2,
+                                  softWrap: true,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: _titleStyle,
+                                ),
                               ),
                             ),
-                          if (!prodotto.consentito) const SizedBox(width: 8),
-                          Expanded(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minHeight: _twoLineTitleHeight,
-                              ),
-                              child: Text(
-                                prodotto.nome,
-                                maxLines: 2,
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                style: _titleStyle,
-                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (!prodotto.consentito) const SizedBox(width: 18),
+                            Text(
+                              codiceDaMostrare,
+                              maxLines: 1,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: kBluScuro),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (!prodotto.consentito) const SizedBox(width: 18),
-                          Text(
-                            codiceDaMostrare,
-                            maxLines: 1,
-                            softWrap: true,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: kBluScuro),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
