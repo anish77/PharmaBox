@@ -46,9 +46,10 @@ class _ProductDetailsState extends State<ProductDetails> {
     }
 
     try {
-      final codice = widget.prodotto.codice.isNotEmpty
-          ? widget.prodotto.codice
-          : widget.prodotto.minsan;
+      final codice =
+          widget.prodotto.codice.isNotEmpty
+              ? widget.prodotto.codice
+              : widget.prodotto.minsan;
       if (codice.isEmpty) return null;
       return await getOrPutImage(codice);
     } catch (error) {
@@ -58,14 +59,18 @@ class _ProductDetailsState extends State<ProductDetails> {
   }
 
   Future<String?> _loadBugiardino() async {
-    final codice = widget.prodotto.codice.isNotEmpty
-        ? widget.prodotto.codice
-        : widget.prodotto.minsan;
+    final codice =
+        widget.prodotto.codice.isNotEmpty
+            ? widget.prodotto.codice
+            : widget.prodotto.minsan;
     if (codice.isEmpty) return null;
 
     try {
       print(widget.prodotto.tipo_prodotto);
-      final url = await getBugiardino(codice,widget.prodotto.tipo_prodotto_dettaglio);
+      final url = await getBugiardino(
+        codice,
+        widget.prodotto.tipo_prodotto_dettaglio,
+      );
       if (url == null || url.isEmpty) {
         return null;
       }
@@ -167,32 +172,31 @@ class _ProductDetailsState extends State<ProductDetails> {
                       children: [
                         Text(
                           widget.prodotto.minsan,
-                          style: const TextStyle(fontSize: 16, color: kBluScuro),
-                        ),
-                        const Baseline(
-                          baseline: 0,
-                          baselineType: TextBaseline.alphabetic,
-                          child: SizedBox(width: 12),
-                        ),
-                        if ((widget.prodotto.tipo_prodotto ?? '').isNotEmpty)
-                          Expanded(
-                            child: Text(
-                              widget.prodotto.tipo_prodotto!,
-                              style: const TextStyle(fontSize: 13, color: kBluScuro),
-                              softWrap: true,
-                              textAlign: TextAlign.right,
-                            ),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: kBluScuro,
                           ),
+                        ),
                       ],
                     ),
+
+                    if ((widget.prodotto.tipo_prodotto ?? '').isNotEmpty)
+                      Text(
+                        widget.prodotto.tipo_prodotto!,
+                        style: const TextStyle(fontSize: 13, color: kBluScuro),
+                        softWrap: true,
+                        textAlign: TextAlign.right,
+                      ),
 
                     const SizedBox(height: 8),
                     const Divider(thickness: 1, color: kBluScuro),
                     const SizedBox(height: 8),
 
                     // sezioni descrizione
-                    _buildSection("Foglietto illustrativo", _buildDescrizioneContent()),
-                  
+                    _buildSection(
+                      "Foglietto illustrativo",
+                      _buildDescrizioneContent(),
+                    ),
                   ],
                 ),
               ),
@@ -293,9 +297,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                 height: _bugiardinoHeight,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: WebViewWidget(
-                    controller: _bugiardinoController!,
-                  ),
+                  child: WebViewWidget(controller: _bugiardinoController!),
                 ),
               ),
               const SizedBox(height: 12),
@@ -374,14 +376,14 @@ class _ProductDetailsState extends State<ProductDetails> {
 
             // Forza background bianco e migliora leggibilità (font-size, immagini responsive)
             await controller.runJavaScript(
-              "(function(){var css='html,body{background:transparent !important;color:#111;min-height:100vh;}'+"+
-              "'body{margin:0;padding:12px;font-size:16px;line-height:1.5;-webkit-text-size-adjust:110%;text-size-adjust:110%;}'+"+
-              "'img,iframe,video{max-width:100% !important;height:auto !important;}table{width:100% !important;overflow:auto;}';"+
-              "var s=document.createElement('style');s.type='text/css';s.appendChild(document.createTextNode(css));document.head.appendChild(s);document.documentElement.style.background='transparent';document.body.style.background='transparent';})();",
+              "(function(){var css='html,body{background:transparent !important;color:#111;min-height:100vh;}'+" +
+                  "'body{margin:0;padding:12px;font-size:16px;line-height:1.5;-webkit-text-size-adjust:110%;text-size-adjust:110%;}'+" +
+                  "'img,iframe,video{max-width:100% !important;height:auto !important;}table{width:100% !important;overflow:auto;}';" +
+                  "var s=document.createElement('style');s.type='text/css';s.appendChild(document.createTextNode(css));document.head.appendChild(s);document.documentElement.style.background='transparent';document.body.style.background='transparent';})();",
             );
             // Calcola l'altezza del contenuto della pagina
             final result = await controller.runJavaScriptReturningResult(
-              'Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)'
+              'Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)',
             );
             double? newHeight;
             if (result is num) {
@@ -390,13 +392,13 @@ class _ProductDetailsState extends State<ProductDetails> {
               final sanitized = result.replaceAll('"', '');
               newHeight = double.tryParse(sanitized);
             }
-              if (newHeight != null && mounted) {
-                final h = newHeight;
-                setState(() {
-                  // Imposta altezza minima 400, senza limite superiore per mostrare tutto
-                  _bugiardinoHeight = h < 400.0 ? 400.0 : h;
-                });
-              }
+            if (newHeight != null && mounted) {
+              final h = newHeight;
+              setState(() {
+                // Imposta altezza minima 400, senza limite superiore per mostrare tutto
+                _bugiardinoHeight = h < 400.0 ? 400.0 : h;
+              });
+            }
           } catch (_) {
             // Se fallisce, mantieni l'altezza corrente
           }
