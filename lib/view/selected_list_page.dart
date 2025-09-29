@@ -18,6 +18,7 @@ import 'package:pharma_box/widgets/scan_tab.dart';
 import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
+import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/gestione_prodotto.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:xml/xml.dart' as xml;
@@ -65,6 +66,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   @override
   void initState() {
     super.initState();
+    // Associa il carrello alla lista corrente (in base al titolo della pagina)
+    Carrello.instance.usaLista(widget.titolo);
     _loadFidelityStatus();
   }
 
@@ -124,18 +127,21 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   
 
   void _aggiungi(Prodotto p) {
+    // Aggiungi/aggiorna nel carrello (fonte verità usata dalla tab Lista)
+    if (p.pezzi.value <= 0) p.pezzi.value = 1;
+    Carrello.instance.aggiungiProdotto(p);
+
+    // Mantieni anche lo stato locale per eventuali usi interni
     setState(() {
       if (_codiciSelezionati.contains(p.codice)) {
-        // già presente: incrementa la quantità
         _qta[p.codice] = (_qta[p.codice] ?? 0) + 1;
       } else {
-        // nuovo prodotto selezionato
         _selezionati.add(p);
         _codiciSelezionati.add(p.codice);
         _qta[p.codice] = 1;
       }
-      _risultati = []; // facoltativo: pulisci risultati
-      _searchCtrl.clear(); // facoltativo: svuota barra
+      _risultati = [];
+      _searchCtrl.clear();
     });
   }
 
@@ -300,7 +306,12 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       if (code == null || code.trim().isEmpty) return;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        await openSearch(code);
+        // Se siamo nella tab "Lista", aggiungi direttamente
+        if (selectedIndex == 2) {
+          await _handleScannedCode(code);
+        } else {
+          await openSearch(code);
+        }
         ref.read(scannedBarcodeProvider.notifier).state = null;
       });
     });
@@ -528,5 +539,39 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         ),
       ],
     );
+  }
+}
+
+extension on _SelectedListPageState {
+  Future<void> _handleScannedCode(String code) async {
+    try {
+      final results = await doSearch(code.trim());
+      if (results.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Nessun prodotto trovato')),
+          );
+        }
+        return;
+      }
+
+      // Se più risultati, per ora aggiunge il primo
+      final prodotto = results.first;
+      _aggiungi(prodotto);
+
+      /*
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Aggiunto: ${prodotto.nome.isNotEmpty ? prodotto.nome : prodotto.minsan}')),
+        );
+      }
+      */
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore ricerca: $e')),
+        );
+      }
+    }
   }
 }

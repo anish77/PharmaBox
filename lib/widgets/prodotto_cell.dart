@@ -100,7 +100,8 @@ class ProdottoCell extends StatelessWidget {
                     child:
                         mostraQuantita
                             ? CounterButton(
-                              key: ValueKey('list-${prodotto.minsan}'),
+                              // Include la quantità nella key per forzare il rebuild quando cambia esternamente
+                              key: ValueKey('list-${prodotto.minsan}-${inListQty ?? 0}'),
                               initialValue: inListQty ?? 0,
                               height: actionHeight,
                               width: actionWidth,

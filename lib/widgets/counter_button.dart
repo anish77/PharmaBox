@@ -28,6 +28,16 @@ class _CounterButtonState extends State<CounterButton> {
     _counter = widget.initialValue;
   }
 
+  @override
+  void didUpdateWidget(covariant CounterButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      setState(() {
+        _counter = widget.initialValue;
+      });
+    }
+  }
+
   void _increment() {
     setState(() {
       _counter++;
