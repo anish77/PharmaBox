@@ -62,7 +62,7 @@ class StatoInvitiPage extends StatelessWidget {
             ),
             centerTitle: false,
             iconTheme: const IconThemeData(color: kBluScuro),
-            backgroundColor: kBackGround,
+            scrolledUnderElevation: 0,
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
