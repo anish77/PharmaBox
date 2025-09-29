@@ -4,6 +4,7 @@ class Prodotto {
   final String nome;
   final String minsan;
   final String? tipo_prodotto;
+  final String? tipo_prodotto_dettaglio;
   final String immagine;
   final String description;
   final String ingredients;
@@ -16,6 +17,7 @@ class Prodotto {
     required this.nome,
     required this.minsan,
     this.tipo_prodotto,
+    this.tipo_prodotto_dettaglio,
     required this.immagine,
     required int pezzi,
     required this.consentito,

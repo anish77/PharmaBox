@@ -1,6 +1,6 @@
 import 'package:pharma_box/data/constants.dart';
 
-enum SearchKind { prodotti, ean, lottiInvendibili, immagine }
+enum SearchKind { prodotti, ean, lottiInvendibili, immagine, bugiardino, bugiardinoparafarmaco }
 
 class _SoapConfig {
   const _SoapConfig({
@@ -18,6 +18,8 @@ const Map<SearchKind, _SoapConfig> _soapConfigs = {
   SearchKind.lottiInvendibili:
       _SoapConfig(dataset: 'TR_LOTTI_INV', filterKey: 'FDI_0001'),
   SearchKind.immagine: _SoapConfig(dataset: 'TDZ', filterKey: 'FDI_T218'),
+  SearchKind.bugiardino: _SoapConfig(dataset: 'TDF', filterKey: 'FDI_T218'),
+  SearchKind.bugiardinoparafarmaco: _SoapConfig(dataset: 'TD1', filterKey: 'FDI_T218')
 };
 
 String buildSearchXml(String query, {SearchKind kind = SearchKind.prodotti}) {
