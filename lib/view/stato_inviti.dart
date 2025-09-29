@@ -53,7 +53,7 @@ class StatoInvitiPage extends StatelessWidget {
                     )
                     : null,
             title: const Text(
-              "I miei inviti",
+              kInviti,
               style: TextStyle(
                 color: kBluScuro,
                 fontWeight: FontWeight.bold,
@@ -76,7 +76,7 @@ class StatoInvitiPage extends StatelessWidget {
                       Image.asset(kCongratulazioni, height: 250, width: 250),
                       SizedBox(height: 12),
                       Text(
-                        'Congratulazioni! \nHai ricevuto un abbonamento in omaggio.',
+                        kAbbonamentoOmaggio,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 18,
@@ -108,7 +108,7 @@ class StatoInvitiPage extends StatelessWidget {
                 // Testo sotto il cerchio
                 Text(
                   invitedFriends == 0
-                      ? "Non hai ancora invitato nessuno"
+                      ? kNessunInvito
                       : "Hai invitato $invitedFriends amic${invitedFriends == 1 ? 'o' : 'i'}",
                   style: const TextStyle(fontSize: 18),
                 ),
@@ -127,7 +127,7 @@ class StatoInvitiPage extends StatelessWidget {
                           child: ListTile(
                             leading: const Icon(Icons.person),
                             title: Text(name),
-                            subtitle: const Text("Registrazione completata ✅"),
+                            subtitle: const Text(kRegCompletata),
                           ),
                         );
                       },
@@ -140,7 +140,7 @@ class StatoInvitiPage extends StatelessWidget {
 
                 if (!showsCongratulation)
                   Text(
-                    "Invita altri amici per ridurre ancora il costo dell’abbonamento!",
+                    kInvitaAltriAmici,
                     style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     textAlign: TextAlign.center,
                   ),

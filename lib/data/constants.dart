@@ -47,6 +47,13 @@ const kAccessoMembri = 'Richiesta accesso membri';
 const kDiventareMembro = 'Ciao, vorrei diventare membro di PharmaBox.';
 const kRichiestaAssistenza = 'Richiesta assistenza PharmaBox';
 const kSupporto = 'Ciao, avrei bisogno di supporto con la mia esperienza.';
+const kAbbonamentoOmaggio =
+    'Congratulazioni! \nHai ricevuto un abbonamento in omaggio.';
+const kNessunInvito = 'Non hai ancora invitato nessuno';
+const kInvitaAltriAmici =
+    'Invita altri amici per ridurre ancora il costo dell’abbonamento!';
+const kRegCompletata = 'Registrazione completata ✅';
+const kInviti = 'I miei inviti';
 
 // Password sicura
 // Requisiti:
