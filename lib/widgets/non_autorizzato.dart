@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
@@ -16,6 +17,10 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   final TextEditingController _couponController = TextEditingController();
   bool _couponValid = false;
   String? _couponMessage;
+  String? _couponFirstName;
+  String? _couponLastName;
+  String? _inviterUid;
+  final String? uid = FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void dispose() {
@@ -123,6 +128,8 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
     }
 
     if (_couponValid) {
+      await _loadCurrentUserData();
+      await _addAmiciInvitati();
       final double basePrice = kAbbonamento.toDouble();
       final double discountedPrice = basePrice * (1 - _discountPercent);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,7 +141,43 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       );
     }
 
-    await _showPaymentOptions(context);
+    //dopo
+    // await _showPaymentOptions(context);
+  }
+
+  Future<void> _loadCurrentUserData() async {
+    if (uid == null) return;
+    try {
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (!doc.exists) return;
+      final data = doc.data();
+      if (data == null) return;
+      final firstName = (data['firstName'] as String?) ?? '';
+      final lastName = (data['lastName'] as String?) ?? '';
+
+      setState(() {
+        _couponFirstName = firstName;
+        _couponLastName = lastName;
+      });
+    } catch (_) {
+      // ignora errori di caricamento
+    }
+  }
+
+  Future<void> _addAmiciInvitati() async {
+    final inviterUid = _inviterUid;
+    if (inviterUid == null || inviterUid.isEmpty) return;
+
+    final nomeAmico = '$_couponFirstName $_couponLastName - ${DateTime.now()}';
+
+    final docRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(inviterUid);
+
+    await docRef.update({
+      'amiciInvitati': FieldValue.arrayUnion([nomeAmico]),
+    });
   }
 
   Future<void> _validateCoupon(String value) async {
@@ -163,7 +206,6 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
                 .limit(1)
                 .get();
       }
-
       if (query.docs.isEmpty &&
           lowerInput != rawInput &&
           lowerInput != upperInput) {
@@ -179,6 +221,8 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       if (isValid) {
         setState(() {
           _couponValid = true;
+          final inviterDoc = query.docs.first;
+          _inviterUid = inviterDoc.id;
           _couponMessage = 'Buono applicato (-10%)';
           _couponController.value = _couponController.value.copyWith(
             text: upperInput,
@@ -187,12 +231,14 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
         });
       } else {
         setState(() {
+          _inviterUid = "";
           _couponValid = false;
           _couponMessage = 'Il codice non è corretto';
         });
       }
     } catch (errore) {
       setState(() {
+        _inviterUid = "";
         _couponValid = false;
         _couponMessage = 'Errore nella verifica, riprova.';
       });

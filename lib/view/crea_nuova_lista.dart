@@ -27,7 +27,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
   String referralCode = "";
-  int nrAmiciInvitati = 0;
 
   @override
   void initState() {
@@ -49,13 +48,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
       final data = snapshot.data();
       final rawCode = data?['codiceInvito'];
-      final rowCodeAmici = data?['nrAmiciInvitati'];
       final codice = rawCode is String ? rawCode : rawCode?.toString() ?? '';
 
       if (!mounted) return;
       setState(() {
         referralCode = codice;
-        nrAmiciInvitati = rowCodeAmici;
       });
     } catch (errore, stackTrace) {
       _logger.e('Errore nel recuperare il codice invito, $errore, $stackTrace');
@@ -198,11 +195,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            StatoInvitiPage(invitedFriends: nrAmiciInvitati),
-                  ),
+                  MaterialPageRoute(builder: (context) => StatoInvitiPage()),
                 );
               },
             ),
