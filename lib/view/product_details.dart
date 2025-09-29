@@ -85,9 +85,9 @@ class _ProductDetailsState extends State<ProductDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text("Dettaglio"),
         centerTitle: false,
-        titleSpacing: 24,
+        titleSpacing: 2,
         backgroundColor: kBackGround,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -337,7 +337,7 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (image.isNotEmpty && !image.startsWith('http')) {
       return image;
     }
-    return kLogo;
+    return kNoImage;
   }
 
   void _ensureWebViewController(String url) {
