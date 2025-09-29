@@ -441,6 +441,17 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                             }
                                           });
                                         },
+                                        onFieldSubmitted: (_) {
+                                          final query = _searchCtrl.text.trim();
+                                          final canSearch = query.length >= 3 &&
+                                              (_lastSearchedQuery == null ||
+                                                  query !=
+                                                      _lastSearchedQuery) &&
+                                              !_isSearching;
+                                          if (canSearch) {
+                                            openSearch(query);
+                                          }
+                                        },
                                       ),
                                       if (_selectedFilters.isNotEmpty)
                                         Align(

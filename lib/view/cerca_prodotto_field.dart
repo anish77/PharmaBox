@@ -3,6 +3,7 @@ import 'package:pharma_box/data/constants.dart';
 
 class CercaProdottoField extends StatelessWidget {
   final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
   final String? initialValue;
   final TextEditingController? controller;
   final double bottomPadding;
@@ -10,6 +11,7 @@ class CercaProdottoField extends StatelessWidget {
   const CercaProdottoField({
     super.key,
     required this.onChanged,
+    this.onFieldSubmitted,
     this.initialValue,
     this.controller,
     this.bottomPadding = 20,
@@ -35,6 +37,7 @@ class CercaProdottoField extends StatelessWidget {
           ),
         ),
         keyboardType: TextInputType.text,
+        textInputAction: TextInputAction.search,
         autocorrect: false,
         validator: (value) {
           if (value == null || value.trim().isEmpty || value.length < 3) {
@@ -43,6 +46,7 @@ class CercaProdottoField extends StatelessWidget {
           return null;
         },
         onChanged: onChanged,
+        onFieldSubmitted: onFieldSubmitted,
       ),
     );
   }
