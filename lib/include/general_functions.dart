@@ -35,7 +35,7 @@ String tradCode(String code) {
     }
 
     return cNewCodice.toString().padLeft(9, '0');
-  } else {
+  } else if (s.length == 9) {
     // NUMERICO -> ALFANUMERICO
     // nella versione originale fanno Val(cCodice); qui richiediamo solo cifre
     final numVal = int.tryParse(s) ?? 0;
@@ -55,6 +55,8 @@ String tradCode(String code) {
     }
     // Nota: dobbiamo mutare il valore numerico man mano:
     return _numericToAlpha(numVal);
+  } else { 
+    return s;
   }
 }
 
@@ -170,7 +172,7 @@ List<Prodotto> parseInnerProductsXml(
 
 Future<List<Prodotto>> doSearch(String q) async {
   try {
-    if (q.length > 6 && RegExp(r'^[0-9]+$').hasMatch(q)) {
+    if (q.length > 9 && RegExp(r'^[0-9]+$').hasMatch(q)) {
       String xmlEanBody = buildSearchXml(q, kind: SearchKind.ean);
       String eanList = await postXml(kFarmadatiEndpoint, xmlEanBody);
       String? inner = _extractInnerXmlFromSoap(eanList);
@@ -201,7 +203,7 @@ Future<List<Prodotto>> doSearch(String q) async {
     final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
     final inner = _extractInnerXmlFromSoap(xmlResp);
     if (inner == null) return [];
-    getOrPutImage(parseInnerProductsXml(inner, DatasetKind.tr001).first.codice);
+    //getOrPutImage(parseInnerProductsXml(inner, DatasetKind.tr001).first.codice);
     return parseInnerProductsXml(inner, DatasetKind.tr001);
   } catch (errore) {
     print(errore);
