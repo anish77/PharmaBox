@@ -99,145 +99,151 @@ class _NewAccountPageState extends State<NewAccountPage> {
 
   @override
   Widget build(BuildContext context) {
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: kBackGround,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: kPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Form(
-            key: _form,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Logo + Brand Name
-                          SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                Image.asset(kLogo, height: 70, width: 70),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  kAppName,
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: kPrimary,
-                                  ),
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Form(
+              key: _form,
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    padding: EdgeInsets.only(bottom: 160 + bottomInset),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 24),
+                        Align(
+                          child: Column(
+                            children: [
+                              Image.asset(kLogo, height: 70, width: 70),
+                              const SizedBox(height: 8),
+                              const Text(
+                                kAppName,
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: kPrimary,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 40),
-
-                          CustomTextFormField(
-                            label: 'Nome',
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return kNomeError;
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredFirstName = value!;
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          CustomTextFormField(
-                            label: 'Cognome',
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return kCognomeError;
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredLastName = value!;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          CustomTextFormField(
-                            label: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) {
-                              if (value != null &&
-                                  isEmailCorrect(value) == false) {
-                                return kEmailError;
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredEmail = value!;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextFormField(
-                            label: 'Cellulare',
-                            keyboardType: TextInputType.phone,
-                            validator: (value) {
-                              if (value != null &&
-                                  isCellCorrect(value) == false) {
-                                return kCellError;
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredPhoneNumber = value!;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextFormField(
-                            label: 'Password',
-                            obscureText: true,
-                            validator: (value) {
-                              if (value != null &&
-                                  isPasswordSecure(value) == false) {
-                                return kPasswordError;
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredPassword = value!;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 32),
+                        CustomTextFormField(
+                          label: 'Nome',
+                          labelStyle: const TextStyle(color: kBluScuro),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return kNomeError;
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredFirstName = value!;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextFormField(
+                          label: 'Cognome',
+                          labelStyle: const TextStyle(color: kBluScuro),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return kCognomeError;
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredLastName = value!;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextFormField(
+                          label: 'Email',
+                          labelStyle: const TextStyle(color: kBluScuro),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value != null &&
+                                isEmailCorrect(value) == false) {
+                              return kEmailError;
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredEmail = value!;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextFormField(
+                          label: 'Cellulare',
+                          labelStyle: const TextStyle(color: kBluScuro),
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value != null &&
+                                isCellCorrect(value) == false) {
+                              return kCellError;
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredPhoneNumber = value!;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextFormField(
+                          label: 'Password',
+                          labelStyle: const TextStyle(color: kBluScuro),
+                          obscureText: true,
+                          validator: (value) {
+                            if (value != null &&
+                                isPasswordSecure(value) == false) {
+                              return kPasswordError;
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredPassword = value!;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 45),
-                  child: CustomButton(
-                    title: "Crea Account",
-                    titleColor: Colors.white,
-                    backgroundColor: kPrimary,
-                    onPressed: () {
-                      final isValid = _form.currentState!.validate();
-                      if (!isValid) {
-                        return;
-                      }
-                      _form.currentState!.save();
-                      _submitLogin();
-                    },
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 45,
+                    child: CustomButton(
+                      title: "Crea Account",
+                      titleColor: Colors.white,
+                      backgroundColor: kPrimary,
+                      onPressed: () {
+                        final isValid = _form.currentState!.validate();
+                        if (!isValid) {
+                          return;
+                        }
+                        _form.currentState!.save();
+                        _submitLogin();
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
