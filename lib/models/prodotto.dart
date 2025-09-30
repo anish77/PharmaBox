@@ -11,6 +11,7 @@ class Prodotto {
   final String howToTake;
   final bool consentito;
   final String codice;
+  final List<String> rendibile; // Array di 3 stringhe
   final ValueNotifier<int> pezzi; // 👈 diventa osservabile
 
   Prodotto({
@@ -24,6 +25,8 @@ class Prodotto {
     required this.description,
     required this.ingredients,
     required this.howToTake,
-    required this.codice, 
-  }) : pezzi = ValueNotifier<int>(pezzi);
+    required this.codice,
+    List<String> rendibile = const ['', '', ''],
+  })  : rendibile = rendibile,
+        pezzi = ValueNotifier<int>(pezzi);
 }
