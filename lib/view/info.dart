@@ -122,12 +122,17 @@ class InfoPage extends StatelessWidget {
     String? subtitle,
     VoidCallback? onTap,
   }) {
+    final bool isDestructive = icon == Icons.delete_forever;
+    final Color avatarColor =
+        isDestructive ? kRed.withValues(alpha: 0.12) : kSecondary;
+    final Color iconColor = isDestructive ? kRed : kPrimary;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade50,
-          child: Icon(icon, color: Colors.blue.shade700),
+          backgroundColor: avatarColor,
+          child: Icon(icon, color: iconColor),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: subtitle != null ? Text(subtitle) : null,
