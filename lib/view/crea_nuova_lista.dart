@@ -115,6 +115,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false, // niente icona automatica a sinistra
+        scrolledUnderElevation: 0,
         leading:
             canPop
                 ? IconButton(

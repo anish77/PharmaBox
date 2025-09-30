@@ -311,6 +311,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       children: [
         Scaffold(
           appBar: AppBar(
+            scrolledUnderElevation: 0,
             title: Text(
               widget.titolo,
               style: TextStyle(
@@ -322,18 +323,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             iconTheme: const IconThemeData(color: kBluScuro),
             centerTitle: false,
             titleSpacing: 0,
-            actions: [
-              /*   IconButton(
-                tooltip:
-                    _bleScanning ? 'Interrompi scansione' : 'Avvia scanner BLE',
-                icon:
-                    Icon(_bleScanning ? Icons.stop : Icons.bluetooth_searching),
-                onPressed:
-                    _bleScanning
-                        ? () => FlutterBluePlus.stopScan()
-                        : () => bleStartScanAndListen(ref),
-              ),*/
-            ],
           ),
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -374,10 +363,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     false; // nascondi la riga selezionati
                                 _lastSearchedQuery =
                                     null; // reset query cercata*/
-
-                                _bleScanning
-                                    ? () => FlutterBluePlus.stopScan()
-                                    : () => bleStartScanAndListen(ref);
                               }
                             });
                           },
@@ -406,7 +391,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                           : () => bleStartScanAndListen(ref),
                                 );
 
-                              //: GestioneProdotto().nonAutorizzato();
                               case 1:
                                 final showFilterGroups =
                                     !_hideUnselectedFilters ||
@@ -443,7 +427,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                         },
                                         onFieldSubmitted: (_) {
                                           final query = _searchCtrl.text.trim();
-                                          final canSearch = query.length >= 3 &&
+                                          final canSearch =
+                                              query.length >= 3 &&
                                               (_lastSearchedQuery == null ||
                                                   query !=
                                                       _lastSearchedQuery) &&
@@ -567,9 +552,9 @@ extension on _SelectedListPageState {
       */
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore ricerca: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Errore ricerca: $e')));
       }
     }
   }
