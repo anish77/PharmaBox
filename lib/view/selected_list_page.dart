@@ -133,7 +133,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     });
   }
 
-  Future<void> openSearch(String q) async {
+  Future<void> openSearch(String q, {bool autoAddIfSingle = true}) async {
     final query = q.trim();
     if (query.length < 3) {
       // opzionale: feedback minimo
@@ -164,7 +164,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         return;
       }
 
-      if (prelim.length == 1) {
+      if (prelim.length == 1 && autoAddIfSingle) {
         _aggiungi(prelim.first);
         _searchCtrl.clear();
         setState(() {
@@ -294,11 +294,21 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       if (code == null || code.trim().isEmpty) return;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        // Se siamo nella tab "Lista", aggiungi direttamente
+        // Eventi da scanner BLE
         if (selectedIndex == 2) {
+          // In "Lista": aggiungi/incrementa direttamente
           await _handleScannedCode(code);
+        } else if (selectedIndex == 1) {
+          // In "Cerca": incrementa di 1 e mostra anche i risultati
+          await _handleScannedCode(code);
+          _searchCtrl.text = code;
+          setState(() => productToSearch = code);
+          await openSearch(code, autoAddIfSingle: false);
         } else {
-          await openSearch(code);
+          // In altre tab, facoltativamente apri la ricerca
+          _searchCtrl.text = code;
+          setState(() => productToSearch = code);
+          await openSearch(code, autoAddIfSingle: false);
         }
         ref.read(scannedBarcodeProvider.notifier).state = null;
       });
@@ -449,7 +459,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                       _lastSearchedQuery) &&
                                               !_isSearching;
                                           if (canSearch) {
-                                            openSearch(query);
+                                            openSearch(query, autoAddIfSingle: false);
                                           }
                                         },
                                       ),
@@ -525,7 +535,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     productToSearch.trim() !=
                                         _lastSearchedQuery) &&
                                 !_isSearching)
-                            ? () => openSearch(productToSearch.trim())
+                            ? () => openSearch(productToSearch.trim(), autoAddIfSingle: false)
                             : null,
                   )
                   : null,
