@@ -30,99 +30,118 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => FocusScope.of(context).unfocus(),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(0, 40, 0, 45 + bottomInset),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    kNotAuthorized,
-                    height: 120,
-                    width: 120,
-                    color: kBluScuro,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    kUtenteNonAutorizzato,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: kBluScuro,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: _couponController,
-                    textInputAction: TextInputAction.done,
-                    onChanged: (_) {
-                      if (_couponValid || _couponMessage != null) {
-                        setState(() {
-                          _couponValid = false;
-                          _couponMessage = null;
-                        });
-                      }
-                    },
-                    onSubmitted: (value) {
-                      _validateCoupon(value);
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Inserisci il codice invito',
-                      labelStyle: const TextStyle(color: kBluScuro),
-                      hintText: 'Codice invito',
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      border: _buildBorder(color: kPrimary),
-                      enabledBorder: _effectiveBorder(),
-                      focusedBorder: _effectiveBorder(width: 1),
-                      suffixIcon:
-                          _couponValid
-                              ? const Icon(Icons.check_circle, color: kGreen)
-                              : null,
-                    ),
-                  ),
-                  if (_couponMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        _couponMessage!,
-                        style: TextStyle(
-                          color: _couponValid ? kGreen : kRed,
-                          fontWeight: FontWeight.w500,
+          return Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 45),
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          kNotAuthorized,
+                          height: 120,
+                          width: 120,
+                          color: kBluScuro,
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Text(
+                          kUtenteNonAutorizzato,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: kBluScuro,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _couponController,
+                          textInputAction: TextInputAction.done,
+                          onChanged: (_) {
+                            if (_couponValid || _couponMessage != null) {
+                              setState(() {
+                                _couponValid = false;
+                                _couponMessage = null;
+                              });
+                            }
+                          },
+                          onSubmitted: (value) {
+                            _validateCoupon(value);
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Inserisci il codice invito',
+                            labelStyle: const TextStyle(color: kBluScuro),
+                            hintText: 'Codice invito',
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            border: _buildBorder(color: kPrimary),
+                            enabledBorder: _effectiveBorder(),
+                            focusedBorder: _effectiveBorder(width: 1),
+                            suffixIcon:
+                                _couponValid
+                                    ? const Icon(
+                                      Icons.check_circle,
+                                      color: kGreen,
+                                    )
+                                    : null,
+                          ),
+                        ),
+                        if (_couponMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              _couponMessage!,
+                              style: TextStyle(
+                                color: _couponValid ? kGreen : kRed,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  const SizedBox(height: 32),
-                  Text(
-                    _buildPriceLabel(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 16,
-                      color: _couponValid ? kGreen : kBluScuro,
-                      fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: SafeArea(
+                    top: false,
+                    minimum: const EdgeInsets.only(bottom: 45),
+                    child: Column(
+                      mainAxisAlignment:
+                          MainAxisAlignment
+                              .end, // <= This places my widgets at the bottom on SliverFillRemaining
+                      children: [
+                        Text(
+                          _buildPriceLabel(),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            fontSize: 16,
+                            color: _couponValid ? kGreen : kBluScuro,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomButton(
+                          title: 'Diventa membro',
+                          titleColor: kWhite,
+                          backgroundColor: kPrimary,
+                          onPressed: () => _handleSubscription(context),
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
-                  CustomButton(
-                    title: 'Diventa membro',
-                    titleColor: kWhite,
-                    backgroundColor: kPrimary,
-                    onPressed: () => _handleSubscription(context),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
