@@ -9,6 +9,7 @@ final bleScanningProvider = StateProvider<bool>((ref) => false);
 final bleStatusProvider = StateProvider<String>((ref) => "");
 // Stato dell'ultimo barcode acquisito dal BLE (event-based)
 final scannedBarcodeProvider = StateProvider<String?>((ref) => null);
+final bleConnected = StateProvider<bool>((ref) => false);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

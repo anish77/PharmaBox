@@ -211,6 +211,37 @@ Future<List<Prodotto>> doSearch(String q) async {
   }
 }
 
+/// Restituisce la descrizione di rendibilità/indennizzo per un codice prodotto.
+/// Tenta prima di leggere il campo descrittivo dal dataset TR015 (FDI_T305);
+/// in alternativa usa il codice (FDI_T303) mappandolo tramite RendiIndennizzoMapper.
+Future<String?> loadRendibilita(String minsan) async {
+  try {
+    final xmlBody = buildSearchXml(minsan, kind: SearchKind.rendibili);
+    final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
+    final inner = _extractInnerXmlFromSoap(xmlResp);
+    if (inner == null || inner == 'EMPTY') {
+      return null;
+    }
+
+    final innerDoc = xml.XmlDocument.parse(inner);
+    final prodotti = innerDoc.findAllElements('Product');
+    if (prodotti.isEmpty) return null;
+
+    final p = prodotti.first;
+    final descr = p.getElement('FDI_0460')?.innerText.trim();
+    if (descr != null && descr.isNotEmpty) {
+      //return descr;
+    }
+    final code = p.getElement('FDI_0460')?.innerText.trim();
+    if (code != null && code.isNotEmpty) {
+      return RendiIndennizzoMapper.getDescrizione(code) ?? code;
+    }
+  } catch (errore) {
+    logger.e('Errore loadRendibilita: $errore');
+  }
+  return null;
+}
+
 Future<String> getOrPutImage(String minsan) async {
   String xmlBodyImage = buildSearchXml(minsan, kind: SearchKind.immagine);
 

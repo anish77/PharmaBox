@@ -125,6 +125,8 @@ String _bleDecode(List<int> bytes) {
 
 Future<void> bleStartScanAndListen(WidgetRef ref) async {
   await _bleEnsurePerms();
+  // Evita listener duplicati da sessioni precedenti
+  await _bleDispose();
   final ok = await ensureBleReady();
   final bool bleScanning = ref.read(bleScanningProvider);
   /*
@@ -200,6 +202,20 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
     (s) => s == BluetoothConnectionState.connected,
   );
 
+  // Ascolta disconnessioni per ripulire i listener e lo stato
+  final connSub = dev.connectionState.listen((s) async {
+    if (s == BluetoothConnectionState.disconnected) {
+      try {
+        ref.read(bleStatusProvider.notifier).state = 'Disconnesso';
+      } catch (_) {}
+      ref.read(bleConnected.notifier).state = false;
+      await _bleDispose();
+      // opzionale: auto-riavvio della scansione
+      // await bleStartScanAndListen(ref);
+    }
+  });
+  _bleSubs.add(connSub);
+
   // check serial
   final serial = await readSerialNumber(dev);
 
@@ -247,9 +263,11 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
         ref.read(scannedBarcodeProvider.notifier).state = tradCode(barcode);
       }, onError: (_) {});
       _bleSubs.add(s);
+      // Sottoscrivi una sola caratteristica notify per evitare duplicati
+      break;
     }
   }
-
+  ref.read(bleConnected.notifier).state = true;
   ref.read(bleStatusProvider.notifier).state =
       subscribed > 0
           ? 'In ascolto… scansiona un barcode'
@@ -265,6 +283,7 @@ Future<void> _bleDispose() async {
   _bleSubs.clear();
   if (_bleDevice != null) {
     try {
+      
       await _bleDevice!.disconnect();
     } catch (_) {}
   }

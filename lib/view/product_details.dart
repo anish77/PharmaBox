@@ -28,6 +28,7 @@ class ProductDetails extends StatefulWidget {
 class _ProductDetailsState extends State<ProductDetails> {
   late final Future<String?> _imageFuture;
   late final Future<String?> _bugiardinoFuture;
+  late final Future<String?> _rendibileFuture;
   WebViewController? _bugiardinoController;
   String? _bugiardinoUrl;
   double _bugiardinoHeight = 400;
@@ -37,6 +38,7 @@ class _ProductDetailsState extends State<ProductDetails> {
     super.initState();
     _imageFuture = _loadImage();
     _bugiardinoFuture = _loadBugiardino();
+    _rendibileFuture = _loadRendibilita();
   }
 
   Future<String?> _loadImage() async {
@@ -57,6 +59,25 @@ class _ProductDetailsState extends State<ProductDetails> {
       return null;
     }
   }
+  Future<String?> _loadRendibilita() async {
+    final codice = widget.prodotto.codice.isNotEmpty
+        ? widget.prodotto.codice
+        : widget.prodotto.minsan;
+    if (codice.isEmpty) return null;
+
+    try {
+      final descrizione = await loadRendibilita(codice);
+      if (descrizione == null || descrizione.trim().isEmpty) {
+        return null;
+      }
+      return descrizione.trim();
+    } catch (error) {
+      debugPrint('Errore durante il recupero dei dati rendibilita: $error');
+      return null;
+    }
+  }
+  
+
 
   Future<String?> _loadBugiardino() async {
     final codice =
@@ -148,13 +169,23 @@ class _ProductDetailsState extends State<ProductDetails> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          kProdottoNonConsentito,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: kRed,
-                          ),
+                        FutureBuilder<String?>(
+                          future: _rendibileFuture,
+                          builder: (context, snapshot) {
+                            final text = (snapshot.connectionState == ConnectionState.waiting)
+                                ? kProdottoNonConsentito
+                                : (snapshot.data?.isNotEmpty == true
+                                    ? snapshot.data!
+                                    : kProdottoNonConsentito);
+                            return Text(
+                              text,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: kRed,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
