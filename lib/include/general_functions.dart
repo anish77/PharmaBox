@@ -5,7 +5,6 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/data/datacached.dart';
 import 'package:pharma_box/logic/_soap_config.dart';
 import 'package:pharma_box/models/prodotto.dart';
-import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:xml/xml.dart' as xml;
 
 var logger = Logger(printer: PrettyPrinter());
@@ -48,7 +47,7 @@ String tradCode(String code) {
       final ch = _cChar32[nPosi3]; // SubStr(_cChar32, nPosi3+1, 1)
       sb.write(ch);
       // aggiorna resto
-      final resto = numVal - nNumero32 * nPosi3;
+      //final resto = numVal - nNumero32 * nPosi3;
       // per i passi successivi serve aggiornare numVal; in Harbour sovrascrivevano cCodice
       // in Dart manteniamo un accumulatore
       // -> per mirror perfetto, convertiamo numVal in variabile mutabile:
@@ -91,7 +90,7 @@ List<Prodotto> parseInnerProductsXml(
         final codice = p.getElement('FDI_0001')?.innerText.trim() ?? '';
         final minsan = p.getElement('FDI_0002')?.innerText.trim();
         final nome = p.getElement('FDI_0004')?.innerText.trim() ?? '';
-        final tipo_prodotto =
+        final tipoProdotto =
             CategoriaMapper.getDescrizione(
               p.getElement('FDI_0008')?.innerText.trim() ?? '',
             ) ??
@@ -99,8 +98,8 @@ List<Prodotto> parseInnerProductsXml(
         return Prodotto(
           codice: codice,
           nome: nome,
-          tipo_prodotto: tipo_prodotto[0],
-          tipo_prodotto_dettaglio: tipo_prodotto[1],
+          tipo_prodotto: tipoProdotto[0],
+          tipo_prodotto_dettaglio: tipoProdotto[1],
           minsan: (minsan != null && minsan.isNotEmpty) ? minsan : codice,
           immagine: '',
           pezzi: 1,
