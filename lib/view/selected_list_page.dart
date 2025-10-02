@@ -361,7 +361,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                               logger.i('switched to: $index');
                               selectedIndex = index!;
                               // Se torni alla tab "Cerca" (1), ripristina lo stato iniziale della ricerca
-                              if (selectedIndex == 1) {
+                              /*  if (selectedIndex == 1) {
                                 /*  productToSearch = '';
                                 _searchCtrl.text = '';
                                 _risultati = [];
@@ -373,7 +373,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     false; // nascondi la riga selezionati
                                 _lastSearchedQuery =
                                     null; // reset query cercata*/
-                              }
+                              } */
                             });
                           },
                         ),
@@ -444,7 +444,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                       _lastSearchedQuery) &&
                                               !_isSearching;
                                           if (canSearch) {
-                                            openSearch(query, autoAddIfSingle: false);
+                                            openSearch(
+                                              query,
+                                              autoAddIfSingle: false,
+                                            );
                                           }
                                         },
                                       ),
@@ -479,11 +482,11 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                     .toList(),
                                           ),
                                         ),
-                                      if (showFilterGroups) ...[
+                                      /* if (showFilterGroups) ...[
                                         opzioni(kFiltri1.title, kFiltri1.items),
                                         opzioni(kFiltri2.title, kFiltri2.items),
                                         opzioni(kFiltri3.title, kFiltri3.items),
-                                      ],
+                                      ],*/
                                       RisultatiRicerca(
                                         risultati: _risultati,
                                         listaTitolo: widget.titolo,
@@ -520,7 +523,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     productToSearch.trim() !=
                                         _lastSearchedQuery) &&
                                 !_isSearching)
-                            ? () => openSearch(productToSearch.trim(), autoAddIfSingle: false)
+                            ? () => openSearch(
+                              productToSearch.trim(),
+                              autoAddIfSingle: false,
+                            )
                             : null,
                   )
                   : null,
