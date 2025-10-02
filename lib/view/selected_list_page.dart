@@ -114,7 +114,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   int get _totaleQta => _qta.values.fold(0, (a, b) => a + b);
 
-  void _aggiungi(Prodotto p) {
+  void _aggiungi(Prodotto p, {bool clearSearchState = true}) {
     // Aggiungi/aggiorna nel carrello (fonte verità usata dalla tab Lista)
     if (p.pezzi.value <= 0) p.pezzi.value = 1;
     Carrello.instance.aggiungiProdotto(p);
@@ -128,8 +128,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         _codiciSelezionati.add(p.codice);
         _qta[p.codice] = 1;
       }
-      _risultati = [];
-      _searchCtrl.clear();
+      if (clearSearchState) {
+        _risultati = [];
+        _searchCtrl.clear();
+      }
     });
   }
 
@@ -140,6 +142,20 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Inserisci almeno 3 caratteri')),
       );
+      return;
+    }
+
+    final sameAsLastQuery =
+        _lastSearchedQuery != null &&
+        _lastSearchedQuery!.toLowerCase() == query.toLowerCase();
+    final hasCachedResults = sameAsLastQuery && _risultati.isNotEmpty;
+
+    if (hasCachedResults) {
+      setState(() {
+        _hideUnselectedFilters = true;
+        _searchSubmitted = true;
+        _lastSearchedQuery = query;
+      });
       return;
     }
 
@@ -557,7 +573,7 @@ extension on _SelectedListPageState {
 
       // Se più risultati, per ora aggiunge il primo
       final prodotto = results.first;
-      _aggiungi(prodotto);
+      _aggiungi(prodotto, clearSearchState: false);
 
       /*
       if (mounted) {

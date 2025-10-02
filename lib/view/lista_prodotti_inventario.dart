@@ -203,6 +203,7 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                     valueListenable: prodotto.pezzi,
                     builder: (context, value, _) {
                       return ProdottoCell(
+                        key: ValueKey(prodotto.minsan), 
                         prodotto: prodotto,
                         inListQty: value,
                         selected: _highlightedIndex == index,
