@@ -40,7 +40,9 @@ class _ScanTabState extends State<ScanTab> {
   }
 
   Future<void> _scannerReady() async {
-    if (widget.statusLabel == 'Disconnesso' || widget.statusLabel.isEmpty) {
+    if (widget.statusLabel == 'Disconnesso' ||
+        widget.statusLabel.isEmpty ||
+        widget.statusLabel == "Nessun dispositivo trovato") {
       _bluetoothOn = false;
     } else {
       _bluetoothOn = true;
