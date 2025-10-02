@@ -250,7 +250,7 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                                             ),
                                           ),
                                           Text(
-                                            displayFormattedDate!,
+                                            displayFormattedDate,
                                             style: const TextStyle(
                                               fontSize: 16,
                                               color: kBluScuro,

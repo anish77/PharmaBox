@@ -208,7 +208,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       }
     }
   }
-
+  /*
   void _rimuoviByIndex(int i) {
     final p = _selezionati[i];
     setState(() {
@@ -216,22 +216,22 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       _codiciSelezionati.remove(p.codice);
       _qta.remove(p.codice);
     });
-  }
-
+  }*/
+  /*
   void _svuotaSelezionati() {
     setState(() {
       _selezionati.clear();
       _codiciSelezionati.clear();
       _qta.clear();
     });
-  }
-
+  }*/
+  /*
   void _incQta(String codice) {
     setState(() {
       _qta[codice] = (_qta[codice] ?? 0) + 1;
     });
-  }
-
+  }*/
+  /*
   void _decQta(String codice) {
     setState(() {
       final cur = _qta[codice] ?? 0;
@@ -239,7 +239,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         _qta[codice] = cur - 1;
       }
     });
-  }
+  }*/
 
   Widget opzioni(String title, List<String> kFiltro) {
     // Calcola gli item visibili per questo gruppo (escludendo i già selezionati)
@@ -330,8 +330,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       });
     });
 
-    final _bleScanning = ref.watch(bleScanningProvider);
-    final _bleStatus = ref.watch(bleStatusProvider);
+    final bleScanning = ref.watch(bleScanningProvider);
+    final bleStatus = ref.watch(bleStatusProvider);
 
     return Stack(
       children: [
@@ -409,19 +409,19 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                   return _gestioneProdotto.nonAutorizzato();
                                 }
                                 return ScanTab(
-                                  isScanning: _bleScanning,
-                                  statusLabel: _bleStatus,
+                                  isScanning: bleScanning,
+                                  statusLabel: bleStatus,
                                   onToggleScan:
-                                      _bleScanning
+                                      bleScanning
                                           ? () => FlutterBluePlus.stopScan()
                                           : () => bleStartScanAndListen(ref),
                                 );
 
                               case 1:
-                                final showFilterGroups =
+                                /* final showFilterGroups =
                                     !_hideUnselectedFilters ||
                                     _selectedFilters.isNotEmpty;
-
+*/
                                 return SingleChildScrollView(
                                   child: Column(
                                     children: [
