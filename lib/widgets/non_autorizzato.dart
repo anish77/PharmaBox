@@ -154,9 +154,11 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
 
     final hasCode = _couponController.text.trim().isNotEmpty;
     if (hasCode && !_couponValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Il codice non è corretto.')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Il codice non è corretto.')),
+        );
+      }
       return;
     }
 
@@ -397,9 +399,11 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
     );
 
     if (proceed == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reindirizzamento a PayPal...')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reindirizzamento a PayPal...')),
+        );
+      }
       // TODO: integrare la chiamata al gateway PayPal.
     }
   }
