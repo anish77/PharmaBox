@@ -92,18 +92,20 @@ class _ForgotPasswordState extends State<ForgotPassword> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: kBackGround,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kPrimary),
-          onPressed: () => Navigator.pop(context),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          backgroundColor: kBackGround,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: kPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-      ),
-
-      body: SafeArea(
-        child: Padding(
+        body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,9 +136,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       const SizedBox(height: 40),
                       Text(
                         kForgotPasswordTitle,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 30,
+                          color: kBluScuro,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -149,21 +152,24 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      Text(kForgotPassword, style: TextStyle(fontSize: 16)),
+                      Text(
+                        kForgotPassword,
+                        style: const TextStyle(fontSize: 16, color: kBluScuro),
+                      ),
                       const SizedBox(height: 16),
                     ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(bottom: 45),
+                padding: const EdgeInsets.only(
+                  bottom: 45,
+                ), //45  EdgeInsets.fromLTRB(16, 40, 16, 0)
                 child: CustomButton(
                   title: "Invia",
                   titleColor: Colors.white,
                   backgroundColor: kPrimary,
-                  onPressed: () {
-                    _resetPassword();
-                  },
+                  onPressed: _resetPassword,
                 ),
               ),
             ],
