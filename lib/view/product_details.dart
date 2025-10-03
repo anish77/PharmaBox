@@ -182,31 +182,36 @@ class _ProductDetailsState extends State<ProductDetails> {
                     FutureBuilder<bool?>(
                       future: _vendibilitaFuture,
                       builder: (context, snapshot) {
-                        final isWaiting =
-                            snapshot.connectionState == ConnectionState.waiting;
+                        final isDone =
+                            snapshot.connectionState == ConnectionState.done;
+                        final hasError = snapshot.hasError;
                         final isVendibile = snapshot.data == true;
 
-                        final showAlert = isWaiting || !isVendibile;
-                        final text = showAlert ? kProdottoNonConsentito : '';
+                        bool showAlert = false;
+                        if (hasError) {
+                          showAlert = true;
+                        } else if (isDone) {
+                          showAlert = !isVendibile;
+                        }
+                        if (!showAlert) {
+                          return const SizedBox.shrink();
+                        }
 
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Visibility(
-                              visible: showAlert,
-                              child: Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: kRed,
-                                  shape: BoxShape.circle,
-                                ),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: kRed,
+                                shape: BoxShape.circle,
                               ),
                             ),
-                            if (showAlert) const SizedBox(width: 8),
-                            Text(
-                              text,
-                              style: const TextStyle(
+                            const SizedBox(width: 8),
+                            const Text(
+                              kProdottoNonConsentito,
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: kRed,

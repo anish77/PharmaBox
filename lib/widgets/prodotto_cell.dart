@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/include/general_functions.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
@@ -14,7 +15,7 @@ const TextStyle _titleStyle = TextStyle(
   color: kBluScuro,
 );
 
-class ProdottoCell extends StatelessWidget {
+class ProdottoCell extends StatefulWidget {
   final Prodotto prodotto;
   final ValueChanged<int> onQuantityChanged;
   final bool selected;
@@ -31,16 +32,46 @@ class ProdottoCell extends StatelessWidget {
   });
 
   @override
+  State<ProdottoCell> createState() => _ProdottoCellState();
+}
+
+class _ProdottoCellState extends State<ProdottoCell> {
+  late final Future<bool?> _vendibilitaFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _vendibilitaFuture = _loadVendibilita();
+  }
+
+  Future<bool?> _loadVendibilita() async {
+    final codice =
+        widget.prodotto.codice.isNotEmpty
+            ? widget.prodotto.codice
+            : widget.prodotto.minsan;
+    if (codice.isEmpty) return null;
+
+    try {
+      return await loadVendibilita(codice);
+    } catch (error) {
+      debugPrint('Errore durante il recupero dei dati vendibilita: $error');
+      return null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final mostraQuantita = (inListQty ?? 0) > 0;
+    final mostraQuantita = (widget.inListQty ?? 0) > 0;
     final codiceDaMostrare =
-        prodotto.codice.isNotEmpty ? prodotto.codice : prodotto.minsan;
+        widget.prodotto.codice.isNotEmpty
+            ? widget.prodotto.codice
+            : widget.prodotto.minsan;
 
     const actionWidth = 120.0;
     const actionHeight = 40.0;
 
     return Card(
-      color: selected ? kYellow : kBackGround,
+      color: widget.selected ? kYellow : kBackGround,
       elevation: 0,
       margin: EdgeInsets.zero,
       child: Padding(
@@ -53,59 +84,87 @@ class ProdottoCell extends StatelessWidget {
               children: [
                 Expanded(
                   child: InkWell(
-                    onTap: onInfoTap,
+                    onTap: widget.onInfoTap,
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
                     hoverColor: Colors.transparent,
                     focusColor: Colors.transparent,
                     splashFactory: NoSplash.splashFactory,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                    child: FutureBuilder<bool?>(
+                      future: _vendibilitaFuture,
+                      builder: (context, snapshot) {
+                        final isDone =
+                            snapshot.connectionState == ConnectionState.done;
+                        final hasError = snapshot.hasError;
+                        final isVendibile = snapshot.data == true;
+
+                        bool showAlert = false;
+                        if (hasError) {
+                          showAlert = true;
+                        } else if (isDone) {
+                          showAlert = !isVendibile;
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (!prodotto.consentito)
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: kRed,
-                                  shape: BoxShape.circle,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                if (showAlert)
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: kRed,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                if (showAlert) const SizedBox(width: 8),
+                                Expanded(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      minHeight: _twoLineTitleHeight,
+                                    ),
+                                    child: Text(
+                                      widget.prodotto.nome,
+                                      maxLines: 2,
+                                      softWrap: true,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: _titleStyle,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            if (!prodotto.consentito) const SizedBox(width: 8),
-                            Expanded(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  minHeight: _twoLineTitleHeight,
-                                ),
-                                child: Text(
-                                  prodotto.nome,
-                                  maxLines: 2,
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (showAlert) const SizedBox(width: 18),
+                                Text(
+                                  codiceDaMostrare,
+                                  maxLines: 1,
                                   softWrap: true,
                                   overflow: TextOverflow.ellipsis,
-                                  style: _titleStyle,
+                                  style: const TextStyle(color: kBluScuro),
+                                ),
+                              ],
+                            ),
+                            if (showAlert) ...[
+                              const SizedBox(height: 4),
+                              const Text(
+                                kProdottoNonConsentito,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: kRed,
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            if (!prodotto.consentito) const SizedBox(width: 18),
-                            Text(
-                              codiceDaMostrare,
-                              maxLines: 1,
-                              softWrap: true,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: kBluScuro),
-                            ),
-                          ],
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -119,29 +178,31 @@ class ProdottoCell extends StatelessWidget {
                             ? CounterButton(
                               // Include la quantità nella key per forzare il rebuild quando cambia esternamente
                               key: ValueKey(
-                                'list-${prodotto.minsan}-${inListQty ?? 0}',
+                                'list-${widget.prodotto.minsan}-${widget.inListQty ?? 0}',
                               ),
-                              initialValue: inListQty ?? 0,
+                              initialValue: widget.inListQty ?? 0,
                               height: actionHeight,
                               width: actionWidth,
                               onChanged: (newValue) {
                                 Carrello.instance.aggiornaQuantita(
-                                  prodotto,
+                                  widget.prodotto,
                                   newValue,
                                 );
-                                onQuantityChanged(newValue);
+                                widget.onQuantityChanged(newValue);
                               },
                             )
                             : GestureDetector(
                               onTap: () {
-                                final currentNotifier = prodotto.pezzi;
+                                final currentNotifier = widget.prodotto.pezzi;
                                 final newValue =
                                     currentNotifier.value > 0
                                         ? currentNotifier.value
                                         : 1;
                                 currentNotifier.value = newValue;
-                                Carrello.instance.aggiungiProdotto(prodotto);
-                                onQuantityChanged(newValue);
+                                Carrello.instance.aggiungiProdotto(
+                                  widget.prodotto,
+                                );
+                                widget.onQuantityChanged(newValue);
                               },
                               child: SizedBox(
                                 height: actionHeight,
