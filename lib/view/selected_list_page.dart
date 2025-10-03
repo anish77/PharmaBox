@@ -129,8 +129,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         _qta[p.codice] = 1;
       }
       if (clearSearchState) {
-      _risultati = [];
-      _searchCtrl.clear();
+        _risultati = [];
+        _searchCtrl.clear();
       }
     });
   }
@@ -311,10 +311,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         // Eventi da scanner BLE
-        if (selectedIndex == 2) {
+        if (selectedIndex == 1) {
           // In "Lista": aggiungi/incrementa direttamente
           await _handleScannedCode(code);
-        } else if (selectedIndex == 1) {
+        } else if (selectedIndex == 0) {
           // In "Cerca": incrementa di 1 e mostra anche i risultati
           await _handleScannedCode(code);
           _searchCtrl.text = code;
@@ -349,6 +349,34 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             iconTheme: const IconThemeData(color: kBluScuro),
             centerTitle: false,
             titleSpacing: 0,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  bleScanning ? Icons.bluetooth_searching : Icons.bluetooth,
+                  color: bleScanning ? kPrimary : kBluScuro,
+                ),
+                tooltip:
+                    bleScanning
+                        ? 'Interrompi scansione Bluetooth'
+                        : 'Connetti scanner Bluetooth',
+                onPressed: () async {
+                  if (!_isAccountActive) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account non attivo')),
+                    );
+                  } else {
+                  if (bleScanning) {
+                    await FlutterBluePlus.stopScan();
+                    ref.read(bleScanningProvider.notifier).state = false;
+                    ref.read(bleStatusProvider.notifier).state =
+                        'Scansione interrotta';
+                  } else {
+                    await bleStartScanAndListen(ref);
+                  }
+                }},
+              ),
+            ],
           ),
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -370,8 +398,9 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                           activeFgColor: Colors.white,
                           inactiveBgColor: kSecondary,
                           inactiveFgColor: kBluScuro,
-                          totalSwitches: 3,
-                          labels: ['Scan', 'Cerca', 'Lista'],
+                          //totalSwitches: 3,
+                          totalSwitches: 2,
+                          labels: ['Cerca', 'Lista'],
                           onToggle: (index) {
                             setState(() {
                               logger.i('switched to: $index');
@@ -399,7 +428,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                         child: Builder(
                           builder: (context) {
                             switch (selectedIndex) {
-                              case 0:
+                              case 3:
                                 if (_isFidelityLoading) {
                                   return const Center(
                                     child: CircularProgressIndicator(),
@@ -417,7 +446,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                           : () => bleStartScanAndListen(ref),
                                 );
 
-                              case 1:
+                              case 0:
                                 /* final showFilterGroups =
                                     !_hideUnselectedFilters ||
                                     _selectedFilters.isNotEmpty;
@@ -478,9 +507,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                 _selectedInOriginalOrder()
                                                     .map(
                                                       (f) => ContainerOpzione(
-                                                        key: ValueKey(
-                                                          'sel-$f',
-                                                        ),
+                                                        key: ValueKey('sel-$f'),
                                                         nomeOpione: f,
                                                         selected: true,
                                                         onSelectedChanged: (
@@ -511,7 +538,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     ],
                                   ),
                                 );
-                              case 2:
+                              case 1:
                                 return ListaProdottiInventario(
                                   titolo: widget.titolo,
                                   nrListe: widget.nrListe,
@@ -529,7 +556,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             ),
           ),
           bottomNavigationBar:
-              selectedIndex == 1
+              selectedIndex == 0
                   ? CercaProdottoBottomBar(
                     title: kCercaProdotto,
                     query: productToSearch,

@@ -9,7 +9,6 @@ import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
-import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
 
 class CreaNuovaLista extends StatefulWidget {
@@ -223,15 +222,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Bottone
-              CustomButton(
-                title: "Crea Nuova Lista",
-                titleColor: Colors.white,
-                backgroundColor: kPrimary,
-                onPressed: () {
-                  CreaListaPopup().showPopup(context);
-                },
-              ),
               const SizedBox(height: 45),
               // Intestazione Liste
               Container(
@@ -241,13 +231,33 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   vertical: 12,
                   horizontal: 8,
                 ),
-                child: const Text(
-                  "Liste",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: kBluScuro,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Liste",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: kBluScuro,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Text(
+                        '+',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: kGreen,
+                        ),
+                      ),
+                      tooltip: "Crea nuova lista",
+                      splashRadius: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => CreaListaPopup().showPopup(context),
+                    ),
+                  ],
                 ),
               ),
 
