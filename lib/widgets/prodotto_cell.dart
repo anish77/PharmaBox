@@ -109,31 +109,42 @@ class _ProdottoCellState extends State<ProdottoCell> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (showAlert)
-                                  Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: const BoxDecoration(
-                                      color: kRed,
-                                      shape: BoxShape.circle,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: const BoxDecoration(
+                                          color: kRed,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        kProdottoNonConsentito,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: kRed,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                if (showAlert) const SizedBox(width: 8),
-                                Expanded(
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      minHeight: _twoLineTitleHeight,
-                                    ),
-                                    child: Text(
-                                      widget.prodotto.nome,
-                                      maxLines: 2,
-                                      softWrap: true,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: _titleStyle,
-                                    ),
+                                if (showAlert) const SizedBox(height: 8),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    minHeight: _twoLineTitleHeight,
+                                  ),
+                                  child: Text(
+                                    widget.prodotto.nome,
+                                    maxLines: 2,
+                                    softWrap: true,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: _titleStyle,
                                   ),
                                 ),
                               ],
@@ -141,7 +152,6 @@ class _ProdottoCellState extends State<ProdottoCell> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                if (showAlert) const SizedBox(width: 18),
                                 Text(
                                   codiceDaMostrare,
                                   maxLines: 1,
@@ -151,17 +161,6 @@ class _ProdottoCellState extends State<ProdottoCell> {
                                 ),
                               ],
                             ),
-                            if (showAlert) ...[
-                              const SizedBox(height: 4),
-                              const Text(
-                                kProdottoNonConsentito,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: kRed,
-                                ),
-                              ),
-                            ],
                           ],
                         );
                       },
