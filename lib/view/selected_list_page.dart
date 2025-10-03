@@ -114,7 +114,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   int get _totaleQta => _qta.values.fold(0, (a, b) => a + b);
 
-  void _aggiungi(Prodotto p) {
+  void _aggiungi(Prodotto p, {bool clearSearchState = true}) {
     // Aggiungi/aggiorna nel carrello (fonte verità usata dalla tab Lista)
     if (p.pezzi.value <= 0) p.pezzi.value = 1;
     Carrello.instance.aggiungiProdotto(p);
@@ -128,8 +128,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         _codiciSelezionati.add(p.codice);
         _qta[p.codice] = 1;
       }
+      if (clearSearchState) {
       _risultati = [];
       _searchCtrl.clear();
+      }
     });
   }
 
@@ -140,6 +142,20 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Inserisci almeno 3 caratteri')),
       );
+      return;
+    }
+
+    final sameAsLastQuery =
+        _lastSearchedQuery != null &&
+        _lastSearchedQuery!.toLowerCase() == query.toLowerCase();
+    final hasCachedResults = sameAsLastQuery && _risultati.isNotEmpty;
+
+    if (hasCachedResults) {
+      setState(() {
+        _hideUnselectedFilters = true;
+        _searchSubmitted = true;
+        _lastSearchedQuery = query;
+      });
       return;
     }
 
@@ -192,7 +208,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       }
     }
   }
-
+  /*
   void _rimuoviByIndex(int i) {
     final p = _selezionati[i];
     setState(() {
@@ -200,22 +216,22 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       _codiciSelezionati.remove(p.codice);
       _qta.remove(p.codice);
     });
-  }
-
+  }*/
+  /*
   void _svuotaSelezionati() {
     setState(() {
       _selezionati.clear();
       _codiciSelezionati.clear();
       _qta.clear();
     });
-  }
-
+  }*/
+  /*
   void _incQta(String codice) {
     setState(() {
       _qta[codice] = (_qta[codice] ?? 0) + 1;
     });
-  }
-
+  }*/
+  /*
   void _decQta(String codice) {
     setState(() {
       final cur = _qta[codice] ?? 0;
@@ -223,7 +239,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         _qta[codice] = cur - 1;
       }
     });
-  }
+  }*/
 
   Widget opzioni(String title, List<String> kFiltro) {
     // Calcola gli item visibili per questo gruppo (escludendo i già selezionati)
@@ -314,13 +330,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       });
     });
 
-    final _bleScanning = ref.watch(bleScanningProvider);
-    final _bleStatus = ref.watch(bleStatusProvider);
+    final bleScanning = ref.watch(bleScanningProvider);
+    final bleStatus = ref.watch(bleStatusProvider);
 
     return Stack(
       children: [
         Scaffold(
           appBar: AppBar(
+            scrolledUnderElevation: 0,
             title: Text(
               widget.titolo,
               style: TextStyle(
@@ -332,18 +349,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             iconTheme: const IconThemeData(color: kBluScuro),
             centerTitle: false,
             titleSpacing: 0,
-            actions: [
-              /*   IconButton(
-                tooltip:
-                    _bleScanning ? 'Interrompi scansione' : 'Avvia scanner BLE',
-                icon:
-                    Icon(_bleScanning ? Icons.stop : Icons.bluetooth_searching),
-                onPressed:
-                    _bleScanning
-                        ? () => FlutterBluePlus.stopScan()
-                        : () => bleStartScanAndListen(ref),
-              ),*/
-            ],
           ),
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -372,7 +377,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                               logger.i('switched to: $index');
                               selectedIndex = index!;
                               // Se torni alla tab "Cerca" (1), ripristina lo stato iniziale della ricerca
-                              if (selectedIndex == 1) {
+                              /*  if (selectedIndex == 1) {
                                 /*  productToSearch = '';
                                 _searchCtrl.text = '';
                                 _risultati = [];
@@ -384,11 +389,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     false; // nascondi la riga selezionati
                                 _lastSearchedQuery =
                                     null; // reset query cercata*/
-
-                                _bleScanning
-                                    ? () => FlutterBluePlus.stopScan()
-                                    : () => bleStartScanAndListen(ref);
-                              }
+                              } */
                             });
                           },
                         ),
@@ -408,20 +409,19 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                   return _gestioneProdotto.nonAutorizzato();
                                 }
                                 return ScanTab(
-                                  isScanning: _bleScanning,
-                                  statusLabel: _bleStatus,
+                                  isScanning: bleScanning,
+                                  statusLabel: bleStatus,
                                   onToggleScan:
-                                      _bleScanning
+                                      bleScanning
                                           ? () => FlutterBluePlus.stopScan()
                                           : () => bleStartScanAndListen(ref),
                                 );
 
-                              //: GestioneProdotto().nonAutorizzato();
                               case 1:
-                                final showFilterGroups =
+                                /* final showFilterGroups =
                                     !_hideUnselectedFilters ||
                                     _selectedFilters.isNotEmpty;
-
+*/
                                 return SingleChildScrollView(
                                   child: Column(
                                     children: [
@@ -453,13 +453,17 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                         },
                                         onFieldSubmitted: (_) {
                                           final query = _searchCtrl.text.trim();
-                                          final canSearch = query.length >= 3 &&
+                                          final canSearch =
+                                              query.length >= 3 &&
                                               (_lastSearchedQuery == null ||
                                                   query !=
                                                       _lastSearchedQuery) &&
                                               !_isSearching;
                                           if (canSearch) {
-                                            openSearch(query, autoAddIfSingle: false);
+                                            openSearch(
+                                              query,
+                                              autoAddIfSingle: false,
+                                            );
                                           }
                                         },
                                       ),
@@ -494,11 +498,11 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                     .toList(),
                                           ),
                                         ),
-                                      if (showFilterGroups) ...[
+                                      /* if (showFilterGroups) ...[
                                         opzioni(kFiltri1.title, kFiltri1.items),
                                         opzioni(kFiltri2.title, kFiltri2.items),
                                         opzioni(kFiltri3.title, kFiltri3.items),
-                                      ],
+                                      ],*/
                                       RisultatiRicerca(
                                         risultati: _risultati,
                                         listaTitolo: widget.titolo,
@@ -535,7 +539,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                     productToSearch.trim() !=
                                         _lastSearchedQuery) &&
                                 !_isSearching)
-                            ? () => openSearch(productToSearch.trim(), autoAddIfSingle: false)
+                            ? () => openSearch(
+                              productToSearch.trim(),
+                              autoAddIfSingle: false,
+                            )
                             : null,
                   )
                   : null,
@@ -566,7 +573,7 @@ extension on _SelectedListPageState {
 
       // Se più risultati, per ora aggiunge il primo
       final prodotto = results.first;
-      _aggiungi(prodotto);
+      _aggiungi(prodotto, clearSearchState: false);
 
       /*
       if (mounted) {
@@ -577,9 +584,9 @@ extension on _SelectedListPageState {
       */
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore ricerca: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Errore ricerca: $e')));
       }
     }
   }
