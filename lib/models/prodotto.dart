@@ -26,7 +26,6 @@ class Prodotto {
     required this.ingredients,
     required this.howToTake,
     required this.codice,
-    List<String> rendibile = const ['', '', ''],
-  }) : rendibile = rendibile,
-       pezzi = ValueNotifier<int>(pezzi);
+    this.rendibile = const ['', '', ''],
+  }) : pezzi = ValueNotifier<int>(pezzi);
 }
