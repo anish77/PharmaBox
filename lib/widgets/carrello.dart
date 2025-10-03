@@ -60,6 +60,7 @@ class Carrello {
 
     if (index >= 0) {
       if (newQuantity <= 0) {
+        list[index].pezzi.value = 0;
         list.removeAt(index);
       } else {
         list[index].pezzi.value = newQuantity;
