@@ -175,29 +175,34 @@ Future<List<Prodotto>> doSearch(String q) async {
     DateTime start = DateTime.now();
     if (q.length > 9 && RegExp(r'^[0-9]+$').hasMatch(q)) {
       // lo cerco prima in cache
-      // 1) lookup EAN      
-    final cached = eanToProdottiCache[q];
-    if (cached != null) {
+      // 1) lookup EAN
+      final cached = eanToProdottiCache[q];
+      if (cached != null) {
+        final List<Prodotto> MinsanCached = [];
 
-      final List<Prodotto> MinsanCached = [];
-      
-      for (var prodotto in cached) {
-
-      print(prodotto);  
-      // buona  
-      MinsanCached.add(Prodotto(
-          codice: prodotto.codice,
-          nome: prodotto.nome,
-          tipoProdotto: prodotto.tipoProdotto?[0],
-          tipoProdottoDettaglio: prodotto.tipoProdotto?[1],
-          minsan: (prodotto.minsan != null && prodotto.minsan.isNotEmpty) ? prodotto.minsan : prodotto.codice,
-          immagine: '',
-          pezzi: 1,
-          consentito: true,
-          description: '',
-          ingredients: '',
-          howToTake: '',
-        ));
+        for (var prodotto in cached) {
+          print(prodotto);
+          // buona
+          MinsanCached.add(
+            Prodotto(
+              codice: prodotto.codice,
+              nome: prodotto.nome,
+              tipoProdotto: prodotto.tipoProdotto?[0],
+              tipoProdottoDettaglio: prodotto.tipoProdotto?[1],
+              minsan:
+                  (prodotto.minsan != null && prodotto.minsan.isNotEmpty)
+                      ? prodotto.minsan
+                      : prodotto.codice,
+              immagine: '',
+              pezzi: 1,
+              consentito: true,
+              description: '',
+              ingredients: '',
+              howToTake: '',
+            ),
+          );
+        }
+        return MinsanCached;
       }
 
       String xmlEanBody = buildSearchXml(q, kind: SearchKind.ean);
@@ -206,7 +211,7 @@ Future<List<Prodotto>> doSearch(String q) async {
       if (inner == null) return [];
       List<Prodotto> listaEan = parseInnerProductsXml(inner, DatasetKind.tr001);
 
-      List<Prodotto> Minsan = [];      
+      List<Prodotto> Minsan = [];
 
       for (var prodotto in listaEan) {
         String xmlBody = buildSearchXml(
