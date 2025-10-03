@@ -1,11 +1,9 @@
-import 'dart:ffi';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:pharma_box/logic/open_email.dart';
+import 'package:pharma_box/view/info.dart';
 import 'package:pharma_box/view/invita_un_amico.dart';
 import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
@@ -117,6 +115,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false, // niente icona automatica a sinistra
+        scrolledUnderElevation: 0,
         leading:
             canPop
                 ? IconButton(
@@ -200,19 +199,14 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.mail_outline, color: kPrimary),
-              title: const Text(
-                'Contattaci',
-                style: TextStyle(color: kBluScuro),
-              ),
-              onTap: OpenEmail().contattaci(
-                context,
-                kRichiestaAssistenza,
-                kSupporto,
-                fallbackMessage:
-                    "Impossibile aprire l'app email.\nContattaci all'indirizzo: $kMembershipEmail",
-                onFailure: () => Navigator.of(context).maybePop(),
-              ),
+              leading: const Icon(Icons.info, color: kPrimary),
+              title: const Text('Info', style: TextStyle(color: kBluScuro)),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => InfoPage()),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.logout, color: kRed),

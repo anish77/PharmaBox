@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class Prodotto {
   final String nome;
   final String minsan;
-  final String? tipo_prodotto;
-  final String? tipo_prodotto_dettaglio;
+  final String? tipoProdotto;
+  final String? tipoProdottoDettaglio;
   final String immagine;
   final String description;
   final String ingredients;
@@ -17,8 +17,8 @@ class Prodotto {
   Prodotto({
     required this.nome,
     required this.minsan,
-    this.tipo_prodotto,
-    this.tipo_prodotto_dettaglio,
+    this.tipoProdotto,
+    this.tipoProdottoDettaglio,
     required this.immagine,
     required int pezzi,
     required this.consentito,
@@ -26,7 +26,6 @@ class Prodotto {
     required this.ingredients,
     required this.howToTake,
     required this.codice,
-    List<String> rendibile = const ['', '', ''],
-  })  : rendibile = rendibile,
-        pezzi = ValueNotifier<int>(pezzi);
+    this.rendibile = const ['', '', ''],
+  }) : pezzi = ValueNotifier<int>(pezzi);
 }

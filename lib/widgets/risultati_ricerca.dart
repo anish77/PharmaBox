@@ -62,20 +62,16 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                   valueListenable: prodotto.pezzi,
                   builder: (context, value, __) {
                     return ProdottoCell(
+                      key: ValueKey(prodotto.minsan),
                       prodotto: prodotto,
                       inListQty: inListQty,
                       selected: _highlightedIndex == index,
                       onQuantityChanged: (newValue) {
-                        Carrello.instance.aggiornaQuantita(
-                          prodotto,
-                          newValue,
-                        );
+                        Carrello.instance.aggiornaQuantita(prodotto, newValue);
                       },
                       onInfoTap: () async {
                         setState(() => _highlightedIndex = index);
-                        await Future.delayed(
-                          const Duration(milliseconds: 120),
-                        );
+                        await Future.delayed(const Duration(milliseconds: 120));
                         if (!mounted) return;
                         await Navigator.push(
                           // ignore: use_build_context_synchronously
@@ -83,11 +79,11 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                           MaterialPageRoute(
                             builder:
                                 (_) => ProductDetails(
-                                      title: prodotto.nome,
-                                      nrListe: widget.nrListe,
-                                      prodotto: prodotto,
-                                      popOnAdd: true,
-                                    ),
+                                  title: prodotto.nome,
+                                  nrListe: widget.nrListe,
+                                  prodotto: prodotto,
+                                  popOnAdd: true,
+                                ),
                           ),
                         );
                         if (mounted) {

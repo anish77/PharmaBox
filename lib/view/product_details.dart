@@ -61,10 +61,12 @@ class _ProductDetailsState extends State<ProductDetails> {
       return null;
     }
   }
+
   Future<String?> _loadRendibilita() async {
-    final codice = widget.prodotto.codice.isNotEmpty
-        ? widget.prodotto.codice
-        : widget.prodotto.minsan;
+    final codice =
+        widget.prodotto.codice.isNotEmpty
+            ? widget.prodotto.codice
+            : widget.prodotto.minsan;
     if (codice.isEmpty) return null;
 
     try {
@@ -106,10 +108,10 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (codice.isEmpty) return null;
 
     try {
-      print(widget.prodotto.tipo_prodotto);
+      logger.i(widget.prodotto.tipoProdotto);
       final url = await getBugiardino(
         codice,
-        widget.prodotto.tipo_prodotto_dettaglio,
+        widget.prodotto.tipoProdottoDettaglio,
       );
       if (url == null || url.isEmpty) {
         return null;
@@ -230,9 +232,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                       ],
                     ),
 
-                    if ((widget.prodotto.tipo_prodotto ?? '').isNotEmpty)
+                    if ((widget.prodotto.tipoProdotto ?? '').isNotEmpty)
                       Text(
-                        widget.prodotto.tipo_prodotto!,
+                        widget.prodotto.tipoProdotto!,
                         style: const TextStyle(fontSize: 13, color: kBluScuro),
                         softWrap: true,
                         textAlign: TextAlign.right,

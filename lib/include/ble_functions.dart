@@ -81,8 +81,9 @@ Future<String?> readSerialNumber(BluetoothDevice dev) async {
         break;
       }
     }
-    if (ch == null || !ch.properties.read)
+    if (ch == null || !ch.properties.read) {
       return null; // niente char o non leggibile
+    }
 
     // Leggi e decodifica
     final bytes = await ch.read();
@@ -127,7 +128,7 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
   await _bleEnsurePerms();
   // Evita listener duplicati da sessioni precedenti
   await _bleDispose();
-  final ok = await ensureBleReady();
+  //final ok = await ensureBleReady();
   final bool bleScanning = ref.read(bleScanningProvider);
   /*
   if (!ok && mounted) {
@@ -283,7 +284,6 @@ Future<void> _bleDispose() async {
   _bleSubs.clear();
   if (_bleDevice != null) {
     try {
-      
       await _bleDevice!.disconnect();
     } catch (_) {}
   }

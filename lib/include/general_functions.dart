@@ -5,7 +5,6 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/data/datacached.dart';
 import 'package:pharma_box/logic/_soap_config.dart';
 import 'package:pharma_box/models/prodotto.dart';
-import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:xml/xml.dart' as xml;
 
 var logger = Logger(printer: PrettyPrinter());
@@ -48,14 +47,14 @@ String tradCode(String code) {
       final ch = _cChar32[nPosi3]; // SubStr(_cChar32, nPosi3+1, 1)
       sb.write(ch);
       // aggiorna resto
-      final resto = numVal - nNumero32 * nPosi3;
+      //final resto = numVal - nNumero32 * nPosi3;
       // per i passi successivi serve aggiornare numVal; in Harbour sovrascrivevano cCodice
       // in Dart manteniamo un accumulatore
       // -> per mirror perfetto, convertiamo numVal in variabile mutabile:
     }
     // Nota: dobbiamo mutare il valore numerico man mano:
     return _numericToAlpha(numVal);
-  } else { 
+  } else {
     return s;
   }
 }
@@ -91,7 +90,7 @@ List<Prodotto> parseInnerProductsXml(
         final codice = p.getElement('FDI_0001')?.innerText.trim() ?? '';
         final minsan = p.getElement('FDI_0002')?.innerText.trim();
         final nome = p.getElement('FDI_0004')?.innerText.trim() ?? '';
-        final tipo_prodotto =
+        final tipoProdotto =
             CategoriaMapper.getDescrizione(
               p.getElement('FDI_0008')?.innerText.trim() ?? '',
             ) ??
@@ -99,8 +98,8 @@ List<Prodotto> parseInnerProductsXml(
         return Prodotto(
           codice: codice,
           nome: nome,
-          tipo_prodotto: tipo_prodotto[0],
-          tipo_prodotto_dettaglio: tipo_prodotto[1],
+          tipoProdotto: tipoProdotto[0],
+          tipoProdottoDettaglio: tipoProdotto[1],
           minsan: (minsan != null && minsan.isNotEmpty) ? minsan : codice,
           immagine: '',
           pezzi: 1,
@@ -148,7 +147,7 @@ List<Prodotto> parseInnerProductsXml(
           howToTake: '',
         );
       }).toList();
-      case DatasetKind.td1:
+    case DatasetKind.td1:
       // se l'XML ha un root <Prodotti> con figli <Prodotto>...
 
       return prodotti.map((p) {
@@ -229,8 +228,11 @@ Future<List<Prodotto>> doSearch(String q) async {
       }
       eanToProdottiCache[q] = Minsan;
       //logger.i(Minsan.length);
+
       logger.i(DateTime.now().difference(start));
       return Minsan;
+
+ 
     }
     final xmlBody = buildSearchXml(q, kind: SearchKind.prodotti);
     final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
@@ -239,8 +241,9 @@ Future<List<Prodotto>> doSearch(String q) async {
     //getOrPutImage(parseInnerProductsXml(inner, DatasetKind.tr001).first.codice);
     logger.i(DateTime.now().difference(start));
     return parseInnerProductsXml(inner, DatasetKind.tr001);
+
   } catch (errore) {
-    print(errore);
+    logger.e(errore);
     return [];
   }
 }
@@ -331,7 +334,7 @@ Future<String> getOrPutImage(String minsan) async {
       minsan: parseInnerProductsXml(inner2, DatasetKind.tdz).first.codice,
       imageUrl: imageurl,
     );
-    print(cdnUrl);
+    logger.i(cdnUrl);
     return cdnUrl ?? "";
   }
   return "";
@@ -390,7 +393,7 @@ Future<String?> getBugiardino(String minsan) async {
 
 Future<String?> getBugiardino(
   String minsan,
-  String? tipo_prodotto_dettaglio,
+  String? tipoProdottoDettaglio,
 ) async {
   final trimmed = minsan.trim();
   if (trimmed.isEmpty) {
@@ -405,7 +408,7 @@ Future<String?> getBugiardino(
 
   final sourceUrl = await _fetchFarmadatiBugiardinoUrl(
     trimmed,
-    tipo_prodotto_dettaglio,
+    tipoProdottoDettaglio,
   );
   if (sourceUrl == null) {
     return null;
@@ -420,19 +423,21 @@ Future<String?> getBugiardino(
   if (cached && await _remoteHtmlExists(cachedUri)) {
     return cachedUri.toString();
   }
-  print(sourceUri);
+  logger.d(sourceUri);
   return sourceUrl;
 }
 
-Future<String?> _fetchFarmadatiBugiardinoUrl(String minsan,String? tipo_prodotto_dettaglio) async 
-{ 
+Future<String?> _fetchFarmadatiBugiardinoUrl(
+  String minsan,
+  String? tipoProdottoDettaglio,
+) async {
   String xmlBody;
-  final String tipo_documento = tipo_prodotto_dettaglio == "F" ? "F": '1';
-  
-  if (tipo_prodotto_dettaglio == "F") {
-     xmlBody = buildSearchXml(minsan, kind: SearchKind.bugiardino);
+  final String tipoDocumento = tipoProdottoDettaglio == "F" ? "F" : '1';
+
+  if (tipoProdottoDettaglio == "F") {
+    xmlBody = buildSearchXml(minsan, kind: SearchKind.bugiardino);
   } else {
-      xmlBody = buildSearchXml(minsan, kind: SearchKind.bugiardinoparafarmaco );
+    xmlBody = buildSearchXml(minsan, kind: SearchKind.bugiardinoparafarmaco);
   }
   final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
   final inner = _extractInnerXmlFromSoap(xmlResp);
@@ -440,7 +445,10 @@ Future<String?> _fetchFarmadatiBugiardinoUrl(String minsan,String? tipo_prodotto
     return null;
   }
 
-  final entries = parseInnerProductsXml(inner, tipo_prodotto_dettaglio == "F" ? DatasetKind.tdf : DatasetKind.td1);
+  final entries = parseInnerProductsXml(
+    inner,
+    tipoProdottoDettaglio == "F" ? DatasetKind.tdf : DatasetKind.td1,
+  );
   if (entries.isEmpty) {
     return null;
   }
@@ -463,7 +471,7 @@ Future<String?> _fetchFarmadatiBugiardinoUrl(String minsan,String? tipo_prodotto
     } catch (_) {}
   }
 
-  return 'https://ws.farmadati.it/WS_DOC/GetDoc.aspx?accesskey=$kFarmadatiPassword&tipodoc=$tipo_documento&nomefile=$rawDescription';
+  return 'https://ws.farmadati.it/WS_DOC/GetDoc.aspx?accesskey=$kFarmadatiPassword&tipodoc=$tipoDocumento&nomefile=$rawDescription';
 }
 
 Future<bool> _remoteHtmlExists(Uri uri, {int depth = 0}) async {
@@ -489,7 +497,7 @@ Future<bool> _remoteHtmlExists(Uri uri, {int depth = 0}) async {
       return getResponse.statusCode == 200 || getResponse.statusCode == 206;
     }
   } catch (error) {
-    print('Errore verifica pdf bugiardino: $error');
+    logger.e('Errore verifica pdf bugiardino: $error');
   }
   return false;
 }
@@ -507,7 +515,7 @@ Future<bool> _cacheBugiardinoOnDoublecore(
         .timeout(const Duration(seconds: 20));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      print('Upload bugiardino fallito: HTTP ${response.statusCode}');
+      logger.e('Upload bugiardino fallito: HTTP ${response.statusCode}');
       return false;
     }
 
@@ -522,7 +530,7 @@ Future<bool> _cacheBugiardinoOnDoublecore(
       }
     }
   } catch (error) {
-    print('Errore upload bugiardino: $error');
+    logger.e('Errore upload bugiardino: $error');
   }
   return false;
 }
@@ -568,7 +576,7 @@ String? _extractInnerXmlFromSoap(String soapXml) {
     final text =
         first.first.descendants
             .whereType<xml.XmlText>()
-            .map((t) => t.text)
+            .map((t) => t.value)
             .join()
             .trim();
     if (text.contains('<') || text.contains('&lt;')) {
