@@ -80,16 +80,17 @@ class _ProductDetailsState extends State<ProductDetails> {
       return null;
     }
   }
-  
-    Future<bool?> _loadVendibilita() async {
-    final codice = widget.prodotto.codice.isNotEmpty
-        ? widget.prodotto.codice
-        : widget.prodotto.minsan;
+
+  Future<bool?> _loadVendibilita() async {
+    final codice =
+        widget.prodotto.codice.isNotEmpty
+            ? widget.prodotto.codice
+            : widget.prodotto.minsan;
     if (codice.isEmpty) return null;
 
     try {
       final vendibile = await loadVendibilita(codice);
-      if (vendibile == null ) {
+      if (vendibile == null) {
         return null;
       }
       return vendibile;
@@ -98,7 +99,6 @@ class _ProductDetailsState extends State<ProductDetails> {
       return null;
     }
   }
-
 
   Future<String?> _loadBugiardino() async {
     final codice =
@@ -179,36 +179,42 @@ class _ProductDetailsState extends State<ProductDetails> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: kRed,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        FutureBuilder<bool?>(
-                          future: _vendibilitaFuture,
-                          builder: (context, snapshot) {
-                            final text = (snapshot.connectionState == ConnectionState.waiting)
-                                ? kProdottoNonConsentito
-                                : (snapshot.data == true
-                                    ? ""
-                                    : kProdottoNonConsentito);
-                            return Text(
+                    FutureBuilder<bool?>(
+                      future: _vendibilitaFuture,
+                      builder: (context, snapshot) {
+                        final isWaiting =
+                            snapshot.connectionState == ConnectionState.waiting;
+                        final isVendibile = snapshot.data == true;
+
+                        final showAlert = isWaiting || !isVendibile;
+                        final text = showAlert ? kProdottoNonConsentito : '';
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Visibility(
+                              visible: showAlert,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: kRed,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            if (showAlert) const SizedBox(width: 8),
+                            Text(
                               text,
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: kRed,
                               ),
-                            );
-                          },
-                        ),
-                      ],
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     Text(
                       widget.prodotto.nome,
