@@ -279,7 +279,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                 itemsToShow
                     .map(
                       (filtro) => ContainerOpzione(
-                        key: ValueKey('opt-' + filtro),
+                        key: ValueKey('opt-$filtro'),
                         nomeOpione: filtro,
                         hideWhenUnselected: _hideUnselectedFilters,
                         selected: _selectedFilters.contains(filtro),
@@ -479,7 +479,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                     .map(
                                                       (f) => ContainerOpzione(
                                                         key: ValueKey(
-                                                          'sel-' + f,
+                                                          'sel-$f',
                                                         ),
                                                         nomeOpione: f,
                                                         selected: true,
