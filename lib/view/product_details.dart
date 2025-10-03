@@ -29,6 +29,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   late final Future<String?> _imageFuture;
   late final Future<String?> _bugiardinoFuture;
   late final Future<String?> _rendibileFuture;
+  late final Future<bool?> _vendibilitaFuture;
   WebViewController? _bugiardinoController;
   String? _bugiardinoUrl;
   double _bugiardinoHeight = 400;
@@ -39,6 +40,7 @@ class _ProductDetailsState extends State<ProductDetails> {
     _imageFuture = _loadImage();
     _bugiardinoFuture = _loadBugiardino();
     _rendibileFuture = _loadRendibilita();
+    _vendibilitaFuture = _loadVendibilita();
   }
 
   Future<String?> _loadImage() async {
@@ -78,6 +80,25 @@ class _ProductDetailsState extends State<ProductDetails> {
       return null;
     }
   }
+  
+    Future<bool?> _loadVendibilita() async {
+    final codice = widget.prodotto.codice.isNotEmpty
+        ? widget.prodotto.codice
+        : widget.prodotto.minsan;
+    if (codice.isEmpty) return null;
+
+    try {
+      final vendibile = await loadVendibilita(codice);
+      if (vendibile == null ) {
+        return null;
+      }
+      return vendibile;
+    } catch (error) {
+      debugPrint('Errore durante il recupero dei dati rendibilita: $error');
+      return null;
+    }
+  }
+
 
   Future<String?> _loadBugiardino() async {
     final codice =
@@ -169,16 +190,14 @@ class _ProductDetailsState extends State<ProductDetails> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        FutureBuilder<String?>(
-                          future: _rendibileFuture,
+                        FutureBuilder<bool?>(
+                          future: _vendibilitaFuture,
                           builder: (context, snapshot) {
-                            final text =
-                                (snapshot.connectionState ==
-                                        ConnectionState.waiting)
-                                    ? kProdottoNonConsentito
-                                    : (snapshot.data?.isNotEmpty == true
-                                        ? snapshot.data!
-                                        : kProdottoNonConsentito);
+                            final text = (snapshot.connectionState == ConnectionState.waiting)
+                                ? kProdottoNonConsentito
+                                : (snapshot.data == true
+                                    ? ""
+                                    : kProdottoNonConsentito);
                             return Text(
                               text,
                               style: const TextStyle(

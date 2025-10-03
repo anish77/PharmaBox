@@ -39,7 +39,7 @@ const kForgotPasswordTitle = 'Password dimenticata';
 const kForgotPassword =
     'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
 // Errori
-const kProdottoNonConsentito = 'Severe warning';
+const kProdottoNonConsentito = 'Non vendibile';
 const kUtenteNonAutorizzato =
     'Questa sezione è riservata ai membri. Attiva l’abbonamento per continuare.';
 const kMembershipEmail = 'infopharmabox@doublecore.it'; 

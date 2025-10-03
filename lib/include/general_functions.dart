@@ -171,7 +171,36 @@ List<Prodotto> parseInnerProductsXml(
 
 Future<List<Prodotto>> doSearch(String q) async {
   try {
+    DateTime start = DateTime.now();
     if (q.length > 9 && RegExp(r'^[0-9]+$').hasMatch(q)) {
+
+      // lo cerco prima in cache
+      // 1) lookup EAN
+      
+    final cached = eanToProdottiCache[q];
+    if (cached != null) {
+
+      final List<Prodotto> MinsanCached = [];
+      
+      for (var prodotto in cached) {
+        
+      MinsanCached.add( Prodotto(
+          codice: prodotto.codice,
+          nome: prodotto.nome,
+          tipo_prodotto: prodotto.tipo_prodotto?[0],
+          tipo_prodotto_dettaglio: prodotto.tipo_prodotto?[1],
+          minsan: (prodotto.minsan != null && prodotto.minsan.isNotEmpty) ? prodotto.minsan : prodotto.codice,
+          immagine: '',
+          pezzi: 1,
+          consentito: true,
+          description: '',
+          ingredients: '',
+          howToTake: '',
+        ));
+      }
+      return MinsanCached;
+    }
+
       String xmlEanBody = buildSearchXml(q, kind: SearchKind.ean);
       String eanList = await postXml(kFarmadatiEndpoint, xmlEanBody);
       String? inner = _extractInnerXmlFromSoap(eanList);
@@ -179,6 +208,8 @@ Future<List<Prodotto>> doSearch(String q) async {
       List<Prodotto> listaEan = parseInnerProductsXml(inner, DatasetKind.tr001);
 
       List<Prodotto> Minsan = [];
+
+      
 
       for (var prodotto in listaEan) {
         String xmlBody = buildSearchXml(
@@ -189,22 +220,28 @@ Future<List<Prodotto>> doSearch(String q) async {
         String? inner = _extractInnerXmlFromSoap(xmlResp);
         if (inner != null) {
           Minsan.add(parseInnerProductsXml(inner, DatasetKind.tr001).first);
-
+          /*
           getOrPutImage(
             parseInnerProductsXml(inner, DatasetKind.tr001).first.codice,
-          );
+          );*/
         }
       }
+      eanToProdottiCache[q] = Minsan;
       //logger.i(Minsan.length);
-      return Minsan; // questo è più lento 
+
+      logger.i(DateTime.now().difference(start));
+      return Minsan;
+
+ 
     }
     final xmlBody = buildSearchXml(q, kind: SearchKind.prodotti);
     final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
     final inner = _extractInnerXmlFromSoap(xmlResp);
     if (inner == null) return [];
     //getOrPutImage(parseInnerProductsXml(inner, DatasetKind.tr001).first.codice);
-    
-    return parseInnerProductsXml(inner, DatasetKind.tr001); // questo è più veloce
+    logger.i(DateTime.now().difference(start));
+    return parseInnerProductsXml(inner, DatasetKind.tr001);
+
   } catch (errore) {
     logger.e(errore);
     return [];
@@ -235,6 +272,44 @@ Future<String?> loadRendibilita(String minsan) async {
     final code = p.getElement('FDI_0460')?.innerText.trim();
     if (code != null && code.isNotEmpty) {
       return RendiIndennizzoMapper.getDescrizione(code) ?? code;
+    } else {
+      return "non rendibile";
+    }
+  } catch (errore) {
+    logger.e('Errore loadRendibilita: $errore');
+  }
+  return null;
+}
+
+Future<bool?> loadVendibilita(String minsan) async {
+  try {
+    final xmlBody = buildSearchXml(minsan, kind: SearchKind.lottiInvendibili);
+    final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
+    final inner = _extractInnerXmlFromSoap(xmlResp);
+
+    print(inner);
+
+    bool vendibile = true;
+    if (inner == null || inner == 'EMPTY') {
+      return true;
+    }
+
+    final innerDoc = xml.XmlDocument.parse(inner);
+    final prodotti = innerDoc.findAllElements('Product');
+    if (prodotti.isEmpty) return null;
+
+    final p = prodotti.first;
+    final descr = p.getElement('FDI_T292')?.innerText.trim();
+    final data = p.getElement('FDI_T293')?.innerText.trim() ;
+    if (descr != null && descr.isNotEmpty && data != null && data.isNotEmpty) {
+
+      DateTime? dData = DateTime.tryParse(data);
+      
+      vendibile = ( descr == "VF" && DateTime.now().difference(dData!).isNegative ) ||
+                   ( descr == "RD" && DateTime.now().difference(dData!).isNegative ) ||
+                   ( descr == "RI" && ! DateTime.now().difference(dData!).isNegative);
+      
+    return vendibile; //? "" : "NON VENDIBILE";
     }
   } catch (errore) {
     logger.e('Errore loadRendibilita: $errore');
