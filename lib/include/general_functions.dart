@@ -8,6 +8,7 @@ import 'package:pharma_box/models/prodotto.dart';
 import 'package:xml/xml.dart' as xml;
 
 var logger = Logger(printer: PrettyPrinter());
+
 /// 32^5 = 33.554.432
 final int _nNumero32Start = 33554432;
 
@@ -173,33 +174,35 @@ Future<List<Prodotto>> doSearch(String q) async {
   try {
     DateTime start = DateTime.now();
     if (q.length > 9 && RegExp(r'^[0-9]+$').hasMatch(q)) {
-
       // lo cerco prima in cache
       // 1) lookup EAN
-      
-    final cached = eanToProdottiCache[q];
-    if (cached != null) {
 
-      final List<Prodotto> MinsanCached = [];
-      
-      for (var prodotto in cached) {
-        
-      MinsanCached.add( Prodotto(
-          codice: prodotto.codice,
-          nome: prodotto.nome,
-          tipo_prodotto: prodotto.tipo_prodotto?[0],
-          tipo_prodotto_dettaglio: prodotto.tipo_prodotto?[1],
-          minsan: (prodotto.minsan != null && prodotto.minsan.isNotEmpty) ? prodotto.minsan : prodotto.codice,
-          immagine: '',
-          pezzi: 1,
-          consentito: true,
-          description: '',
-          ingredients: '',
-          howToTake: '',
-        ));
+      final cached = eanToProdottiCache[q];
+      if (cached != null) {
+        final List<Prodotto> MinsanCached = [];
+
+        for (var prodotto in cached) {
+          MinsanCached.add(
+            Prodotto(
+              codice: prodotto.codice,
+              nome: prodotto.nome,
+              tipoProdotto: prodotto.tipoProdotto?[0],
+              tipoProdottoDettaglio: prodotto.tipoProdotto?[1],
+              minsan:
+                  (prodotto.minsan != null && prodotto.minsan.isNotEmpty)
+                      ? prodotto.minsan
+                      : prodotto.codice,
+              immagine: '',
+              pezzi: 1,
+              consentito: true,
+              description: '',
+              ingredients: '',
+              howToTake: '',
+            ),
+          );
+        }
+        return MinsanCached;
       }
-      return MinsanCached;
-    }
 
       String xmlEanBody = buildSearchXml(q, kind: SearchKind.ean);
       String eanList = await postXml(kFarmadatiEndpoint, xmlEanBody);
@@ -208,8 +211,6 @@ Future<List<Prodotto>> doSearch(String q) async {
       List<Prodotto> listaEan = parseInnerProductsXml(inner, DatasetKind.tr001);
 
       List<Prodotto> Minsan = [];
-
-      
 
       for (var prodotto in listaEan) {
         String xmlBody = buildSearchXml(
@@ -231,8 +232,6 @@ Future<List<Prodotto>> doSearch(String q) async {
 
       logger.i(DateTime.now().difference(start));
       return Minsan;
-
- 
     }
     final xmlBody = buildSearchXml(q, kind: SearchKind.prodotti);
     final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
@@ -241,7 +240,6 @@ Future<List<Prodotto>> doSearch(String q) async {
     //getOrPutImage(parseInnerProductsXml(inner, DatasetKind.tr001).first.codice);
     logger.i(DateTime.now().difference(start));
     return parseInnerProductsXml(inner, DatasetKind.tr001);
-
   } catch (errore) {
     logger.e(errore);
     return [];
@@ -300,16 +298,16 @@ Future<bool?> loadVendibilita(String minsan) async {
 
     final p = prodotti.first;
     final descr = p.getElement('FDI_T292')?.innerText.trim();
-    final data = p.getElement('FDI_T293')?.innerText.trim() ;
+    final data = p.getElement('FDI_T293')?.innerText.trim();
     if (descr != null && descr.isNotEmpty && data != null && data.isNotEmpty) {
-
       DateTime? dData = DateTime.tryParse(data);
-      
-      vendibile = ( descr == "VF" && DateTime.now().difference(dData!).isNegative ) ||
-                   ( descr == "RD" && DateTime.now().difference(dData!).isNegative ) ||
-                   ( descr == "RI" && ! DateTime.now().difference(dData!).isNegative);
-      
-    return vendibile; //? "" : "NON VENDIBILE";
+
+      vendibile =
+          (descr == "VF" && DateTime.now().difference(dData!).isNegative) ||
+          (descr == "RD" && DateTime.now().difference(dData!).isNegative) ||
+          (descr == "RI" && !DateTime.now().difference(dData!).isNegative);
+
+      return vendibile; //? "" : "NON VENDIBILE";
     }
   } catch (errore) {
     logger.e('Errore loadRendibilita: $errore');
