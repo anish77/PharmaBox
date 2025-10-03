@@ -596,7 +596,7 @@ String? _extractInnerXmlFromSoap(String soapXml) {
   final text =
       node.descendants
           .whereType<xml.XmlText>()
-          .map((t) => t.text)
+          .map((t) => t.value)
           .join()
           .trim();
   if (text.isNotEmpty) {
