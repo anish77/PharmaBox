@@ -501,7 +501,7 @@ String? _extractInnerXmlFromSoap(String soapXml) {
     final text =
         first.first.descendants
             .whereType<xml.XmlText>()
-            .map((t) => t.text)
+            .map((t) => t.value)
             .join()
             .trim();
     if (text.contains('<') || text.contains('&lt;')) {
