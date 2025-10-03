@@ -20,7 +20,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
     _counter = widget.initialValue;
   }
 
-   @override
+  @override
   void didUpdateWidget(covariant CounterButtonLarge oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialValue != widget.initialValue) {
@@ -56,7 +56,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
           child: GestureDetector(
             onTap: _decrement,
             child: Container(
-              height: 48, 
+              height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: kSecondary,
@@ -76,16 +76,19 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
 
         // Counter
         Expanded(
-          child: Container(
-            height: 48, 
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: kPrimary,
-              border: Border.all(color: kPrimary, width: 1),
-            ),
-            child: Text(
-              '$_counter',
-              style: const TextStyle(fontSize: 18, color: kSecondary),
+          child: GestureDetector(
+            onTap: _showManualEntryDialog,
+            child: Container(
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: kPrimary,
+                border: Border.all(color: kPrimary, width: 1),
+              ),
+              child: Text(
+                '$_counter',
+                style: const TextStyle(fontSize: 18, color: kWhite),
+              ),
             ),
           ),
         ),
@@ -95,7 +98,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
           child: GestureDetector(
             onTap: _increment,
             child: Container(
-              height: 48, 
+              height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: kSecondary,
@@ -114,5 +117,85 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
         ),
       ],
     );
+  }
+
+  Future<void> _showManualEntryDialog() async {
+    final newValue = await showDialog<int>(
+      context: context,
+      builder: (_) => _ManualCounterDialog(initialValue: _counter),
+    );
+
+    if (newValue != null && newValue != _counter) {
+      setState(() {
+        _counter = newValue;
+        widget.onChanged?.call(_counter);
+      });
+    }
+  }
+}
+
+class _ManualCounterDialog extends StatefulWidget {
+  const _ManualCounterDialog({
+    required this.initialValue,
+  });
+
+  final int initialValue;
+
+  @override
+  State<_ManualCounterDialog> createState() => _ManualCounterDialogState();
+}
+
+class _ManualCounterDialogState extends State<_ManualCounterDialog> {
+  late final TextEditingController _controller;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue.toString());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Modifica quantità'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: 'Numero pezzi',
+          errorText: _errorMessage,
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annulla'),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: const Text('Salva'),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    final parsed = int.tryParse(_controller.text);
+    if (parsed == null || parsed < 0) {
+      setState(() {
+        _errorMessage = 'Inserisci un numero valido.';
+      });
+      return;
+    }
+    Navigator.of(context).pop(parsed);
   }
 }

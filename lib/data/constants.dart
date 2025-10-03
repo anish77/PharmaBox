@@ -1,5 +1,8 @@
 import 'package:flutter/widgets.dart';
 
+const kAbbonamento = 199;
+const kBuonoSconto10 = "SCONTO di 10%";
+const kSconto10 = 0.10;
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
 
@@ -9,6 +12,7 @@ const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
 const kNotAuthorized = 'assets/lock.png';
+const kCongratulazioni = 'assets/congratulazioni.png';
 
 //colors
 const kPrimary = Color(0xFF5D5FEF);
@@ -35,8 +39,21 @@ const kForgotPasswordTitle = 'Password dimenticata';
 const kForgotPassword =
     'Invieremo un codice di verifica a questo indirizzo email, se corrisponde a un account creato in precedenza.';
 // Errori
-const kProdottoNonConsentito = 'Severe worning';
-const kUtenteNonAutorizzato = 'Utente non autorizzato, invia un email a xxxx ';
+const kProdottoNonConsentito = 'Non vendibile';
+const kUtenteNonAutorizzato =
+    'Questa sezione è riservata ai membri. Attiva l’abbonamento per continuare.';
+const kMembershipEmail = 'infopharmabox@doublecore.it'; 
+const kAccessoMembri = 'Richiesta accesso membri';
+const kDiventareMembro = 'Ciao, vorrei diventare membro di PharmaBox.';
+const kRichiestaAssistenza = 'Richiesta assistenza PharmaBox';
+const kSupporto = 'Ciao, avrei bisogno di supporto con la mia esperienza.';
+const kAbbonamentoOmaggio =
+    'Congratulazioni! \nHai ricevuto un abbonamento in omaggio.';
+const kNessunInvito = 'Non hai ancora invitato nessuno';
+const kInvitaAltriAmici =
+    'Invita altri amici per ridurre ancora il costo dell’abbonamento!';
+const kRegCompletata = 'Registrazione completata ✅';
+const kInviti = 'I miei inviti';
 
 // Password sicura
 // Requisiti:
@@ -76,7 +93,15 @@ const kFiltri3 = FilterGroup(
 const kAddToList = 'Aggiungi';
 const kOpzioni = 'Cerca prodotto';
 const kScarica = 'Scarica file';
+const kDisponibileMembri = 'Disponibile solo per i membri.';
+const kDiventaMembro = 'Diventa membro';
 
+//InviteFriendPage
+const kInvitaAmico = 'Invita un amico';
+const kSconto = 'Ottieni fino a 100% di sconto sul prossimo abbonamento!';
+const kLinkRiferimento = 'Condividi il tuo link di riferimento';
+const kInvitaAmici = 'Invita amici a registrarsi';
+const kGuadagna = 'Per ogni amico invitato guadagna 10% di sconto ';
 
 // API endpoints
 const kFarmadatiEndpoint =
@@ -84,9 +109,10 @@ const kFarmadatiEndpoint =
 
 // Cloudflare R2 integration (configura questi valori nel tuo ambiente)
 // Dominio pubblico (CDN) collegato al bucket R2 "prod-images"
-const kR2CdnBaseUrl = 'https://www.doublecore.it';
+const kR2CdnBaseUrl = 'https://doublecore.it';
 // Endpoint del Worker per l'ingest (POST /ingest)
-const kR2IngestEndpoint = 'https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest';
+const kR2IngestEndpoint =
+    'https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest';
 // Opzionale: una API key semplice allineata con il Worker (header x-api-key)
 const kR2ApiKey = 'doublecore';
 const kFarmadatiSoapHeaders = {
@@ -95,3 +121,9 @@ const kFarmadatiSoapHeaders = {
   'SOAPAction':
       'http://webservices.farmadati.it/FarmadatiItaliaWebServicesM1/ExecuteQuery',
 };
+
+
+const kBugiardinoMonografieBase = 'http://api.doublecore.it/pdf_html';
+const kBugiardinoUploadEndpoint = 'http://api.doublecore.it/uploader.php';
+
+enum DatasetKind { tr001, tdz, tdf, td1 }

@@ -72,12 +72,13 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Padding(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: Stack(
+          children: [
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -153,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                                   _submitLogin();
                                 },
                               ),
-                              const SizedBox(height: 16),
+                              // const SizedBox(height: 6),
 
                               // Forgot password
                               TextButton(
@@ -199,19 +200,19 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
             ),
-          ),
 
-          // Loader full screen fuori SafeArea così copre tutto
-          if (_isLoading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black54,
-                child: const Center(
-                  child: CircularProgressIndicator(color: kPrimary),
+            // Loader full screen fuori SafeArea così copre tutto
+            if (_isLoading)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black54,
+                  child: const Center(
+                    child: CircularProgressIndicator(color: kPrimary),
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -4,11 +4,13 @@ import 'dart:io';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/web.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pharma_box/main.dart';
 import '../include/general_functions.dart';
 // rimuoviamo la dipendenza diretta dalla pagina UI per evitare cicli di import
 
+var logger = Logger(printer: PrettyPrinter());
 Future<bool> ensureBleReady() async {
   // 1. Permessi
   final statuses =
@@ -79,8 +81,9 @@ Future<String?> readSerialNumber(BluetoothDevice dev) async {
         break;
       }
     }
-    if (ch == null || !ch.properties.read)
+    if (ch == null || !ch.properties.read) {
       return null; // niente char o non leggibile
+    }
 
     // Leggi e decodifica
     final bytes = await ch.read();
@@ -123,8 +126,10 @@ String _bleDecode(List<int> bytes) {
 
 Future<void> bleStartScanAndListen(WidgetRef ref) async {
   await _bleEnsurePerms();
-  final ok = await ensureBleReady();
-  bool bleScanning = ref.watch(bleScanningProvider);
+  // Evita listener duplicati da sessioni precedenti
+  await _bleDispose();
+  //final ok = await ensureBleReady();
+  final bool bleScanning = ref.read(bleScanningProvider);
   /*
   if (!ok && mounted) {
     ScaffoldMessenger.of(
@@ -151,19 +156,19 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
       //logger.i(results.length);
       for (final r in results) {
         // 👉 Se conosci il nome del tuo scanner, filtra:
-        // if (r.device.platformName != 'NOME_TUO_SCANNER') continue;
-        //logger.i(r.advertisementData);
-        
+        //if (r.device.platformName != 'NOME_TUO_SCANNER') continue;
+        logger.i(r.device);
+
         //if (r.device.remoteId.str != '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B')
         if (r.device.platformName != 'BarCode Scanner BLE') continue;
 
         // preso il primo device; ferma scan e connetti
         await FlutterBluePlus.stopScan();
-        
-            ref.read(bleScanningProvider.notifier).state = false;
-        ref.read(bleStatusProvider.notifier).state = 'Connessione a ${r.device.remoteId.str}…';
 
-      
+        ref.read(bleScanningProvider.notifier).state = false;
+        ref.read(bleStatusProvider.notifier).state =
+            'Connessione a ${r.device.remoteId.str}…';
+
         await _bleConnectAndSubscribe(r.device, ref);
         break;
       }
@@ -178,7 +183,7 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
 
   // quando finisce lo scan (per timeout)
   FlutterBluePlus.isScanning.where((v) => v == false).first.then((_) {
-    if (ref.watch(bleScanningProvider)) {
+    if (ref.read(bleScanningProvider)) {
       ref.read(bleScanningProvider.notifier).state = false;
       ref.read(bleStatusProvider.notifier).state = "Nessun dispositivo trovato";
     }
@@ -198,11 +203,25 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
     (s) => s == BluetoothConnectionState.connected,
   );
 
+  // Ascolta disconnessioni per ripulire i listener e lo stato
+  final connSub = dev.connectionState.listen((s) async {
+    if (s == BluetoothConnectionState.disconnected) {
+      try {
+        ref.read(bleStatusProvider.notifier).state = 'Disconnesso';
+      } catch (_) {}
+      ref.read(bleConnected.notifier).state = false;
+      await _bleDispose();
+      // opzionale: auto-riavvio della scansione
+      // await bleStartScanAndListen(ref);
+    }
+  });
+  _bleSubs.add(connSub);
+
   // check serial
   final serial = await readSerialNumber(dev);
 
-  //logger.i("SERIALE:");
-  //logger.i(serial);
+  logger.i("SERIALE:");
+  logger.i(serial);
 
   //setState(() => _bleStatus = 'Discover services…');
   ref.read(bleStatusProvider.notifier).state = "Discovering services...";
@@ -239,20 +258,21 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
         //if (!mounted) return;
         //setState(() => _bleStatus = 'Letto: $barcode');
         ref.read(bleStatusProvider.notifier).state = 'Letto: $barcode';
-        
+
         // Pubblica il barcode convertito su un provider di stato
         // L'UI lo ascolta e apre la ricerca
         ref.read(scannedBarcodeProvider.notifier).state = tradCode(barcode);
       }, onError: (_) {});
       _bleSubs.add(s);
+      // Sottoscrivi una sola caratteristica notify per evitare duplicati
+      break;
     }
   }
-
-    ref.read(bleStatusProvider.notifier).state =   
-        subscribed > 0
-            ? 'In ascolto… scansiona un barcode'
-            : 'Nessuna characteristic notify nel service FEEA';
-  
+  ref.read(bleConnected.notifier).state = true;
+  ref.read(bleStatusProvider.notifier).state =
+      subscribed > 0
+          ? 'In ascolto… scansiona un barcode'
+          : 'Nessuna characteristic notify nel service FEEA';
 }
 
 Future<void> _bleDispose() async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/prodotto_cell.dart';
@@ -35,6 +36,14 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 8),
+        Text(
+          '${sorted.length} risultati',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: kBluScuro,
+          ),
+        ),
         const SizedBox(height: 8),
         ListView.builder(
           shrinkWrap: true,
@@ -49,45 +58,40 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                   (p) => p.minsan == prodotto.minsan,
                 );
                 final inListQty = idx >= 0 ? lista[idx].pezzi.value : 0;
-                return InkWell(
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  splashFactory: NoSplash.splashFactory,
-                  onTap: () async {
-                    setState(() => _highlightedIndex = index);
-                    await Future.delayed(const Duration(milliseconds: 120));
-                    if (!mounted) return;
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProductDetails(
-                          title: prodotto.nome,
-                          nrListe: widget.nrListe,
-                          prodotto: prodotto,
-                          popOnAdd: true,
-                        ),
-                      ),
+                return ValueListenableBuilder<int>(
+                  valueListenable: prodotto.pezzi,
+                  builder: (context, value, __) {
+                    return ProdottoCell(
+                      key: ValueKey(prodotto.minsan),
+                      prodotto: prodotto,
+                      inListQty: inListQty,
+                      selected: _highlightedIndex == index,
+                      onQuantityChanged: (newValue) {
+                        Carrello.instance.aggiornaQuantita(prodotto, newValue);
+                      },
+                      onInfoTap: () async {
+                        setState(() => _highlightedIndex = index);
+                        await Future.delayed(const Duration(milliseconds: 120));
+                        if (!mounted) return;
+                        await Navigator.push(
+                          // ignore: use_build_context_synchronously
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => ProductDetails(
+                                  title: prodotto.nome,
+                                  nrListe: widget.nrListe,
+                                  prodotto: prodotto,
+                                  popOnAdd: true,
+                                ),
+                          ),
+                        );
+                        if (mounted) {
+                          setState(() => _highlightedIndex = null);
+                        }
+                      },
                     );
-                    if (mounted) setState(() => _highlightedIndex = null);
                   },
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: prodotto.pezzi,
-                    builder: (context, value, __) {
-                      return ProdottoCell(
-                        prodotto: prodotto,
-                        inListQty: inListQty,
-                        selected: _highlightedIndex == index,
-                        onQuantityChanged: (newValue) {
-                          Carrello.instance.aggiornaQuantita(
-                            prodotto,
-                            newValue,
-                          );
-                        },
-                      );
-                    },
-                  ),
                 );
               },
             );

@@ -4,8 +4,16 @@ import 'package:pharma_box/data/constants.dart';
 class CounterButton extends StatefulWidget {
   final int initialValue;
   final Function(int)? onChanged;
+  final double? height;
+  final double? width;
 
-  const CounterButton({super.key, this.initialValue = 1, this.onChanged});
+  const CounterButton({
+    super.key,
+    this.initialValue = 1,
+    this.onChanged,
+    this.height,
+    this.width,
+  });
 
   @override
   State<CounterButton> createState() => _CounterButtonState();
@@ -18,6 +26,16 @@ class _CounterButtonState extends State<CounterButton> {
   void initState() {
     super.initState();
     _counter = widget.initialValue;
+  }
+
+  @override
+  void didUpdateWidget(covariant CounterButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      setState(() {
+        _counter = widget.initialValue;
+      });
+    }
   }
 
   void _increment() {
@@ -38,7 +56,7 @@ class _CounterButtonState extends State<CounterButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Button -
@@ -95,5 +113,19 @@ class _CounterButtonState extends State<CounterButton> {
         ),
       ],
     );
+
+    if (widget.height != null || widget.width != null) {
+      return SizedBox(
+        height: widget.height,
+        width: widget.width,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: row,
+        ),
+      );
+    }
+
+    return row;
   }
 }
