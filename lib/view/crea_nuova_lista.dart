@@ -111,18 +111,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
   @override
   Widget build(BuildContext context) {
-    final canPop = Navigator.of(context).canPop();
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false, // niente icona automatica a sinistra
         scrolledUnderElevation: 0,
-        leading:
-            canPop
-                ? IconButton(
-                  icon: const Icon(Icons.arrow_back, color: kPrimary),
-                  onPressed: () => Navigator.of(context).maybePop(),
-                )
-                : null,
         title: Padding(
           padding: const EdgeInsets.only(left: 8),
           child: Row(
