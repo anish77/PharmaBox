@@ -181,7 +181,7 @@ Future<List<Prodotto>> doSearch(String q) async {
         final List<Prodotto> MinsanCached = [];
 
         for (var prodotto in cached) {
-          print(prodotto);
+          logger.i(prodotto);
           // buona
           MinsanCached.add(
             Prodotto(
@@ -190,7 +190,7 @@ Future<List<Prodotto>> doSearch(String q) async {
               tipoProdotto: prodotto.tipoProdotto?[0],
               tipoProdottoDettaglio: prodotto.tipoProdotto?[1],
               minsan:
-                  (prodotto.minsan != null && prodotto.minsan.isNotEmpty)
+                  (prodotto.minsan.isNotEmpty)
                       ? prodotto.minsan
                       : prodotto.codice,
               immagine: '',
@@ -285,8 +285,6 @@ Future<bool?> loadVendibilita(String minsan) async {
     final xmlBody = buildSearchXml(minsan, kind: SearchKind.lottiInvendibili);
     final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
     final inner = _extractInnerXmlFromSoap(xmlResp);
-
-    print(inner);
 
     bool vendibile = true;
     if (inner == null || inner == 'EMPTY') {
@@ -589,7 +587,7 @@ String? _extractInnerXmlFromSoap(String soapXml) {
 
   // 1) CDATA?
   final cdataText =
-      node.children.whereType<xml.XmlCDATA>().map((c) => c.text.trim()).join();
+      node.children.whereType<xml.XmlCDATA>().map((c) => c.value.trim()).join();
   if (cdataText.isNotEmpty) return cdataText;
 
   // 2) Testo escapato?
