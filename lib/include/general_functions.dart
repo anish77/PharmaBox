@@ -175,20 +175,21 @@ Future<List<Prodotto>> doSearch(String q) async {
     if (q.length > 9 && RegExp(r'^[0-9]+$').hasMatch(q)) {
 
       // lo cerco prima in cache
-      // 1) lookup EAN
-      
+      // 1) lookup EAN      
     final cached = eanToProdottiCache[q];
     if (cached != null) {
 
       final List<Prodotto> MinsanCached = [];
       
       for (var prodotto in cached) {
-        
-      MinsanCached.add( Prodotto(
+
+      print(prodotto);  
+      // buona  
+      MinsanCached.add(Prodotto(
           codice: prodotto.codice,
           nome: prodotto.nome,
-          tipo_prodotto: prodotto.tipo_prodotto?[0],
-          tipo_prodotto_dettaglio: prodotto.tipo_prodotto?[1],
+          tipoProdotto: prodotto.tipoProdotto?[0],
+          tipoProdottoDettaglio: prodotto.tipoProdotto?[1],
           minsan: (prodotto.minsan != null && prodotto.minsan.isNotEmpty) ? prodotto.minsan : prodotto.codice,
           immagine: '',
           pezzi: 1,
@@ -207,9 +208,7 @@ Future<List<Prodotto>> doSearch(String q) async {
       if (inner == null) return [];
       List<Prodotto> listaEan = parseInnerProductsXml(inner, DatasetKind.tr001);
 
-      List<Prodotto> Minsan = [];
-
-      
+      List<Prodotto> Minsan = [];      
 
       for (var prodotto in listaEan) {
         String xmlBody = buildSearchXml(
