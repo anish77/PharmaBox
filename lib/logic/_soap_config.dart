@@ -15,7 +15,7 @@ class _SoapConfig {
 const Map<SearchKind, _SoapConfig> _soapConfigs = {
   SearchKind.prodotti: _SoapConfig(dataset: 'TR001', filterKey: 'FDI_0004'),
   SearchKind.ean: _SoapConfig(dataset: 'TR016', filterKey: 'FDI_0002'),
-  SearchKind.lottiInvendibili: _SoapConfig(dataset: 'TR_LOTTI_INV', filterKey: 'FDI_0001'),
+  SearchKind.lottiInvendibili: _SoapConfig(dataset: 'TR012', filterKey: 'FDI_T291'),
   SearchKind.immagine: _SoapConfig(dataset: 'TDZ', filterKey: 'FDI_T218'),
   SearchKind.bugiardino: _SoapConfig(dataset: 'TDF', filterKey: 'FDI_T218'),
   SearchKind.bugiardinoparafarmaco: _SoapConfig(dataset: 'TD1', filterKey: 'FDI_T218'),

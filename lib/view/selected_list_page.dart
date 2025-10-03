@@ -129,8 +129,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         _qta[p.codice] = 1;
       }
       if (clearSearchState) {
-        _risultati = [];
-        _searchCtrl.clear();
+      _risultati = [];
+      _searchCtrl.clear();
       }
     });
   }
