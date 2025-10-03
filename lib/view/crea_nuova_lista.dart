@@ -344,7 +344,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                   if (nuovoNome != null &&
                                       nuovoNome.isNotEmpty) {
                                     final currentUid = _currentUid;
-                                    if (currentUid == null) {
+                                    if (currentUid == null && context.mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -416,13 +416,15 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                               onDismissed: (direction) async {
                                 if (direction == DismissDirection.endToStart) {
                                   await eliminaLista(items[index]);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Lista "${items[index]}" eliminata',
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Lista "${items[index]}" eliminata',
+                                        ),
                                       ),
-                                    ),
-                                  );
+                                    );
+                                  }
                                 }
                               },
                               child: ListTile(
@@ -452,16 +454,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                       ),
                                     );
                                   }
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => SelectedListPage(
-                                            titolo: items[index],
-                                            nrListe: items.length,
-                                          ),
-                                    ),
-                                  );
+                                  if (context.mounted) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => SelectedListPage(
+                                              titolo: items[index],
+                                              nrListe: items.length,
+                                            ),
+                                      ),
+                                    );
+                                  }
                                 },
                               ),
                             );

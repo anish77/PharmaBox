@@ -203,7 +203,7 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                     valueListenable: prodotto.pezzi,
                     builder: (context, value, _) {
                       return ProdottoCell(
-                        key: ValueKey(prodotto.minsan), 
+                        key: ValueKey(prodotto.minsan),
                         prodotto: prodotto,
                         inListQty: value,
                         selected: _highlightedIndex == index,
@@ -218,18 +218,20 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                           await Future.delayed(
                             const Duration(milliseconds: 120),
                           );
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => ProductDetails(
-                                    title: prodotto.nome,
-                                    nrListe: widget.nrListe,
-                                    prodotto: prodotto,
-                                    popOnAdd: false,
-                                  ),
-                            ),
-                          );
+                          if (context.mounted) {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => ProductDetails(
+                                      title: prodotto.nome,
+                                      nrListe: widget.nrListe,
+                                      prodotto: prodotto,
+                                      popOnAdd: false,
+                                    ),
+                              ),
+                            );
+                          }
                           if (mounted) {
                             setState(() => _highlightedIndex = null);
                           }

@@ -165,13 +165,15 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       await _addAmiciInvitati();
       final double basePrice = kAbbonamento.toDouble();
       final double discountedPrice = basePrice * (1 - _discountPercent);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Buono applicato: da ${basePrice.toStringAsFixed(2)}€ a ${discountedPrice.toStringAsFixed(2)}€',
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Buono applicato: da ${basePrice.toStringAsFixed(2)}€ a ${discountedPrice.toStringAsFixed(2)}€',
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
 
     //dopo
@@ -314,10 +316,14 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
 
     switch (option) {
       case _PaymentOption.paypal:
-        await _startPaypalPayment(context);
+        if (context.mounted) {
+          await _startPaypalPayment(context);
+        }
         break;
       case _PaymentOption.creditCard:
-        await _startCreditCardPayment(context);
+        if (context.mounted) {
+          await _startCreditCardPayment(context);
+        }
         break;
     }
   }
@@ -492,7 +498,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       },
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pagamento con carta in elaborazione...')),
       );
