@@ -143,6 +143,9 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
   ref.read(bleScanningProvider.notifier).state = true;
   ref.read(bleStatusProvider.notifier).state = "Scanning...";
 
+  // wait for bluetooth to turn on & permission granted
+await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+
   await FlutterBluePlus.startScan(
     //withServices: [_feea],
     timeout: const Duration(seconds: 6),

@@ -367,12 +367,12 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                     );
                   } else {
                   if (bleScanning) {
-                    await FlutterBluePlus.stopScan();
+                    FlutterBluePlus.stopScan();
                     ref.read(bleScanningProvider.notifier).state = false;
                     ref.read(bleStatusProvider.notifier).state =
                         'Scansione interrotta';
                   } else {
-                    await bleStartScanAndListen(ref);
+                    bleStartScanAndListen(ref);
                   }
                 }},
               ),
