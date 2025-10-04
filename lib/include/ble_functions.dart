@@ -117,6 +117,12 @@ Future<void> _bleEnsurePerms() async {
 }
 
 String _bleDecode(List<int> bytes) {
+  if (bytes.length == 17) {
+    String barcode = String.fromCharCodes(bytes).trim().substring(10,16);
+    print(barcode);
+
+    return barcode;
+  }
   try {
     return utf8.decode(bytes, allowMalformed: true).trim();
   } catch (_) {
@@ -144,7 +150,9 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
   ref.read(bleStatusProvider.notifier).state = "Scanning...";
 
   // wait for bluetooth to turn on & permission granted
-await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+  await FlutterBluePlus.adapterState
+      .where((val) => val == BluetoothAdapterState.on)
+      .first;
 
   await FlutterBluePlus.startScan(
     //withServices: [_feea],

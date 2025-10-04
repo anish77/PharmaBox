@@ -122,6 +122,11 @@ const kFarmadatiSoapHeaders = {
       'http://webservices.farmadati.it/FarmadatiItaliaWebServicesM1/ExecuteQuery',
 };
 
+const kBitProdottoUndefined = 0;
+const kBitProdottoVendibile = 1;
+const kBitProdottoNonVendibile = 2;
+
+
 
 const kBugiardinoMonografieBase = 'http://api.doublecore.it/pdf_html';
 const kBugiardinoUploadEndpoint = 'http://api.doublecore.it/uploader.php';

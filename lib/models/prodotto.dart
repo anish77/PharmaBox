@@ -9,7 +9,7 @@ class Prodotto {
   final String description;
   final String ingredients;
   final String howToTake;
-  final bool consentito;
+  int vendibile;
   final String codice;
   final List<String> rendibile; // Array di 3 stringhe
   final ValueNotifier<int> pezzi; // 👈 diventa osservabile
@@ -21,7 +21,7 @@ class Prodotto {
     this.tipoProdottoDettaglio,
     required this.immagine,
     required int pezzi,
-    required this.consentito,
+    required this.vendibile,
     required this.description,
     required this.ingredients,
     required this.howToTake,

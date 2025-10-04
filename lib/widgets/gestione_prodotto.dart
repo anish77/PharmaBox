@@ -16,7 +16,7 @@ class GestioneProdotto {
       minsan: 'Minsan 123456789',
       immagine: 'assets/noImage.png',
       pezzi: 1,
-      consentito: false,
+      vendibile: 0,
       description:
           "Cardiavax™ is a combination therapy containing an HMG-CoA reductase inhibitor (atorvastatin) and a beta-adrenergic blocker (metoprolol).",
       ingredients:

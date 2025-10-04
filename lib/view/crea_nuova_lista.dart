@@ -18,6 +18,13 @@ class CreaNuovaLista extends StatefulWidget {
   State<CreaNuovaLista> createState() => _CreaNuovaListaState();
 }
 
+class _ListaViewData {
+  const _ListaViewData({required this.nome, required this.totalePezzi});
+
+  final String nome;
+  final int totalePezzi;
+}
+
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
   final Logger _logger = Logger(printer: PrettyPrinter());
   int? selectedIndex;
@@ -56,11 +63,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     }
   }
 
-  Stream<List<String>> getListeStream() {
+  Stream<List<_ListaViewData>> getListeStream() {
     final uid = _currentUid;
     if (uid == null) {
       _logger.w('getListeStream invoked without authenticated user');
-      return Stream<List<String>>.value(const []);
+      return Stream<List<_ListaViewData>>.value(const []);
     }
 
     return FirebaseFirestore.instance
@@ -68,16 +75,53 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         .doc(uid)
         .snapshots()
         .map((doc) {
-          if (!doc.exists) return <String>[];
+          if (!doc.exists) return const <_ListaViewData>[];
           final data = doc.data();
           final rawListe = data?['liste'] ?? [];
           final liste = List<Map<String, dynamic>>.from(rawListe);
-          return List<String>.from(
-            liste
-                .map((l) => (l['nomeLista'] ?? '') as String)
-                .where((nome) => nome.isNotEmpty),
-          );
+          return liste
+              .map((l) {
+                final nomeLista = (l['nomeLista'] ?? '') as String;
+                if (nomeLista.isEmpty) return null;
+                final totaleItems = _sommaQuantita(l['items']);
+                final totaleProdotti = _sommaQuantita(l['prodotti']);
+                final totale =
+                    totaleItems > 0 ? totaleItems : totaleProdotti;
+                return _ListaViewData(
+                  nome: nomeLista,
+                  totalePezzi: totale,
+                );
+              })
+              .whereType<_ListaViewData>()
+              .toList(growable: false);
         });
+  }
+
+  int _sommaQuantita(dynamic rawItems) {
+    if (rawItems is Iterable) {
+      var totale = 0;
+      for (final element in rawItems) {
+        if (element is Map) {
+          final map =
+              element.map((key, value) => MapEntry(key.toString(), value));
+          final quantity = map['quantity'] ??
+              map['qty'] ??
+              map['pezzi'] ??
+              map['quantita'] ??
+              map['qta'];
+          totale += _parseQuantity(quantity);
+        }
+      }
+      return totale;
+    }
+    return 0;
+  }
+
+  int _parseQuantity(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   Future<void> eliminaLista(String nomeLista) async {
@@ -266,23 +310,26 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 child: Builder(
                   builder: (scaffoldContext) {
                     // context sicuro
-                    return StreamBuilder<List<String>>(
+                    return StreamBuilder<List<_ListaViewData>>(
                       stream: getListeStream(),
                       builder: (context, snapshot) {
-                        final items = snapshot.data ?? [];
+                        final liste = snapshot.data ?? const <_ListaViewData>[];
 
-                        if (items.isEmpty) {
+                        if (liste.isEmpty) {
                           return const Center(
                             child: Text('Nessuna lista disponibile'),
                           );
                         }
 
                         return ListView.builder(
-                          itemCount: items.length,
+                          itemCount: liste.length,
                           itemBuilder: (context, index) {
+                            final entry = liste[index];
+                            final nomeLista = entry.nome;
+                            final totalePezzi = entry.totalePezzi;
                             final isSelected = selectedIndex == index;
                             return Dismissible(
-                              key: Key(items[index]),
+                              key: Key(nomeLista),
                               direction: DismissDirection.horizontal,
                               background: Container(
                                 alignment: Alignment.centerLeft,
@@ -310,7 +357,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                 if (direction == DismissDirection.startToEnd) {
                                   // Edit lista
                                   final TextEditingController controller =
-                                      TextEditingController(text: items[index]);
+                                      TextEditingController(text: nomeLista);
                                   final nuovoNome = await showDialog<String>(
                                     context: context,
                                     builder:
@@ -369,7 +416,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                             data['liste'] ?? [],
                                           );
                                       final indexLista = liste.indexWhere(
-                                        (l) => l['nomeLista'] == items[index],
+                                        (l) => l['nomeLista'] == nomeLista,
                                       );
                                       if (indexLista >= 0) {
                                         liste[indexLista]['nomeLista'] =
@@ -391,7 +438,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                             "Conferma eliminazione",
                                           ),
                                           content: Text(
-                                            'Vuoi davvero cancellare la lista "${items[index]}"?',
+                                            'Vuoi davvero cancellare la lista "$nomeLista"?',
                                           ),
                                           actions: [
                                             TextButton(
@@ -417,12 +464,12 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                               },
                               onDismissed: (direction) async {
                                 if (direction == DismissDirection.endToStart) {
-                                  await eliminaLista(items[index]);
+                                  await eliminaLista(nomeLista);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          'Lista "${items[index]}" eliminata',
+                                          'Lista "$nomeLista" eliminata',
                                         ),
                                       ),
                                     );
@@ -430,7 +477,25 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                 }
                               },
                               child: ListTile(
-                                title: Text(items[index]),
+                                title: Text(nomeLista),
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: kSecondary.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    '$totalePezzi',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: kBluScuro,
+                                    ),
+                                  ),
+                                ),
                                 tileColor:
                                     isSelected
                                         ? kSecondary.withValues(alpha: 0.3)
@@ -440,7 +505,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                     selectedIndex = index;
                                   });
                                   // Imposta la lista corrente nel carrello
-                                  Carrello.instance.usaLista(items[index]);
+                                  Carrello.instance.usaLista(nomeLista);
                                   // Carica prodotti salvati su Firestore per questa lista
                                   final uid = _currentUid;
                                   if (uid != null) {
@@ -462,8 +527,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                       MaterialPageRoute(
                                         builder:
                                             (context) => SelectedListPage(
-                                              titolo: items[index],
-                                              nrListe: items.length,
+                                              titolo: nomeLista,
+                                              nrListe: liste.length,
                                             ),
                                       ),
                                     );

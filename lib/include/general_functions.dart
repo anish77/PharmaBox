@@ -60,6 +60,18 @@ String tradCode(String code) {
   }
 }
 
+int setBit(int value, int position) {
+  return value | (1 << position);
+}
+
+int clearBit(int value, int position) {
+  return value & ~(1 << position);
+}
+
+bool isBit(int value, int position) {
+  return (value & (1 << position)) != 0;
+}
+
 /// Helper per la seconda branch (NUMERICO -> ALFANUMERICO)
 String _numericToAlpha(int value) {
   int nNumero32 = _nNumero32Start;
@@ -104,7 +116,7 @@ List<Prodotto> parseInnerProductsXml(
           minsan: (minsan != null && minsan.isNotEmpty) ? minsan : codice,
           immagine: '',
           pezzi: 1,
-          consentito: true,
+          vendibile: 0,
           description: '',
           ingredients: '',
           howToTake: '',
@@ -123,7 +135,7 @@ List<Prodotto> parseInnerProductsXml(
           nome: '',
           minsan: codice,
           pezzi: 1,
-          consentito: true,
+          vendibile: 0,
           description: '',
           ingredients: '',
           howToTake: '',
@@ -142,7 +154,7 @@ List<Prodotto> parseInnerProductsXml(
           nome: '',
           minsan: codice,
           pezzi: 1,
-          consentito: true,
+          vendibile: 0,
           description: description,
           ingredients: '',
           howToTake: '',
@@ -161,7 +173,7 @@ List<Prodotto> parseInnerProductsXml(
           nome: '',
           minsan: codice,
           pezzi: 1,
-          consentito: true,
+          vendibile: 0,
           description: description,
           ingredients: '',
           howToTake: '',
@@ -195,7 +207,7 @@ Future<List<Prodotto>> doSearch(String q) async {
                       : prodotto.codice,
               immagine: '',
               pezzi: 1,
-              consentito: true,
+              vendibile: 0,
               description: '',
               ingredients: '',
               howToTake: '',

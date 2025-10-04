@@ -115,7 +115,7 @@ class Carrello {
             minsan: (e['minsan'] ?? '') as String,
             immagine: kNoImage,
             pezzi: qty,
-            consentito: false,
+            vendibile: 0,
             description: '',
             ingredients: '',
             howToTake: '',
