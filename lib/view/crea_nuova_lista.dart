@@ -266,7 +266,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 45),
+              const SizedBox(height: 10),
               // Intestazione Liste
               Container(
                 width: double.infinity,
@@ -287,6 +287,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       ),
                     ),
                     IconButton(
+                      icon: Icon(Icons.playlist_add, color: kBluScuro, size:35),
+                      /*
                       icon: Text(
                         '+',
                         style: TextStyle(
@@ -295,6 +297,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                           color: kGreen,
                         ),
                       ),
+                      */
                       tooltip: "Crea nuova lista",
                       splashRadius: 20,
                       padding: EdgeInsets.zero,
@@ -546,20 +549,43 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                             const SizedBox(height: 12),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                                horizontal: 16,
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: kSecondary.withValues(alpha: 0.6),
+                                color: kSecondary.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                'Totale pezzi in tutte le liste: $totaleGlobal',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: kBluScuro,
-                                ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Totale pezzi in tutte le liste:',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: kBluScuro,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: kSecondary.withValues(alpha: 0.6),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Text(
+                                      '$totaleGlobal',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: kBluScuro,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
