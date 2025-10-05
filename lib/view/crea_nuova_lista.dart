@@ -314,26 +314,30 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       stream: getListeStream(),
                       builder: (context, snapshot) {
                         final liste = snapshot.data ?? const <_ListaViewData>[];
+                        final totaleGlobal =
+                            liste.fold<int>(0, (sum, e) => sum + e.totalePezzi);
 
-                        if (liste.isEmpty) {
-                          return const Center(
-                            child: Text('Nessuna lista disponibile'),
-                          );
-                        }
-
-                        return ListView.builder(
-                          itemCount: liste.length,
-                          itemBuilder: (context, index) {
-                            final entry = liste[index];
-                            final nomeLista = entry.nome;
-                            final totalePezzi = entry.totalePezzi;
-                            final isSelected = selectedIndex == index;
-                            return Dismissible(
-                              key: Key(nomeLista),
-                              direction: DismissDirection.horizontal,
-                              background: Container(
-                                alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.symmetric(
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: liste.isEmpty
+                                  ? const Center(
+                                      child: Text('Nessuna lista disponibile'),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: liste.length,
+                                      itemBuilder: (context, index) {
+                                        final entry = liste[index];
+                                        final nomeLista = entry.nome;
+                                        final totalePezzi = entry.totalePezzi;
+                                        final isSelected = selectedIndex == index;
+                                        return Dismissible(
+                                          key: Key(nomeLista),
+                                          direction: DismissDirection.horizontal,
+                                          background: Container(
+                                            alignment: Alignment.centerLeft,
+                                            padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
                                 ),
                                 color: Colors.green,
@@ -535,8 +539,30 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                   }
                                 },
                               ),
-                            );
-                          },
+                                        );
+                                      },
+                                    ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: kSecondary.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Totale pezzi in tutte le liste: $totaleGlobal',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: kBluScuro,
+                                ),
+                              ),
+                            ),
+                          ],
                         );
                       },
                     );

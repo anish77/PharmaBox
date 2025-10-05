@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/view/forgot_password.dart';
@@ -24,19 +25,69 @@ class _LoginPageState extends State<LoginPage> {
   var _enteredEmail = '';
   var _enteredPassword = '';
   bool _isLoading = false;
+  bool _rememberCredentials = false;
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final savedEmail = await _secureStorage.read(key: 'login_email');
+      final savedPassword = await _secureStorage.read(key: 'login_password');
+      if (!mounted) return;
+      _emailController.text = savedEmail ?? '';
+      _passwordController.text = savedPassword ?? '';
+      setState(() {
+        _enteredEmail = savedEmail ?? '';
+        _enteredPassword = savedPassword ?? '';
+        _rememberCredentials =
+            (savedEmail != null && savedEmail.isNotEmpty) &&
+            (savedPassword != null && savedPassword.isNotEmpty);
+      });
+    } catch (error, stackTrace) {
+      logger.e(
+        'Errore nel caricare credenziali salvate: $error',
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   void _submitLogin() async {
+    final email = _enteredEmail.trim();
+    final password = _enteredPassword.trim();
     setState(() {
       _isLoading = true;
     });
 
     try {
       final userCredentials = await _firebase.signInWithEmailAndPassword(
-        email: _enteredEmail.trim(),
-        password: _enteredPassword.trim(),
+        email: email,
+        password: password,
       );
 
       logger.i('Login successful: ${userCredentials.user?.email}');
+
+      if (_rememberCredentials) {
+        await _secureStorage.write(key: 'login_email', value: email);
+        await _secureStorage.write(key: 'login_password', value: password);
+      } else {
+        await _secureStorage.delete(key: 'login_email');
+        await _secureStorage.delete(key: 'login_password');
+      }
       Navigator.push(
         // ignore: use_build_context_synchronously
         context,
@@ -112,6 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                               CustomTextFormField(
                                 label: 'Email',
                                 keyboardType: TextInputType.emailAddress,
+                                controller: _emailController,
                                 validator: (value) {
                                   if (value == null ||
                                       value.trim().isEmpty ||
@@ -123,12 +175,16 @@ class _LoginPageState extends State<LoginPage> {
                                 onSaved: (value) {
                                   _enteredEmail = value ?? '';
                                 },
+                                onChanged: (value) {
+                                  _enteredEmail = value;
+                                },
                               ),
                               const SizedBox(height: 16),
                               // Password field
                               CustomTextFormField(
                                 label: 'Password',
                                 obscureText: true,
+                                controller: _passwordController,
                                 validator: (value) {
                                   if (value == null ||
                                       value.trim().length < 6) {
@@ -138,6 +194,21 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                                 onSaved: (value) {
                                   _enteredPassword = value ?? '';
+                                },
+                                onChanged: (value) {
+                                  _enteredPassword = value;
+                                },
+                              ),
+                              CheckboxListTile(
+                                contentPadding: EdgeInsets.zero,
+                                value: _rememberCredentials,
+                                activeColor: kPrimary,
+                                controlAffinity: ListTileControlAffinity.leading,
+                                title: const Text('Ricorda credenziali'),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _rememberCredentials = value ?? false;
+                                  });
                                 },
                               ),
                               const SizedBox(height: 24),
@@ -151,6 +222,8 @@ class _LoginPageState extends State<LoginPage> {
                                       _formKey.currentState!.validate();
                                   if (!isValid) return;
                                   _formKey.currentState!.save();
+                                  _enteredEmail = _emailController.text;
+                                  _enteredPassword = _passwordController.text;
                                   _submitLogin();
                                 },
                               ),

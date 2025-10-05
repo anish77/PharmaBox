@@ -12,6 +12,7 @@ class CustomTextFormField extends StatelessWidget {
   final TextStyle? floatingLabelStyle;
   final TextStyle? textStyle;
   final Color? cursorColor;
+  final TextEditingController? controller;
 
   const CustomTextFormField({
     super.key,
@@ -25,11 +26,13 @@ class CustomTextFormField extends StatelessWidget {
     this.floatingLabelStyle,
     this.textStyle,
     this.cursorColor,
+    this.controller,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
