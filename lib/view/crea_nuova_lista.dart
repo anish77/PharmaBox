@@ -85,12 +85,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 if (nomeLista.isEmpty) return null;
                 final totaleItems = _sommaQuantita(l['items']);
                 final totaleProdotti = _sommaQuantita(l['prodotti']);
-                final totale =
-                    totaleItems > 0 ? totaleItems : totaleProdotti;
-                return _ListaViewData(
-                  nome: nomeLista,
-                  totalePezzi: totale,
-                );
+                final totale = totaleItems > 0 ? totaleItems : totaleProdotti;
+                return _ListaViewData(nome: nomeLista, totalePezzi: totale);
               })
               .whereType<_ListaViewData>()
               .toList(growable: false);
@@ -102,9 +98,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
       var totale = 0;
       for (final element in rawItems) {
         if (element is Map) {
-          final map =
-              element.map((key, value) => MapEntry(key.toString(), value));
-          final quantity = map['quantity'] ??
+          final map = element.map(
+            (key, value) => MapEntry(key.toString(), value),
+          );
+          final quantity =
+              map['quantity'] ??
               map['qty'] ??
               map['pezzi'] ??
               map['quantita'] ??
@@ -287,7 +285,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.playlist_add, color: kBluScuro, size:35),
+                      icon: Icon(
+                        Icons.addchart_outlined,
+                        color: kBluScuro,
+                        size: 35,
+                      ),
                       /*
                       icon: Text(
                         '+',
@@ -317,234 +319,293 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       stream: getListeStream(),
                       builder: (context, snapshot) {
                         final liste = snapshot.data ?? const <_ListaViewData>[];
-                        final totaleGlobal =
-                            liste.fold<int>(0, (sum, e) => sum + e.totalePezzi);
+                        final totaleGlobal = liste.fold<int>(
+                          0,
+                          (sum, e) => sum + e.totalePezzi,
+                        );
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
-                              child: liste.isEmpty
-                                  ? const Center(
-                                      child: Text('Nessuna lista disponibile'),
-                                    )
-                                  : ListView.builder(
-                                      itemCount: liste.length,
-                                      itemBuilder: (context, index) {
-                                        final entry = liste[index];
-                                        final nomeLista = entry.nome;
-                                        final totalePezzi = entry.totalePezzi;
-                                        final isSelected = selectedIndex == index;
-                                        return Dismissible(
-                                          key: Key(nomeLista),
-                                          direction: DismissDirection.horizontal,
-                                          background: Container(
-                                            alignment: Alignment.centerLeft,
-                                            padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                color: Colors.green,
-                                child: const Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              secondaryBackground: Container(
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                color: Colors.red,
-                                child: const Icon(
-                                  Icons.delete,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              confirmDismiss: (direction) async {
-                                if (direction == DismissDirection.startToEnd) {
-                                  // Edit lista
-                                  final TextEditingController controller =
-                                      TextEditingController(text: nomeLista);
-                                  final nuovoNome = await showDialog<String>(
-                                    context: context,
-                                    builder:
-                                        (context) => AlertDialog(
-                                          title: const Text(
-                                            "Modifica nome lista",
-                                          ),
-                                          content: TextField(
-                                            controller: controller,
-                                            decoration: const InputDecoration(
-                                              labelText: "Nuovo nome",
-                                            ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              child: const Text("Annulla"),
-                                              onPressed:
-                                                  () => Navigator.of(
-                                                    context,
-                                                  ).pop(null),
-                                            ),
-                                            TextButton(
-                                              child: const Text("Salva"),
-                                              onPressed:
-                                                  () => Navigator.of(
-                                                    context,
-                                                  ).pop(controller.text.trim()),
-                                            ),
-                                          ],
+                              child:
+                                  liste.isEmpty
+                                      ? const Center(
+                                        child: Text(
+                                          'Nessuna lista disponibile',
                                         ),
-                                  );
+                                      )
+                                      : ListView.builder(
+                                        itemCount: liste.length,
+                                        itemBuilder: (context, index) {
+                                          final entry = liste[index];
+                                          final nomeLista = entry.nome;
+                                          final totalePezzi = entry.totalePezzi;
+                                          final isSelected =
+                                              selectedIndex == index;
+                                          return Dismissible(
+                                            key: Key(nomeLista),
+                                            direction:
+                                                DismissDirection.horizontal,
+                                            background: Container(
+                                              alignment: Alignment.centerLeft,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                  ),
+                                              color: Colors.green,
+                                              child: const Icon(
+                                                Icons.edit,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            secondaryBackground: Container(
+                                              alignment: Alignment.centerRight,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                  ),
+                                              color: Colors.red,
+                                              child: const Icon(
+                                                Icons.delete,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            confirmDismiss: (direction) async {
+                                              if (direction ==
+                                                  DismissDirection.startToEnd) {
+                                                // Edit lista
+                                                final TextEditingController
+                                                controller =
+                                                    TextEditingController(
+                                                      text: nomeLista,
+                                                    );
+                                                final nuovoNome = await showDialog<
+                                                  String
+                                                >(
+                                                  context: context,
+                                                  builder:
+                                                      (context) => AlertDialog(
+                                                        title: const Text(
+                                                          "Modifica nome lista",
+                                                        ),
+                                                        content: TextField(
+                                                          controller:
+                                                              controller,
+                                                          decoration:
+                                                              const InputDecoration(
+                                                                labelText:
+                                                                    "Nuovo nome",
+                                                              ),
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            child: const Text(
+                                                              "Annulla",
+                                                            ),
+                                                            onPressed:
+                                                                () =>
+                                                                    Navigator.of(
+                                                                      context,
+                                                                    ).pop(null),
+                                                          ),
+                                                          TextButton(
+                                                            child: const Text(
+                                                              "Salva",
+                                                            ),
+                                                            onPressed:
+                                                                () => Navigator.of(
+                                                                  context,
+                                                                ).pop(
+                                                                  controller
+                                                                      .text
+                                                                      .trim(),
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                );
 
-                                  if (nuovoNome != null &&
-                                      nuovoNome.isNotEmpty) {
-                                    final currentUid = _currentUid;
-                                    if (currentUid == null && context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Effettua il login per modificare le liste',
-                                          ),
-                                        ),
-                                      );
-                                      return false;
-                                    }
-                                    final docRef = FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(currentUid);
-                                    final doc = await docRef.get();
-                                    if (doc.exists) {
-                                      final data = doc.data()!;
-                                      final liste =
-                                          List<Map<String, dynamic>>.from(
-                                            data['liste'] ?? [],
+                                                if (nuovoNome != null &&
+                                                    nuovoNome.isNotEmpty) {
+                                                  final currentUid =
+                                                      _currentUid;
+                                                  if (currentUid == null &&
+                                                      context.mounted) {
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'Effettua il login per modificare le liste',
+                                                        ),
+                                                      ),
+                                                    );
+                                                    return false;
+                                                  }
+                                                  final docRef =
+                                                      FirebaseFirestore.instance
+                                                          .collection('users')
+                                                          .doc(currentUid);
+                                                  final doc =
+                                                      await docRef.get();
+                                                  if (doc.exists) {
+                                                    final data = doc.data()!;
+                                                    final liste = List<
+                                                      Map<String, dynamic>
+                                                    >.from(data['liste'] ?? []);
+                                                    final indexLista = liste
+                                                        .indexWhere(
+                                                          (l) =>
+                                                              l['nomeLista'] ==
+                                                              nomeLista,
+                                                        );
+                                                    if (indexLista >= 0) {
+                                                      liste[indexLista]['nomeLista'] =
+                                                          nuovoNome;
+                                                      await docRef.update({
+                                                        'liste': liste,
+                                                      });
+                                                    }
+                                                  }
+                                                }
+                                                return false; // importante: non chiudere il Dismissible
+                                              }
+
+                                              // Se swipe verso sinistra → conferma eliminazione
+                                              if (direction ==
+                                                  DismissDirection.endToStart) {
+                                                return await showDialog(
+                                                  context: context,
+                                                  builder:
+                                                      (context) => AlertDialog(
+                                                        title: const Text(
+                                                          "Conferma eliminazione",
+                                                        ),
+                                                        content: Text(
+                                                          'Vuoi davvero cancellare la lista "$nomeLista"?',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            child: const Text(
+                                                              "Annulla",
+                                                            ),
+                                                            onPressed:
+                                                                () =>
+                                                                    Navigator.of(
+                                                                      context,
+                                                                    ).pop(
+                                                                      false,
+                                                                    ),
+                                                          ),
+                                                          TextButton(
+                                                            child: const Text(
+                                                              "Elimina",
+                                                            ),
+                                                            onPressed:
+                                                                () =>
+                                                                    Navigator.of(
+                                                                      context,
+                                                                    ).pop(true),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                );
+                                              }
+
+                                              return false;
+                                            },
+                                            onDismissed: (direction) async {
+                                              if (direction ==
+                                                  DismissDirection.endToStart) {
+                                                await eliminaLista(nomeLista);
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Lista "$nomeLista" eliminata',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                            child: ListTile(
+                                              title: Text(nomeLista),
+                                              trailing: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 6,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: kSecondary.withValues(
+                                                    alpha: 0.6,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                ),
+                                                child: Text(
+                                                  '$totalePezzi',
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: kBluScuro,
+                                                  ),
+                                                ),
+                                              ),
+                                              tileColor:
+                                                  isSelected
+                                                      ? kSecondary.withValues(
+                                                        alpha: 0.3,
+                                                      )
+                                                      : null,
+                                              onTap: () async {
+                                                setState(() {
+                                                  selectedIndex = index;
+                                                });
+                                                // Imposta la lista corrente nel carrello
+                                                Carrello.instance.usaLista(
+                                                  nomeLista,
+                                                );
+                                                // Carica prodotti salvati su Firestore per questa lista
+                                                final uid = _currentUid;
+                                                if (uid != null) {
+                                                  await Carrello.instance
+                                                      .caricaListaDaCloud(uid);
+                                                } else {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Effettua il login per sincronizzare la lista',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                                if (context.mounted) {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder:
+                                                          (
+                                                            context,
+                                                          ) => SelectedListPage(
+                                                            titolo: nomeLista,
+                                                            nrListe:
+                                                                liste.length,
+                                                          ),
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                            ),
                                           );
-                                      final indexLista = liste.indexWhere(
-                                        (l) => l['nomeLista'] == nomeLista,
-                                      );
-                                      if (indexLista >= 0) {
-                                        liste[indexLista]['nomeLista'] =
-                                            nuovoNome;
-                                        await docRef.update({'liste': liste});
-                                      }
-                                    }
-                                  }
-                                  return false; // importante: non chiudere il Dismissible
-                                }
-
-                                // Se swipe verso sinistra → conferma eliminazione
-                                if (direction == DismissDirection.endToStart) {
-                                  return await showDialog(
-                                    context: context,
-                                    builder:
-                                        (context) => AlertDialog(
-                                          title: const Text(
-                                            "Conferma eliminazione",
-                                          ),
-                                          content: Text(
-                                            'Vuoi davvero cancellare la lista "$nomeLista"?',
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              child: const Text("Annulla"),
-                                              onPressed:
-                                                  () => Navigator.of(
-                                                    context,
-                                                  ).pop(false),
-                                            ),
-                                            TextButton(
-                                              child: const Text("Elimina"),
-                                              onPressed:
-                                                  () => Navigator.of(
-                                                    context,
-                                                  ).pop(true),
-                                            ),
-                                          ],
-                                        ),
-                                  );
-                                }
-
-                                return false;
-                              },
-                              onDismissed: (direction) async {
-                                if (direction == DismissDirection.endToStart) {
-                                  await eliminaLista(nomeLista);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Lista "$nomeLista" eliminata',
-                                        ),
+                                        },
                                       ),
-                                    );
-                                  }
-                                }
-                              },
-                              child: ListTile(
-                                title: Text(nomeLista),
-                                trailing: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: kSecondary.withValues(alpha: 0.6),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Text(
-                                    '$totalePezzi',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: kBluScuro,
-                                    ),
-                                  ),
-                                ),
-                                tileColor:
-                                    isSelected
-                                        ? kSecondary.withValues(alpha: 0.3)
-                                        : null,
-                                onTap: () async {
-                                  setState(() {
-                                    selectedIndex = index;
-                                  });
-                                  // Imposta la lista corrente nel carrello
-                                  Carrello.instance.usaLista(nomeLista);
-                                  // Carica prodotti salvati su Firestore per questa lista
-                                  final uid = _currentUid;
-                                  if (uid != null) {
-                                    await Carrello.instance.caricaListaDaCloud(
-                                      uid,
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Effettua il login per sincronizzare la lista',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  if (context.mounted) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) => SelectedListPage(
-                                              titolo: nomeLista,
-                                              nrListe: liste.length,
-                                            ),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                                        );
-                                      },
-                                    ),
                             ),
                             const SizedBox(height: 12),
                             Container(
@@ -557,7 +618,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Totale pezzi in tutte le liste:',
