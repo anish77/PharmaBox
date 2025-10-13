@@ -3,7 +3,7 @@ import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
-import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/domain/models/prodotto.dart';
 import 'package:pharma_box/widgets/non_autorizzato.dart';
 
 class GestioneProdotto {
@@ -12,6 +12,7 @@ class GestioneProdotto {
   Widget prodottoTrovato() {
     // Creo il prodotto da aggiungere
     final Prodotto prodotto = Prodotto(
+      id: 0,
       nome: 'Prodotto Oki',
       minsan: 'Minsan 123456789',
       immagine: 'assets/noImage.png',

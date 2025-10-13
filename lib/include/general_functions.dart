@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:isar/isar.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/data/datacached.dart';
 import 'package:pharma_box/logic/_soap_config.dart';
-import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/domain/models/prodotto.dart';
 import 'package:xml/xml.dart' as xml;
 
 var logger = Logger(printer: PrettyPrinter());
@@ -100,6 +101,7 @@ List<Prodotto> parseInnerProductsXml(
       // se l'XML ha un root <Prodotti> con figli <Prodotto>...
 
       return prodotti.map((p) {
+        final id = Isar.autoIncrement;
         final codice = p.getElement('FDI_0001')?.innerText.trim() ?? '';
         final minsan = p.getElement('FDI_0002')?.innerText.trim();
         final nome = p.getElement('FDI_0004')?.innerText.trim() ?? '';
@@ -109,6 +111,7 @@ List<Prodotto> parseInnerProductsXml(
             ) ??
             ['', ''];
         return Prodotto(
+          id: id,
           codice: codice,
           nome: nome,
           tipoProdotto: tipoProdotto[0],
@@ -130,6 +133,7 @@ List<Prodotto> parseInnerProductsXml(
         final immagine = p.getElement('FDI_T438')?.innerText.trim() ?? '';
 
         return Prodotto(
+          id: 0,
           codice: codice,
           immagine: immagine,
           nome: '',
@@ -149,6 +153,7 @@ List<Prodotto> parseInnerProductsXml(
         final description = p.getElement('FDI_T227')?.innerText.trim() ?? '';
 
         return Prodotto(
+          id: 0,
           codice: codice,
           immagine: '',
           nome: '',
@@ -168,6 +173,7 @@ List<Prodotto> parseInnerProductsXml(
         final description = p.getElement('FDI_T477')?.innerText.trim() ?? '';
 
         return Prodotto(
+          id: 0,
           codice: codice,
           immagine: '',
           nome: '',
@@ -197,6 +203,7 @@ Future<List<Prodotto>> doSearch(String q) async {
           // buona
           MinsanCached.add(
             Prodotto(
+              id: prodotto.id,
               codice: prodotto.codice,
               nome: prodotto.nome,
               tipoProdotto: prodotto.tipoProdotto?[0],

@@ -1,4 +1,4 @@
-import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/domain/models/prodotto.dart';
 
 class CategoriaMapper {
   static const Map<String, List<String>> _map = {

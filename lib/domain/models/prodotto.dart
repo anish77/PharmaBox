@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class Prodotto {
+  final int id;
   final String nome;
   final String minsan;
   final String? tipoProdotto;
@@ -15,6 +16,7 @@ class Prodotto {
   final ValueNotifier<int> pezzi; // 👈 diventa osservabile
 
   Prodotto({
+    required this.id,
     required this.nome,
     required this.minsan,
     this.tipoProdotto,
@@ -28,4 +30,23 @@ class Prodotto {
     required this.codice,
     this.rendibile = const ['', '', ''],
   }) : pezzi = ValueNotifier<int>(pezzi);
+
+  Prodotto toogleCompletion() {
+  return Prodotto(
+    id: id,
+    nome: nome,
+    minsan: minsan,
+    tipoProdotto: tipoProdotto,
+    tipoProdottoDettaglio: tipoProdottoDettaglio,
+    immagine: immagine,
+    pezzi: pezzi.value,
+    vendibile: vendibile,
+    description: description,
+    ingredients: ingredients,
+    howToTake: howToTake,
+    codice: codice,
+    rendibile: List<String>.from(rendibile),
+  );
+}
+
 }

@@ -8,7 +8,7 @@ import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/main.dart';
-import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/domain/models/prodotto.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
 import 'package:pharma_box/widgets/scan_tab.dart';

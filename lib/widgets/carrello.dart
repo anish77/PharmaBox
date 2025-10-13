@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/prodotto.dart';
+import '../domain/models/prodotto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pharma_box/firebase/firebase_logic.dart';
 import 'package:pharma_box/data/constants.dart';
@@ -111,6 +111,7 @@ class Carrello {
               (e['titolo'] ?? e['title'] ?? e['name'] ?? e['nome'] ?? '')
                   as String;
           return Prodotto(
+            id: 0,
             nome: titolo.isNotEmpty ? titolo : (e['minsan'] ?? '') as String,
             minsan: (e['minsan'] ?? '') as String,
             immagine: kNoImage,

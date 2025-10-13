@@ -50,7 +50,6 @@ class _NewAccountPageState extends State<NewAccountPage> {
         'phoneNumber': _enteredPhoneNumber,
         'uid': uid,
         'password': _enteredPassword,
-        'liste': [],
         'isActive': false,
         'expirationDate': Timestamp.fromDate(expirationDate),
         'codiceInvito': codiceInvito,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/domain/models/prodotto.dart';
 
 class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
   ProdottiSearchDelegate({required this.onSearch});
