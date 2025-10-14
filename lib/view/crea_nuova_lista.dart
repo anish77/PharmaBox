@@ -29,6 +29,7 @@ class _ListaViewData {
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
   final Logger _logger = Logger(printer: PrettyPrinter());
   int? selectedIndex;
+  final Set<String> _checkedLists = <String>{};
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
   String referralCode = "";
@@ -344,6 +345,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                           final totalePezzi = entry.totalePezzi;
                                           final isSelected =
                                               selectedIndex == index;
+                                          final isChecked = _checkedLists
+                                              .contains(nomeLista);
                                           return Dismissible(
                                             key: Key(nomeLista),
                                             direction:
@@ -462,11 +465,23 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                               nomeLista,
                                                         );
                                                     if (indexLista >= 0) {
+                                                      final wasChecked =
+                                                          _checkedLists.remove(
+                                                            nomeLista,
+                                                          );
                                                       liste[indexLista]['nomeLista'] =
                                                           nuovoNome;
                                                       await docRef.update({
                                                         'liste': liste,
                                                       });
+                                                      if (wasChecked &&
+                                                          mounted) {
+                                                        setState(() {
+                                                          _checkedLists.add(
+                                                            nuovoNome,
+                                                          );
+                                                        });
+                                                      }
                                                     }
                                                   }
                                                 }
@@ -531,9 +546,40 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                     ),
                                                   );
                                                 }
+                                                if (mounted) {
+                                                  setState(() {
+                                                    _checkedLists.remove(
+                                                      nomeLista,
+                                                    );
+                                                  });
+                                                }
                                               }
                                             },
                                             child: ListTile(
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 1,
+                                                  ), // sinistra/destra
+                                              leading: Checkbox(
+                                                value: isChecked,
+                                                activeColor: kPrimary,
+                                                onChanged: (value) {
+                                                  if (value == null) {
+                                                    return;
+                                                  }
+                                                  setState(() {
+                                                    if (value) {
+                                                      _checkedLists.add(
+                                                        nomeLista,
+                                                      );
+                                                    } else {
+                                                      _checkedLists.remove(
+                                                        nomeLista,
+                                                      );
+                                                    }
+                                                  });
+                                                },
+                                              ),
                                               title: Text(nomeLista),
                                               trailing: Container(
                                                 padding:
