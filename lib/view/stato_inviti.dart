@@ -120,6 +120,7 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
             centerTitle: false,
             iconTheme: const IconThemeData(color: kBluScuro),
             scrolledUnderElevation: 0,
+            titleSpacing: 0,
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
