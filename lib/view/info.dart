@@ -147,7 +147,20 @@ class InfoPage extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Informazioni'), centerTitle: false),
+      appBar: AppBar(
+        scrolledUnderElevation: 0,
+        title: Text(
+          kInformazioni,
+          style: TextStyle(
+            color: kBluScuro,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: kBluScuro),
+        centerTitle: false,
+        titleSpacing: 0,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child:

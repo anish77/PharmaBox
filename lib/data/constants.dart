@@ -42,7 +42,7 @@ const kForgotPassword =
 const kProdottoNonConsentito = 'Non vendibile';
 const kUtenteNonAutorizzato =
     'Questa sezione è riservata ai membri. Attiva l’abbonamento per continuare.';
-const kMembershipEmail = 'infopharmabox@doublecore.it'; 
+const kMembershipEmail = 'infopharmabox@doublecore.it';
 const kAccessoMembri = 'Richiesta accesso membri';
 const kDiventareMembro = 'Ciao, vorrei diventare membro di PharmaBox.';
 const kRichiestaAssistenza = 'Richiesta assistenza PharmaBox';
@@ -98,6 +98,7 @@ const kDiventaMembro = 'Diventa membro';
 
 //InviteFriendPage
 const kInvitaAmico = 'Invita un amico';
+const kInformazioni = 'Informazioni';
 const kSconto = 'Ottieni fino a 100% di sconto sul prossimo abbonamento!';
 const kLinkRiferimento = 'Condividi il tuo link di riferimento';
 const kInvitaAmici = 'Invita amici a registrarsi';
@@ -125,8 +126,6 @@ const kFarmadatiSoapHeaders = {
 const kBitProdottoUndefined = 0;
 const kBitProdottoVendibile = 1;
 const kBitProdottoNonVendibile = 2;
-
-
 
 const kBugiardinoMonografieBase = 'http://api.doublecore.it/pdf_html';
 const kBugiardinoUploadEndpoint = 'http://api.doublecore.it/uploader.php';
