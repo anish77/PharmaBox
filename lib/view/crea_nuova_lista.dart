@@ -1,6 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/web.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/data/models/prodotto_isar.dart';
 import 'package:pharma_box/domain/models/lists.dart';
@@ -13,6 +19,7 @@ import 'package:pharma_box/domain/repository/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
+import 'package:share_plus/share_plus.dart';
 
 class CreaNuovaLista extends StatefulWidget {
   const CreaNuovaLista({super.key});
@@ -28,6 +35,25 @@ class _ListaViewData {
   int get id => lista.id;
   String get nome => lista.nameList;
   final int totalePezzi;
+}
+
+class _ExportListData {
+  const _ExportListData({required this.title, required this.products});
+
+  final String title;
+  final List<_ExportProductData> products;
+}
+
+class _ExportProductData {
+  const _ExportProductData({
+    required this.name,
+    required this.minsan,
+    required this.quantity,
+  });
+
+  final String name;
+  final String minsan;
+  final int quantity;
 }
 
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
@@ -158,6 +184,178 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     if (context.mounted) {
       await context.read<ListsCubit>().loadLists();
     }
+  }
+
+  Future<void> _scaricaListeSelezionate(
+    BuildContext context,
+    List<_ListaViewData> listeView,
+  ) async {
+    final selezionate = listeView
+        .where((entry) => entry.lista.isCompleted)
+        .map(
+          (entry) => _ExportListData(
+            title: entry.nome,
+            products: entry.lista.products
+                .map(
+                  (p) => _ExportProductData(
+                    name: p.nome,
+                    minsan: p.codice.isNotEmpty ? p.codice : p.minsan,
+                    quantity: p.pezzi,
+                  ),
+                )
+                .toList(growable: false),
+          ),
+        )
+        .toList(growable: false);
+
+    if (selezionate.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Seleziona almeno una lista da scaricare'),
+        ),
+      );
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder:
+          (sheetContext) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.picture_as_pdf),
+                  title: const Text('Scarica PDF'),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await _handleExport(
+                      () => _exportSelectedAsPdf(selezionate),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.table_chart_outlined),
+                  title: const Text('Scarica CSV'),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await _handleExport(
+                      () => _exportSelectedAsCsv(selezionate),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Future<void> _handleExport(Future<void> Function() exporter) async {
+    try {
+      await exporter();
+    } catch (error, stackTrace) {
+      _logger.e(
+        'Errore durante l\'esportazione delle liste',
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Si è verificato un errore durante l\'esportazione'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportSelectedAsPdf(List<_ExportListData> lists) async {
+    final document = pw.Document();
+    document.addPage(
+      pw.MultiPage(
+        build: (context) {
+          final widgets = <pw.Widget>[];
+          for (final list in lists) {
+            widgets
+              ..add(
+                pw.Text(
+                  list.title,
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              )
+              ..add(pw.SizedBox(height: 8));
+
+            if (list.products.isEmpty) {
+              widgets.add(pw.Text('Nessun prodotto'));
+            } else {
+              widgets.add(
+                pw.TableHelper.fromTextArray(
+                  headers: ['Nome prodotto', 'Minsan', 'Pezzi'],
+                  data: list.products
+                      .map((p) => [p.name, p.minsan, p.quantity.toString()])
+                      .toList(growable: false),
+                ),
+              );
+            }
+
+            widgets.add(pw.SizedBox(height: 16));
+          }
+
+          return widgets;
+        },
+      ),
+    );
+
+    final bytes = await document.save();
+    await _saveAndShare(
+      bytes,
+      'liste_selezionate.pdf',
+      mimeType: 'application/pdf',
+    );
+  }
+
+  Future<void> _exportSelectedAsCsv(List<_ExportListData> lists) async {
+    final buffer = StringBuffer()..writeln('Lista;Nome prodotto;Minsan;Pezzi');
+
+    for (final list in lists) {
+      if (list.products.isEmpty) {
+        buffer.writeln('${_escapeCsv(list.title)};;;');
+        continue;
+      }
+
+      for (final product in list.products) {
+        buffer.writeln(
+          '${_escapeCsv(list.title)};${_escapeCsv(product.name)};${_escapeCsv(product.minsan)};${product.quantity}',
+        );
+      }
+    }
+
+    final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+    await _saveAndShare(bytes, 'liste_selezionate.csv', mimeType: 'text/csv');
+  }
+
+  String _escapeCsv(String value) {
+    if (value.isEmpty) return value;
+    final escaped = value.replaceAll('"', '""');
+    final needsQuotes =
+        value.contains(';') || value.contains('"') || value.contains('\n');
+    return needsQuotes ? '"$escaped"' : escaped;
+  }
+
+  Future<void> _saveAndShare(
+    Uint8List bytes,
+    String filename, {
+    required String mimeType,
+  }) async {
+    final directory = await getTemporaryDirectory();
+    final filePath = '${directory.path}/$filename';
+    final file = File(filePath);
+    await file.writeAsBytes(bytes, flush: true);
+
+    final xFile = XFile(file.path, mimeType: mimeType, name: filename);
+    await Share.shareXFiles([xFile], subject: 'Liste selezionate');
   }
 
   @override
@@ -480,7 +678,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                         child: ListTile(
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                                horizontal: 8,
+                                                horizontal: 1,
                                               ), // sinistra/destra
                                           leading: Checkbox(
                                             value: lista.isCompleted,
@@ -543,58 +741,55 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                             color: kSecondary.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Column(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Totale pezzi in tutte le liste:',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: kBluScuro,
-                                    ),
+                              const Text(
+                                'Totale pezzi in tutte le liste:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: kBluScuro,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: kSecondary.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  '$totaleGlobal',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: kBluScuro,
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: kSecondary.withValues(alpha: 0.6),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Text(
-                                      '$totaleGlobal',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: kBluScuro,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: CustomButton(
+                            title: 'Scarica liste selezionate',
+                            titleColor: Colors.white,
+                            backgroundColor: kPrimary,
+                            onPressed:
+                                () => _scaricaListeSelezionate(
+                                  context,
+                                  listeView,
+                                ),
                           ),
                         ),
                       ],
                     );
                   },
-                ),
-              ),
-              const SizedBox(height: 8),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 45,
-                child: CustomButton(
-                  title: "Scarica liste selezionate",
-                  titleColor: Colors.white,
-                  backgroundColor: kPrimary,
-                  onPressed: () {},
                 ),
               ),
             ],
