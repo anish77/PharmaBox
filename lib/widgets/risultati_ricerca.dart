@@ -22,6 +22,7 @@ class RisultatiRicerca extends StatefulWidget {
 }
 
 class _RisultatiRicercaState extends State<RisultatiRicerca> {
+  final carrello = CarrelloIsar.instance;
   int? _highlightedIndex;
 
   @override
@@ -45,19 +46,20 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
           ),
         ),
         const SizedBox(height: 8),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: sorted.length,
-          itemBuilder: (context, index) {
-            final prodotto = sorted[index];
-            return ValueListenableBuilder<List<Prodotto>>(
-              valueListenable: Carrello.instance.prodotti,
-              builder: (context, lista, _) {
+        ValueListenableBuilder<List<Prodotto>>(
+          valueListenable: carrello.prodotti,
+          builder: (context, lista, _) {
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sorted.length,
+              itemBuilder: (context, index) {
+                final prodotto = sorted[index];
                 final idx = lista.indexWhere(
                   (p) => p.minsan == prodotto.minsan,
                 );
                 final inListQty = idx >= 0 ? lista[idx].pezzi.value : 0;
+
                 return ValueListenableBuilder<int>(
                   valueListenable: prodotto.pezzi,
                   builder: (context, value, __) {
@@ -66,15 +68,14 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                       prodotto: prodotto,
                       inListQty: inListQty,
                       selected: _highlightedIndex == index,
-                      onQuantityChanged: (newValue) {
-                        Carrello.instance.aggiornaQuantita(prodotto, newValue);
+                      onQuantityChanged: (newValue) async {
+                        await carrello.aggiornaQuantita(prodotto, newValue);
                       },
                       onInfoTap: () async {
                         setState(() => _highlightedIndex = index);
                         await Future.delayed(const Duration(milliseconds: 120));
                         if (!mounted) return;
                         await Navigator.push(
-                          // ignore: use_build_context_synchronously
                           context,
                           MaterialPageRoute(
                             builder:

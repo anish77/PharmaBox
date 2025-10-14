@@ -4,13 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pharma_box/widgets/carrello.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/domain/models/prodotto.dart';
 import 'package:pharma_box/view/product_details.dart';
-import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/prodotto_cell.dart';
-import 'package:share_plus/share_plus.dart';
 
 class ListaProdottiInventario extends StatefulWidget {
   const ListaProdottiInventario({
@@ -42,17 +42,17 @@ class _ExportEntry {
 class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
   int? _highlightedIndex;
 
+  /// Mostra bottom sheet con opzioni di esportazione
   Future<void> _showExportSheet(
     BuildContext context,
     List<Prodotto> prodotti,
   ) async {
     final exportItems = prodotti
         .map(
-          (prodotto) => _ExportEntry(
-            name: prodotto.nome,
-            minsan:
-                prodotto.codice.isNotEmpty ? prodotto.codice : prodotto.minsan,
-            quantity: prodotto.pezzi.value,
+          (p) => _ExportEntry(
+            name: p.nome,
+            minsan: p.codice.isNotEmpty ? p.codice : p.minsan,
+            quantity: p.pezzi.value,
           ),
         )
         .toList(growable: false);
@@ -61,31 +61,29 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
 
     await showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.picture_as_pdf),
-                title: const Text('Scarica PDF'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _handleExport(() => _exportAsPdf(exportItems));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.table_chart_outlined),
-                title: const Text('Scarica CSV'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _handleExport(() => _exportAsCsv(exportItems));
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf),
+              title: const Text('Scarica PDF'),
+              onTap: () async {
+                Navigator.of(sheetContext).pop();
+                await _handleExport(() => _exportAsPdf(exportItems));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart_outlined),
+              title: const Text('Scarica CSV'),
+              onTap: () async {
+                Navigator.of(sheetContext).pop();
+                await _handleExport(() => _exportAsCsv(exportItems));
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -106,39 +104,32 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
     final document = pw.Document();
     document.addPage(
       pw.MultiPage(
-        build:
-            (pw.Context context) => [
-              pw.Text(
-                widget.titolo,
-                style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.SizedBox(height: 16),
-              pw.TableHelper.fromTextArray(
-                headers: ['Nome prodotto', 'Minsan', 'Pezzi'],
-                data:
-                    items
-                        .map(
-                          (item) => [
-                            item.name,
-                            item.minsan,
-                            item.quantity.toString(),
-                          ],
-                        )
-                        .toList(),
-              ),
-            ],
+        build: (context) => [
+          pw.Text(
+            widget.titolo,
+            style: pw.TextStyle(
+              fontSize: 20,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 16),
+          pw.TableHelper.fromTextArray(
+            headers: ['Nome prodotto', 'Minsan', 'Pezzi'],
+            data: items
+                .map((item) => [
+                      item.name,
+                      item.minsan,
+                      item.quantity.toString(),
+                    ])
+                .toList(),
+          ),
+        ],
       ),
     );
 
     final bytes = await document.save();
-    await _saveAndShare(
-      bytes,
-      'lista_prodotti.pdf',
-      mimeType: 'application/pdf',
-    );
+    await _saveAndShare(bytes, 'lista_prodotti.pdf',
+        mimeType: 'application/pdf');
   }
 
   Future<void> _exportAsCsv(List<_ExportEntry> items) async {
@@ -173,32 +164,34 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
     await file.writeAsBytes(bytes, flush: true);
 
     final xFile = XFile(file.path, mimeType: mimeType, name: filename);
-
-    await SharePlus.instance.share(
-      ShareParams(files: [xFile], subject: widget.titolo),
-    );
+    await Share.shareXFiles([xFile], subject: widget.titolo);
   }
 
   @override
   Widget build(BuildContext context) {
+    final carrello = CarrelloIsar.instance;
+
     return Column(
       children: [
         const SizedBox(height: 8),
         Expanded(
           child: ValueListenableBuilder<List<Prodotto>>(
-            valueListenable: Carrello.instance.prodotti,
+            valueListenable: carrello.prodotti,
             builder: (context, prodotti, _) {
-              // Ordina alfabeticamente per titolo (case-insensitive)
-              final sorted = List<Prodotto>.from(prodotti)..sort(
-                (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
-              );
+              // Ordina alfabeticamente per nome
+              final sorted = List<Prodotto>.from(prodotti)
+                ..sort(
+                  (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+                );
+
               final bottomInset = MediaQuery.of(context).padding.bottom;
+
               return ListView.builder(
                 padding: EdgeInsets.only(bottom: bottomInset + 45),
                 itemCount: sorted.length,
                 itemBuilder: (context, index) {
                   final prodotto = sorted[index];
-                  // print("lista prodotti - ${prodotto.titolo}");
+
                   return ValueListenableBuilder<int>(
                     valueListenable: prodotto.pezzi,
                     builder: (context, value, _) {
@@ -207,8 +200,8 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                         prodotto: prodotto,
                         inListQty: value,
                         selected: _highlightedIndex == index,
-                        onQuantityChanged: (newValue) {
-                          Carrello.instance.aggiornaQuantita(
+                        onQuantityChanged: (newValue) async {
+                          await carrello.aggiornaQuantita(
                             prodotto,
                             newValue,
                           );
@@ -216,22 +209,22 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                         onInfoTap: () async {
                           setState(() => _highlightedIndex = index);
                           await Future.delayed(
-                            const Duration(milliseconds: 120),
-                          );
+                              const Duration(milliseconds: 120));
+
                           if (context.mounted) {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (_) => ProductDetails(
-                                      title: prodotto.nome,
-                                      nrListe: widget.nrListe,
-                                      prodotto: prodotto,
-                                      popOnAdd: false,
-                                    ),
+                                builder: (_) => ProductDetails(
+                                  title: prodotto.nome,
+                                  nrListe: widget.nrListe,
+                                  prodotto: prodotto,
+                                  popOnAdd: false,
+                                ),
                               ),
                             );
                           }
+
                           if (mounted) {
                             setState(() => _highlightedIndex = null);
                           }
@@ -247,19 +240,20 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
         Padding(
           padding: const EdgeInsets.only(top: 24, bottom: 45),
           child: ValueListenableBuilder<List<Prodotto>>(
-            valueListenable: Carrello.instance.prodotti,
+            valueListenable: carrello.prodotti,
             builder: (context, prodotti, _) {
-              final sorted = List<Prodotto>.from(prodotti)..sort(
-                (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
-              );
+              final sorted = List<Prodotto>.from(prodotti)
+                ..sort(
+                  (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+                );
+
               return CustomButton(
                 title: kScarica,
                 titleColor: kWhite,
                 backgroundColor: kPrimary,
-                onPressed:
-                    sorted.isEmpty
-                        ? null
-                        : () => _showExportSheet(context, sorted),
+                onPressed: sorted.isEmpty
+                    ? null
+                    : () => _showExportSheet(context, sorted),
               );
             },
           ),

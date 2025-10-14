@@ -37,7 +37,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   @override
   void initState() {
     super.initState();
-    // Garantiamo di avere i dati locali sincronizzati quando la pagina si apre.
+    // Carica le liste salvate in Isar
     context.read<ListsCubit>().loadLists();
   }
 
@@ -120,17 +120,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     }
   }
 
+  /// 🔹 Apri lista → carica prodotti in CarrelloIsar
   Future<void> _apriLista(
     BuildContext context,
     Lists lista,
     int numeroListe,
   ) async {
     try {
-      Carrello.instance.usaLista(lista.nameList);
-      final prodotti = lista.products.map((prodotto) => prodotto.toDomain());
-      Carrello.instance.sostituisciProdottiCorrenti(
-        List.from(prodotti, growable: false),
-      );
+      final carrello = CarrelloIsar.instance;
+      carrello.usaLista(lista.nameList);
+
+      final prodottiDomain = lista.products.map((p) => p.toDomain()).toList();
+      carrello.sostituisciProdottiCorrenti(prodottiDomain);
     } catch (errore, stack) {
       _logger.e(
         'Errore nel preparare la lista ${lista.nameList}, $errore',
@@ -152,6 +153,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 SelectedListPage(titolo: lista.nameList, nrListe: numeroListe),
       ),
     );
+    // al ritorno ricarica le liste da Isar
+    if (context.mounted) {
+      await context.read<ListsCubit>().loadLists();
+    }
   }
 
   @override
@@ -181,8 +186,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
           Builder(
             builder:
                 (context) => IconButton(
-                  icon: Padding(
-                    padding: const EdgeInsets.only(right: 16),
+                  icon: const Padding(
+                    padding: EdgeInsets.only(right: 16),
                     child: Icon(Icons.menu, color: kPrimary),
                   ),
                   onPressed: () => Scaffold.of(context).openEndDrawer(),
@@ -194,7 +199,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            const DrawerHeader(
               decoration: BoxDecoration(color: kPrimary),
               child: Text(
                 'Menu',
@@ -247,7 +252,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             ),
             ListTile(
               leading: const Icon(Icons.logout, color: kRed),
-              title: Text(
+              title: const Text(
                 'Log out',
                 style: TextStyle(
                   fontSize: 18,
@@ -288,7 +293,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.addchart_outlined,
                         color: kBluScuro,
                         size: 35,
@@ -501,9 +506,9 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                   )
                                                   : null,
                                           onTap: () async {
-                                            setState(() {
-                                              selectedIndex = index;
-                                            });
+                                            setState(
+                                              () => selectedIndex = index,
+                                            );
                                             await _apriLista(
                                               context,
                                               lista,

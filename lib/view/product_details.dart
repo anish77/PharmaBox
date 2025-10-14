@@ -19,7 +19,7 @@ class ProductDetails extends StatefulWidget {
   final String title;
   final int nrListe;
   final Prodotto prodotto;
-  final bool popOnAdd; // se true, torna indietro dopo "Aggiungi"
+  final bool popOnAdd;
 
   @override
   State<ProductDetails> createState() => _ProductDetailsState();
@@ -33,6 +33,8 @@ class _ProductDetailsState extends State<ProductDetails> {
   WebViewController? _bugiardinoController;
   String? _bugiardinoUrl;
   double _bugiardinoHeight = 400;
+
+  final carrello = CarrelloIsar.instance;
 
   @override
   void initState() {
@@ -48,12 +50,10 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (existing.isNotEmpty && existing.startsWith('http')) {
       return existing;
     }
-
     try {
-      final codice =
-          widget.prodotto.codice.isNotEmpty
-              ? widget.prodotto.codice
-              : widget.prodotto.minsan;
+      final codice = widget.prodotto.codice.isNotEmpty
+          ? widget.prodotto.codice
+          : widget.prodotto.minsan;
       if (codice.isEmpty) return null;
       return await getOrPutImage(codice);
     } catch (error) {
@@ -63,63 +63,53 @@ class _ProductDetailsState extends State<ProductDetails> {
   }
 
   Future<String?> _loadRendibilita() async {
-    final codice =
-        widget.prodotto.codice.isNotEmpty
-            ? widget.prodotto.codice
-            : widget.prodotto.minsan;
+    final codice = widget.prodotto.codice.isNotEmpty
+        ? widget.prodotto.codice
+        : widget.prodotto.minsan;
     if (codice.isEmpty) return null;
 
     try {
       final descrizione = await loadRendibilita(codice);
-      if (descrizione == null || descrizione.trim().isEmpty) {
-        return null;
-      }
-      return descrizione.trim();
+      return descrizione?.trim().isEmpty ?? true ? null : descrizione?.trim();
     } catch (error) {
-      debugPrint('Errore durante il recupero dei dati rendibilita: $error');
+      debugPrint('Errore durante il recupero rendibilita: $error');
       return null;
     }
   }
 
   Future<bool?> _loadVendibilita() async {
-    final codice =
-        widget.prodotto.codice.isNotEmpty
-            ? widget.prodotto.codice
-            : widget.prodotto.minsan;
+    final codice = widget.prodotto.codice.isNotEmpty
+        ? widget.prodotto.codice
+        : widget.prodotto.minsan;
     if (codice.isEmpty) return null;
 
     try {
-      if (widget.prodotto.vendibile != 0) return isBit(widget.prodotto.vendibile,kBitProdottoVendibile);
-      final vendibile = await loadVendibilita(codice);
-      if (vendibile == null) {
-        return null;
+      if (widget.prodotto.vendibile != 0) {
+        return isBit(widget.prodotto.vendibile, kBitProdottoVendibile);
       }
-      widget.prodotto.vendibile = setBit(widget.prodotto.vendibile, vendibile ? kBitProdottoVendibile:kBitProdottoNonVendibile);
-      
+      final vendibile = await loadVendibilita(codice);
+      if (vendibile == null) return null;
+
+      widget.prodotto.vendibile = setBit(
+        widget.prodotto.vendibile,
+        vendibile ? kBitProdottoVendibile : kBitProdottoNonVendibile,
+      );
       return vendibile;
     } catch (error) {
-      debugPrint('Errore durante il recupero dei dati rendibilita: $error');
+      debugPrint('Errore durante il recupero vendibilita: $error');
       return null;
     }
   }
 
   Future<String?> _loadBugiardino() async {
-    final codice =
-        widget.prodotto.codice.isNotEmpty
-            ? widget.prodotto.codice
-            : widget.prodotto.minsan;
+    final codice = widget.prodotto.codice.isNotEmpty
+        ? widget.prodotto.codice
+        : widget.prodotto.minsan;
     if (codice.isEmpty) return null;
 
     try {
-      logger.i(widget.prodotto.tipoProdotto);
-      final url = await getBugiardino(
-        codice,
-        widget.prodotto.tipoProdottoDettaglio,
-      );
-      if (url == null || url.isEmpty) {
-        return null;
-      }
-      return url.trim();
+      final url = await getBugiardino(codice, widget.prodotto.tipoProdottoDettaglio);
+      return url?.trim().isEmpty ?? true ? null : url?.trim();
     } catch (error) {
       debugPrint('Errore durante il recupero bugiardino: $error');
       return null;
@@ -128,17 +118,16 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   @override
   Widget build(BuildContext context) {
+    final prodotto = widget.prodotto;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dettaglio"),
+        title: const Text("Dettaglio"),
         centerTitle: false,
-        titleSpacing: 2,
         backgroundColor: kBackGround,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context, widget.prodotto);
-          },
+          onPressed: () => Navigator.pop(context, prodotto),
         ),
       ),
       body: Padding(
@@ -146,7 +135,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // immagine sopra
+            // immagine
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.3,
               width: double.infinity,
@@ -156,27 +145,21 @@ class _ProductDetailsState extends State<ProductDetails> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
                   final imageUrl = snapshot.data;
                   if (imageUrl != null && imageUrl.isNotEmpty) {
                     return Image.network(
                       imageUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        final fallbackAsset = _fallbackAsset();
-                        return Image.asset(fallbackAsset, fit: BoxFit.contain);
-                      },
+                      errorBuilder: (_, __, ___) => Image.asset(_fallbackAsset(), fit: BoxFit.contain),
                     );
                   }
-
-                  final fallbackAsset = _fallbackAsset();
-                  return Image.asset(fallbackAsset, fit: BoxFit.contain);
+                  return Image.asset(_fallbackAsset(), fit: BoxFit.contain);
                 },
               ),
             ),
             const SizedBox(height: 16),
 
-            // parte scrollabile
+            // parte testuale
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -185,23 +168,13 @@ class _ProductDetailsState extends State<ProductDetails> {
                     FutureBuilder<bool?>(
                       future: _vendibilitaFuture,
                       builder: (context, snapshot) {
-                        final isDone =
-                            snapshot.connectionState == ConnectionState.done;
+                        final isDone = snapshot.connectionState == ConnectionState.done;
                         final hasError = snapshot.hasError;
                         final isVendibile = snapshot.data == true;
+                        final showAlert = hasError || (isDone && !isVendibile);
 
-                        bool showAlert = false;
-                        if (hasError) {
-                          showAlert = true;
-                        } else if (isDone) {
-                          showAlert = !isVendibile;
-                        }
-                        if (!showAlert) {
-                          return const SizedBox.shrink();
-                        }
-
+                        if (!showAlert) return const SizedBox.shrink();
                         return Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Container(
                               width: 10,
@@ -225,44 +198,26 @@ class _ProductDetailsState extends State<ProductDetails> {
                       },
                     ),
                     Text(
-                      widget.prodotto.nome,
+                      prodotto.nome,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: kBluScuro,
                       ),
                     ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          widget.prodotto.minsan,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: kBluScuro,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      prodotto.minsan,
+                      style: const TextStyle(fontSize: 16, color: kBluScuro),
                     ),
-
-                    if ((widget.prodotto.tipoProdotto ?? '').isNotEmpty)
+                    if ((prodotto.tipoProdotto ?? '').isNotEmpty)
                       Text(
-                        widget.prodotto.tipoProdotto!,
+                        prodotto.tipoProdotto!,
                         style: const TextStyle(fontSize: 13, color: kBluScuro),
-                        softWrap: true,
-                        textAlign: TextAlign.right,
                       ),
-
                     const SizedBox(height: 8),
                     const Divider(thickness: 1, color: kBluScuro),
                     const SizedBox(height: 8),
-
-                    // sezioni descrizione
-                    _buildSection(
-                      "Foglietto illustrativo",
-                      _buildDescrizioneContent(),
-                    ),
+                    _buildSection("Foglietto illustrativo", _buildDescrizioneContent()),
                   ],
                 ),
               ),
@@ -272,11 +227,9 @@ class _ProductDetailsState extends State<ProductDetails> {
             Padding(
               padding: const EdgeInsets.only(top: 24, bottom: 24),
               child: ValueListenableBuilder<List<Prodotto>>(
-                valueListenable: Carrello.instance.prodotti,
+                valueListenable: carrello.prodotti,
                 builder: (context, prodotti, _) {
-                  final index = prodotti.indexWhere(
-                    (p) => p.minsan == widget.prodotto.minsan,
-                  );
+                  final index = prodotti.indexWhere((p) => p.minsan == prodotto.minsan);
                   final isInList = index >= 0;
 
                   if (isInList) {
@@ -284,12 +237,8 @@ class _ProductDetailsState extends State<ProductDetails> {
                     return CounterButtonLarge(
                       key: ValueKey(currentQty),
                       initialValue: currentQty,
-                      onChanged: (newValue) {
-                        // Aggiorna la quantità nel carrello
-                        Carrello.instance.aggiornaQuantita(
-                          prodotti[index],
-                          newValue,
-                        );
+                      onChanged: (newValue) async {
+                        await carrello.aggiornaQuantita(prodotti[index], newValue);
                       },
                     );
                   }
@@ -298,16 +247,10 @@ class _ProductDetailsState extends State<ProductDetails> {
                     title: kAddToList,
                     titleColor: kWhite,
                     backgroundColor: kPrimary,
-                    onPressed: () {
-                      // Se non presente, aggiunge con quantità almeno 1
-                      if (widget.prodotto.pezzi.value <= 0) {
-                        widget.prodotto.pezzi.value = 1;
-                      }
-                      Carrello.instance.aggiungiProdotto(widget.prodotto);
-                      // Torna indietro automaticamente solo se richiesto
-                      if (widget.popOnAdd) {
-                        Navigator.pop(context);
-                      }
+                    onPressed: () async {
+                      if (prodotto.pezzi.value <= 0) prodotto.pezzi.value = 1;
+                      await carrello.aggiungiProdotto(prodotto);
+                      if (widget.popOnAdd) Navigator.pop(context);
                     },
                   );
                 },
@@ -346,16 +289,10 @@ class _ProductDetailsState extends State<ProductDetails> {
           );
         }
 
-        if (snapshot.hasError) {
-          return fallback;
-        }
-
         final url = snapshot.data;
         if (url != null && url.isNotEmpty) {
           _ensureWebViewController(url);
-          if (_bugiardinoController == null) {
-            return fallback;
-          }
+          if (_bugiardinoController == null) return fallback;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -383,14 +320,11 @@ class _ProductDetailsState extends State<ProductDetails> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: kBluScuro,
-            ),
-          ),
+          Text(title,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: kBluScuro)),
           const SizedBox(height: 8),
           child,
         ],
@@ -400,14 +334,12 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   String _fallbackAsset() {
     final image = widget.prodotto.immagine;
-    if (image.isNotEmpty && !image.startsWith('http')) {
-      return image;
-    }
+    if (image.isNotEmpty && !image.startsWith('http')) return image;
     return kNoImage;
   }
 
   void _ensureWebViewController(String url) {
-    final normalizedUrl = _normalizeBugiardinoUrl(url);
+    final normalizedUrl = url.trim();
     if (_bugiardinoUrl == normalizedUrl && _bugiardinoController != null) {
       return;
     }
@@ -424,50 +356,18 @@ class _ProductDetailsState extends State<ProductDetails> {
     controller.setBackgroundColor(Colors.transparent);
     controller.setNavigationDelegate(
       NavigationDelegate(
-        onNavigationRequest: (request) {
-          return NavigationDecision.navigate;
-        },
-        onWebResourceError: (error) {
-          final originalUri = Uri.tryParse(url);
-          if (originalUri != null && originalUri.scheme == 'http') {
-            _bugiardinoController?.loadRequest(originalUri);
-          }
-        },
         onPageFinished: (finishedUrl) async {
           try {
-            // Assicura viewport mobile per evitare testo/raster troppo piccolo
             await controller.runJavaScript(
-              "(function(){var m=document.querySelector('meta[name=viewport]'); if(!m){m=document.createElement('meta'); m.name='viewport'; m.content='width=device-width, initial-scale=1.0, maximum-scale=1.0'; document.head.appendChild(m);} })();",
+              "(function(){var m=document.querySelector('meta[name=viewport]'); if(!m){m=document.createElement('meta'); m.name='viewport'; m.content='width=device-width, initial-scale=1.0'; document.head.appendChild(m);} })();",
             );
-
-            // Forza background bianco e migliora leggibilità (font-size, immagini responsive)
-            await controller.runJavaScript(
-              "(function(){var css='html,body{background:transparent !important;color:#111;min-height:100vh;}'+" +
-                  "'body{margin:0;padding:12px;font-size:16px;line-height:1.5;-webkit-text-size-adjust:110%;text-size-adjust:110%;}'+" +
-                  "'img,iframe,video{max-width:100% !important;height:auto !important;}table{width:100% !important;overflow:auto;}';" +
-                  "var s=document.createElement('style');s.type='text/css';s.appendChild(document.createTextNode(css));document.head.appendChild(s);document.documentElement.style.background='transparent';document.body.style.background='transparent';})();",
-            );
-            // Calcola l'altezza del contenuto della pagina
             final result = await controller.runJavaScriptReturningResult(
               'Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)',
             );
-            double? newHeight;
-            if (result is num) {
-              newHeight = result.toDouble();
-            } else if (result is String) {
-              final sanitized = result.replaceAll('"', '');
-              newHeight = double.tryParse(sanitized);
+            if (mounted) {
+              setState(() => _bugiardinoHeight = (double.tryParse(result.toString()) ?? 400).clamp(400, 2000));
             }
-            if (newHeight != null && mounted) {
-              final h = newHeight;
-              setState(() {
-                // Imposta altezza minima 400, senza limite superiore per mostrare tutto
-                _bugiardinoHeight = h < 400.0 ? 400.0 : h;
-              });
-            }
-          } catch (_) {
-            // Se fallisce, mantieni l'altezza corrente
-          }
+          } catch (_) {}
         },
       ),
     );
@@ -475,10 +375,5 @@ class _ProductDetailsState extends State<ProductDetails> {
 
     _bugiardinoController = controller;
     _bugiardinoUrl = normalizedUrl;
-  }
-
-  String _normalizeBugiardinoUrl(String url) {
-    // Non forzare più https: usa l'URL così com'è (ripulito)
-    return url.trim();
   }
 }

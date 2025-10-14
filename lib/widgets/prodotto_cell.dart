@@ -37,6 +37,7 @@ class ProdottoCell extends StatefulWidget {
 
 class _ProdottoCellState extends State<ProdottoCell> {
   late final Future<bool?> _vendibilitaFuture;
+  final carrello = CarrelloIsar.instance;
 
   @override
   void initState() {
@@ -45,10 +46,9 @@ class _ProdottoCellState extends State<ProdottoCell> {
   }
 
   Future<bool?> _loadVendibilita() async {
-    final codice =
-        widget.prodotto.codice.isNotEmpty
-            ? widget.prodotto.codice
-            : widget.prodotto.minsan;
+    final codice = widget.prodotto.codice.isNotEmpty
+        ? widget.prodotto.codice
+        : widget.prodotto.minsan;
     if (codice.isEmpty) return null;
 
     try {
@@ -62,10 +62,9 @@ class _ProdottoCellState extends State<ProdottoCell> {
   @override
   Widget build(BuildContext context) {
     final mostraQuantita = (widget.inListQty ?? 0) > 0;
-    final codiceDaMostrare =
-        widget.prodotto.codice.isNotEmpty
-            ? widget.prodotto.codice
-            : widget.prodotto.minsan;
+    final codiceDaMostrare = widget.prodotto.codice.isNotEmpty
+        ? widget.prodotto.codice
+        : widget.prodotto.minsan;
 
     const actionWidth = 120.0;
     const actionHeight = 40.0;
@@ -109,57 +108,48 @@ class _ProdottoCellState extends State<ProdottoCell> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (showAlert)
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: const BoxDecoration(
-                                          color: kRed,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        kProdottoNonConsentito,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: kRed,
-                                        ),
-                                      ),
-                                    ],
+                            if (showAlert)
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: kRed,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
-                                if (showAlert) const SizedBox(height: 8),
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    minHeight: _twoLineTitleHeight,
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    kProdottoNonConsentito,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: kRed,
+                                    ),
                                   ),
-                                  child: Text(
-                                    widget.prodotto.nome,
-                                    maxLines: 2,
-                                    softWrap: true,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: _titleStyle,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            if (showAlert) const SizedBox(height: 8),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: _twoLineTitleHeight,
+                              ),
+                              child: Text(
+                                widget.prodotto.nome,
+                                maxLines: 2,
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                style: _titleStyle,
+                              ),
                             ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  codiceDaMostrare,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: kBluScuro),
-                                ),
-                              ],
+                            Text(
+                              codiceDaMostrare,
+                              maxLines: 1,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: kBluScuro),
                             ),
                           ],
                         );
@@ -172,63 +162,57 @@ class _ProdottoCellState extends State<ProdottoCell> {
                   padding: const EdgeInsets.only(top: 2),
                   child: SizedBox(
                     width: actionWidth,
-                    child:
-                        mostraQuantita
-                            ? CounterButton(
-                              // Include la quantità nella key per forzare il rebuild quando cambia esternamente
-                              key: ValueKey(
-                                'list-${widget.prodotto.minsan}-${widget.inListQty ?? 0}',
-                              ),
-                              initialValue: widget.inListQty ?? 0,
+                    child: mostraQuantita
+                        ? CounterButton(
+                            key: ValueKey(
+                                'list-${widget.prodotto.minsan}-${widget.inListQty ?? 0}'),
+                            initialValue: widget.inListQty ?? 0,
+                            height: actionHeight,
+                            width: actionWidth,
+                            onChanged: (newValue) async {
+                              await carrello.aggiornaQuantita(
+                                widget.prodotto,
+                                newValue,
+                              );
+                              widget.onQuantityChanged(newValue);
+                            },
+                          )
+                        : GestureDetector(
+                            onTap: () async {
+                              final currentNotifier = widget.prodotto.pezzi;
+                              final newValue =
+                                  currentNotifier.value > 0
+                                      ? currentNotifier.value
+                                      : 1;
+                              currentNotifier.value = newValue;
+                              await carrello.aggiungiProdotto(widget.prodotto);
+                              widget.onQuantityChanged(newValue);
+                            },
+                            child: SizedBox(
                               height: actionHeight,
-                              width: actionWidth,
-                              onChanged: (newValue) {
-                                Carrello.instance.aggiornaQuantita(
-                                  widget.prodotto,
-                                  newValue,
-                                );
-                                widget.onQuantityChanged(newValue);
-                              },
-                            )
-                            : GestureDetector(
-                              onTap: () {
-                                final currentNotifier = widget.prodotto.pezzi;
-                                final newValue =
-                                    currentNotifier.value > 0
-                                        ? currentNotifier.value
-                                        : 1;
-                                currentNotifier.value = newValue;
-                                Carrello.instance.aggiungiProdotto(
-                                  widget.prodotto,
-                                );
-                                widget.onQuantityChanged(newValue);
-                              },
-                              child: SizedBox(
-                                height: actionHeight,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: kPrimary,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
                                     color: kPrimary,
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: kPrimary,
-                                      width: 1,
-                                    ),
+                                    width: 1,
                                   ),
-                                  child: const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 6,
-                                      ),
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Text(
-                                          kAddToList,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: kWhite,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                ),
+                                child: const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 6,
+                                    ),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        kAddToList,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: kWhite,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
@@ -236,6 +220,7 @@ class _ProdottoCellState extends State<ProdottoCell> {
                                 ),
                               ),
                             ),
+                          ),
                   ),
                 ),
               ],

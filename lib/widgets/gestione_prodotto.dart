@@ -7,10 +7,11 @@ import 'package:pharma_box/domain/models/prodotto.dart';
 import 'package:pharma_box/widgets/non_autorizzato.dart';
 
 class GestioneProdotto {
-  var logger = Logger(printer: PrettyPrinter());
-  // Widget prodotto trovato
+  final logger = Logger(printer: PrettyPrinter());
+  final carrello = CarrelloIsar.instance;
+
+  // Widget prodotto trovato (esempio dimostrativo)
   Widget prodottoTrovato() {
-    // Creo il prodotto da aggiungere
     final Prodotto prodotto = Prodotto(
       id: 0,
       nome: 'Prodotto Oki',
@@ -19,18 +20,20 @@ class GestioneProdotto {
       pezzi: 1,
       vendibile: 0,
       description:
-          "Cardiavax™ is a combination therapy containing an HMG-CoA reductase inhibitor (atorvastatin) and a beta-adrenergic blocker (metoprolol).",
+          "Cardiavax™ è una terapia combinata contenente un inibitore dell'HMG-CoA reduttasi (atorvastatina) e un beta-bloccante (metoprololo).",
       ingredients:
-          "Each tablet contains atorvastatin calcium (20 mg) and metoprolol tartrate (25 mg). Other ingredients: cellulose, lactose, magnesium stearate, coating agents.",
+          "Ogni compressa contiene atorvastatina calcio (20 mg) e metoprololo tartrato (25 mg). Altri ingredienti: cellulosa, lattosio, magnesio stearato, agenti di rivestimento.",
       howToTake:
-          "Not for use in pregnancy or breastfeeding. \nMay cause dizziness, tiredness, or muscle pain. \nAvoid alcohol and grapefruit juice. \nUse with caution if you have liver or kidney problems. \nDo not stop suddenly without medical advice.",
+          "Non usare in gravidanza o allattamento.\nPuò causare vertigini, stanchezza o dolori muscolari.\nEvitare alcol e succo di pompelmo.\nUsare con cautela in caso di problemi epatici o renali.\nNon interrompere improvvisamente senza consiglio medico.",
       codice: '1234567',
     );
 
     return Padding(
       padding: const EdgeInsets.only(top: 80, left: 10, right: 0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Indicatore di non vendibilità
           Row(
             children: [
               Container(
@@ -42,9 +45,9 @@ class GestioneProdotto {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 kProdottoNonConsentito,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: kRed,
@@ -53,6 +56,8 @@ class GestioneProdotto {
             ],
           ),
           const SizedBox(height: 10),
+
+          // Dettagli del prodotto
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -73,9 +78,8 @@ class GestioneProdotto {
                     ),
                     Text(
                       prodotto.minsan,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.normal,
                         color: kBluScuro,
                       ),
                     ),
@@ -85,10 +89,10 @@ class GestioneProdotto {
                       builder: (context, value, _) {
                         return CounterButton(
                           initialValue: value,
-                          onChanged: (newValue) {
+                          onChanged: (newValue) async {
                             prodotto.pezzi.value = newValue;
-                            Carrello.instance.aggiungiProdotto(prodotto);
-                            logger.i("Valore aggiornato: $newValue");
+                            await carrello.aggiungiProdotto(prodotto);
+                            logger.i("Quantità aggiornata: $newValue per ${prodotto.nome}");
                           },
                         );
                       },
@@ -103,7 +107,7 @@ class GestioneProdotto {
     );
   }
 
-  // Widget cerca prodotto
+  // Campo di ricerca prodotto
   Widget cercaProdotto({
     required BuildContext context,
     required Function(String) onChanged,
@@ -113,9 +117,10 @@ class GestioneProdotto {
       child: TextFormField(
         decoration: InputDecoration(
           labelText: kCercaProdotto,
-          labelStyle: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: kBluScuro),
+          labelStyle: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: kBluScuro),
           enabledBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: kPrimary),
           ),
@@ -136,6 +141,7 @@ class GestioneProdotto {
     );
   }
 
+  // Schermata non autorizzato (account inattivo)
   Widget nonAutorizzato() {
     return const NonAutorizzato();
   }

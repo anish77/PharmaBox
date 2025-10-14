@@ -1,128 +1,156 @@
-import 'package:flutter/material.dart';
-import '../domain/models/prodotto.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:pharma_box/firebase/firebase_logic.dart';
-import 'package:pharma_box/data/constants.dart';
+import 'package:flutter/foundation.dart';
+import 'package:isar/isar.dart';
+import 'package:pharma_box/data/models/lists_isar.dart';
+import 'package:pharma_box/data/models/prodotto_isar.dart';
+import 'package:pharma_box/domain/models/prodotto.dart';
+import 'package:pharma_box/db/isar_service.dart';
 
-class Carrello {
-  Carrello._privateConstructor();
-  static final Carrello instance = Carrello._privateConstructor();
+/// Gestisce il carrello persistente su Isar.
+/// È un singleton che sincronizza i prodotti in memoria e nel DB locale.
+class CarrelloIsar {
+  CarrelloIsar._();
+  static final CarrelloIsar instance = CarrelloIsar._();
 
-  final Map<String, ValueNotifier<List<Prodotto>>> _liste = {};
-  String _listaCorrente = '_default';
+  final ValueNotifier<List<Prodotto>> prodotti = ValueNotifier([]);
+  late ListsIsar _listaCorrente;
+  bool _inizializzato = false;
 
-  /// Imposta la lista corrente (crea se non esiste)
-  void usaLista(String nomeLista) {
-    _listaCorrente = nomeLista;
-    _liste.putIfAbsent(nomeLista, () => ValueNotifier<List<Prodotto>>([]));
+  /// Inizializza o crea la lista corrente in base al titolo (nome lista)
+  Future<void> usaLista(String titolo) async {
+    final isar = await IsarService.instance.db;
+    _listaCorrente = await isar.writeTxn(() async {
+      final existing =
+          await isar.listsIsars.filter().nameListEqualTo(titolo).findFirst();
+
+      if (existing != null) return existing;
+
+      final nuova =
+          ListsIsar()
+            ..nameList = titolo
+            ..date = DateTime.now().toIso8601String()
+            ..isCompleted = false;
+      await isar.listsIsars.put(nuova);
+      return nuova;
+    });
+
+    await _caricaProdotti();
   }
 
-  /// Restituisce il ValueNotifier della lista corrente
-  ValueNotifier<List<Prodotto>> get prodotti {
-    _liste.putIfAbsent(_listaCorrente, () => ValueNotifier<List<Prodotto>>([]));
-    return _liste[_listaCorrente]!;
+  /// Carica i prodotti collegati alla lista
+  Future<void> _caricaProdotti() async {
+    final isar = await IsarService.instance.db;
+
+    await _listaCorrente.products.load();
+    final prodottiIsar = _listaCorrente.products.toList();
+
+    final prodottiDom = prodottiIsar.map((p) => p.toDomain()).toList();
+    prodotti.value = prodottiDom;
+
+    _inizializzato = true;
   }
 
-  void aggiungiProdotto(Prodotto prodotto) {
-    final notifier = prodotti;
-    final list = List<Prodotto>.from(notifier.value);
-    final index = list.indexWhere((p) => p.minsan == prodotto.minsan);
+  /// Aggiunge un prodotto alla lista
+  Future<void> aggiungiProdotto(Prodotto prodotto) async {
+    final isar = await IsarService.instance.db;
+    if (!_inizializzato) return;
 
-    if (index >= 0) {
-      list[index].pezzi.value += prodotto.pezzi.value;
-    } else {
-      list.add(prodotto);
-    }
-    notifier.value = list; // 🔄 notifica cambiamento
+    await isar.writeTxn(() async {
+      // Se il prodotto non è ancora salvato, salvalo prima
+      var prodottoIsar = ProdottoIsar.fromDomain(prodotto);
+      final existing =
+          await isar.prodottoIsars
+              .filter()
+              .minsanEqualTo(prodotto.minsan)
+              .findFirst();
 
-    // Persisti su Firestore
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      final qty =
-          list.firstWhere((p) => p.minsan == prodotto.minsan).pezzi.value;
-      FirebaseLogic.instance.upsertItemLista(
-        uid: uid,
-        nomeLista: _listaCorrente,
-        item: {
-          'minsan': prodotto.minsan,
-          'titolo': prodotto.nome,
-          'quantity': qty,
-          // opzionale: altri campi utili
-        },
-      );
-    }
-  }
-
-  void aggiornaQuantita(Prodotto prodotto, int newQuantity) {
-    final notifier = prodotti;
-    final list = List<Prodotto>.from(notifier.value);
-    final index = list.indexWhere((p) => p.minsan == prodotto.minsan);
-
-    if (index >= 0) {
-      if (newQuantity <= 0) {
-        list[index].pezzi.value = 0;
-        list.removeAt(index);
+      if (existing != null) {
+        prodottoIsar = existing;
+        existing.pezzi = prodotto.pezzi.value;
+        await isar.prodottoIsars.put(existing);
       } else {
-        list[index].pezzi.value = newQuantity;
+        await isar.prodottoIsars.put(prodottoIsar);
       }
-      notifier.value = list; // 🔄 notifica cambiamento
 
-      // Persisti su Firestore
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        if (newQuantity <= 0) {
-          FirebaseLogic.instance.aggiornaQuantitaItemLista(
-            uid: uid,
-            nomeLista: _listaCorrente,
-            minsan: prodotto.minsan,
-            quantity: newQuantity,
-          );
-        } else {
-          // Usa upsert completo per garantire che il titolo resti salvato
-          FirebaseLogic.instance.upsertItemLista(
-            uid: uid,
-            nomeLista: _listaCorrente,
-            item: {
-              'minsan': prodotto.minsan,
-              'titolo': prodotto.nome,
-              'quantity': newQuantity,
-            },
-          );
-        }
+      // Crea il link solo se non già presente
+      await _listaCorrente.products.load();
+      final giaPresente = _listaCorrente.products.any(
+        (p) => p.minsan == prodottoIsar.minsan,
+      );
+      if (!giaPresente) {
+        _listaCorrente.products.add(prodottoIsar);
+        await _listaCorrente.products.save();
       }
-    }
+    });
+
+    await _caricaProdotti();
   }
 
-  // Sostituisce completamente i prodotti della lista corrente
+  /// Aggiorna la quantità di un prodotto
+  Future<void> aggiornaQuantita(Prodotto prodotto, int nuovaQta) async {
+    final isar = await IsarService.instance.db;
+    if (!_inizializzato) return;
+
+    await isar.writeTxn(() async {
+      final existing =
+          await isar.prodottoIsars
+              .filter()
+              .minsanEqualTo(prodotto.minsan)
+              .findFirst();
+
+      if (existing != null) {
+        existing.pezzi = nuovaQta;
+        await isar.prodottoIsars.put(existing);
+      } else {
+        // se non esiste, lo aggiungo
+        final nuovo = ProdottoIsar.fromDomain(prodotto)..pezzi = nuovaQta;
+        await isar.prodottoIsars.put(nuovo);
+        _listaCorrente.products.add(nuovo);
+        await _listaCorrente.products.save();
+      }
+    });
+
+    await _caricaProdotti();
+  }
+
+  /// Rimuove un prodotto dal carrello
+  Future<void> rimuoviProdotto(Prodotto prodotto) async {
+    final isar = await IsarService.instance.db;
+    if (!_inizializzato) return;
+
+    await isar.writeTxn(() async {
+      final prodottoIsar =
+          await isar.prodottoIsars
+              .filter()
+              .minsanEqualTo(prodotto.minsan)
+              .findFirst();
+      if (prodottoIsar == null) return;
+
+      await _listaCorrente.products.load();
+      _listaCorrente.products.removeWhere((p) => p.id == prodottoIsar.id);
+      await _listaCorrente.products.save();
+
+      // opzionale: elimina anche dal DB se non collegato ad altre liste
+      await isar.prodottoIsars.delete(prodottoIsar.id);
+    });
+
+    await _caricaProdotti();
+  }
+
+  /// Svuota completamente la lista
+  Future<void> svuotaLista() async {
+    final isar = await IsarService.instance.db;
+    if (!_inizializzato) return;
+
+    await isar.writeTxn(() async {
+      await _listaCorrente.products.load();
+      _listaCorrente.products.clear();
+      await _listaCorrente.products.save();
+    });
+
+    prodotti.value = [];
+  }
+
   void sostituisciProdottiCorrenti(List<Prodotto> nuovi) {
     prodotti.value = List<Prodotto>.from(nuovi);
-  }
-
-  // Carica da Firestore gli items della lista corrente
-  Future<void> caricaListaDaCloud(String uid) async {
-    final items = await FirebaseLogic.instance.leggiItemsLista(
-      uid: uid,
-      nomeLista: _listaCorrente,
-    );
-    final prodottiCaricati =
-        items.map((e) {
-          final qty = (e['quantity'] ?? 0) as int;
-          final titolo =
-              (e['titolo'] ?? e['title'] ?? e['name'] ?? e['nome'] ?? '')
-                  as String;
-          return Prodotto(
-            id: 0,
-            nome: titolo.isNotEmpty ? titolo : (e['minsan'] ?? '') as String,
-            minsan: (e['minsan'] ?? '') as String,
-            immagine: kNoImage,
-            pezzi: qty,
-            vendibile: 0,
-            description: '',
-            ingredients: '',
-            howToTake: '',
-            codice: '',
-          );
-        }).toList();
-    sostituisciProdottiCorrenti(prodottiCaricati);
   }
 }
