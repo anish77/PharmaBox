@@ -11,6 +11,7 @@ import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/domain/repository/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
+import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
 
 class CreaNuovaLista extends StatefulWidget {
@@ -534,34 +535,39 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                             color: kSecondary.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
                             children: [
-                              const Text(
-                                'Totale pezzi in tutte le liste:',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: kBluScuro,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: kSecondary.withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Text(
-                                  '$totaleGlobal',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: kBluScuro,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Totale pezzi in tutte le liste:',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: kBluScuro,
+                                    ),
                                   ),
-                                ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: kSecondary.withValues(alpha: 0.6),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Text(
+                                      '$totaleGlobal',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: kBluScuro,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -569,6 +575,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       ],
                     );
                   },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 45,
+                child: CustomButton(
+                  title: "Scarica liste selezionate",
+                  titleColor: Colors.white,
+                  backgroundColor: kPrimary,
+                  onPressed: () {},
                 ),
               ),
             ],
