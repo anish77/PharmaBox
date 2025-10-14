@@ -6,11 +6,14 @@ import 'package:pharma_box/data/constants.dart';
 class LogoutPopup {
   var logger = Logger(printer: PrettyPrinter());
 
-  void showLogout(BuildContext context) {
+  void showLogout(BuildContext parentContext) {
+    final drawerNavigator = Navigator.of(parentContext);
+    final rootNavigator = Navigator.of(parentContext, rootNavigator: true);
+
     showDialog(
-      context: context,
+      context: parentContext,
       builder:
-          (context) => AlertDialog(
+          (dialogContext) => AlertDialog(
             title: const Text(
               'Conferma logout',
               style: TextStyle(color: kBluScuro),
@@ -28,17 +31,22 @@ class LogoutPopup {
                     try {
                       await FirebaseAuth.instance.signOut();
                       // ignore: use_build_context_synchronously
-                      Navigator.of(context).pop(); // chiude il dialog
-                      Navigator.of(
-                        // ignore: use_build_context_synchronously
-                        context,
-                        rootNavigator: true,
-                      ).pop(); // chiude il drawer se è aperto
-                      // ignore: use_build_context_synchronously
-                      Navigator.pop(context);
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop(); // chiudi dialog
+                      }
+                      if (drawerNavigator.mounted && drawerNavigator.canPop()) {
+                        drawerNavigator.pop(); // chiudi il drawer se aperto
+                      }
+                      if (rootNavigator.mounted) {
+                        rootNavigator.popUntil((route) => route.isFirst);
+                      }
+
                       logger.d('Log out: SUCCESS');
                     } catch (error) {
                       logger.e(error);
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
                     }
                   },
                   style: OutlinedButton.styleFrom(
@@ -50,7 +58,8 @@ class LogoutPopup {
                 const SizedBox(height: 4),
                 OutlinedButton(
                   onPressed: () {
-                    Navigator.of(context).pop(false); // Annulla
+                    if (!dialogContext.mounted) return;
+                    Navigator.of(dialogContext).pop(false); // Annulla
                   },
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(40),

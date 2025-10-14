@@ -66,12 +66,13 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _submitLogin() async {
+  Future<void> _submitLogin() async {
+    if (_isLoading) return;
+
     final email = _enteredEmail.trim();
     final password = _enteredPassword.trim();
-    setState(() {
-      _isLoading = true;
-    });
+
+    setState(() => _isLoading = true);
 
     try {
       final userCredentials = await _firebase.signInWithEmailAndPassword(
@@ -88,13 +89,14 @@ class _LoginPageState extends State<LoginPage> {
         await _secureStorage.delete(key: 'login_email');
         await _secureStorage.delete(key: 'login_password');
       }
-      Navigator.push(
-        // ignore: use_build_context_synchronously
-        context,
-        MaterialPageRoute(builder: (ctx) => const CreaNuovaLista()),
+
+      if (!mounted) return; // 👈 nuova guardia
+      Navigator.of(context).pushReplacement(
+        // o semplicemente `return;`
+        MaterialPageRoute(builder: (_) => const CreaNuovaLista()),
       );
     } on FirebaseAuthException catch (error) {
-      String message = 'Errore di autenticazione';
+      var message = 'Errore di autenticazione';
       if (error.code == 'wrong-password') {
         message = 'Password errata';
       } else if (error.code == 'user-not-found') {
@@ -103,20 +105,17 @@ class _LoginPageState extends State<LoginPage> {
         message = 'Email non valida';
       }
 
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).clearSnackBars();
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      if (!mounted) return; // 👈 nuova guardia
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
+        );
 
       logger.e('Login failed: ${error.message}');
-      logger.i(error.code);
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -203,7 +202,8 @@ class _LoginPageState extends State<LoginPage> {
                                 contentPadding: EdgeInsets.zero,
                                 value: _rememberCredentials,
                                 activeColor: kPrimary,
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                                 title: const Text('Ricorda credenziali'),
                                 onChanged: (value) {
                                   setState(() {

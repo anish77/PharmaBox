@@ -8,6 +8,7 @@ class CustomTextFormField extends StatelessWidget {
   final String? Function(String?)? validator;
   final void Function(String?)? onSaved;
   final void Function(String)? onChanged;
+  final void Function(String)? onFieldSubmitted;
   final TextStyle? labelStyle;
   final TextStyle? floatingLabelStyle;
   final TextStyle? textStyle;
@@ -22,6 +23,7 @@ class CustomTextFormField extends StatelessWidget {
     this.validator,
     this.onSaved,
     this.onChanged,
+    this.onFieldSubmitted,
     this.labelStyle,
     this.floatingLabelStyle,
     this.textStyle,
