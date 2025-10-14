@@ -4,15 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_box/firebase/firebase_options.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:provider/provider.dart' as legacy_provider;
-
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/data/models/lists_isar.dart';
 import 'package:pharma_box/data/models/prodotto_isar.dart';
 import 'package:pharma_box/data/repository/lists_isar_repo.dart';
 import 'package:pharma_box/domain/repository/lists_repo.dart';
-import 'package:pharma_box/db/firebase_options.dart';
 import 'package:pharma_box/presentation/lists_cubit.dart';
 import 'package:pharma_box/view/login_page.dart';
 
