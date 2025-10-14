@@ -1,7 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/view/info.dart';
 import 'package:pharma_box/view/invita_un_amico.dart';
@@ -11,6 +17,7 @@ import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
+import 'package:share_plus/share_plus.dart';
 
 class CreaNuovaLista extends StatefulWidget {
   const CreaNuovaLista({super.key});
@@ -24,6 +31,25 @@ class _ListaViewData {
 
   final String nome;
   final int totalePezzi;
+}
+
+class _ListExportData {
+  const _ListExportData({required this.nome, required this.items});
+
+  final String nome;
+  final List<_ListExportItem> items;
+}
+
+class _ListExportItem {
+  const _ListExportItem({
+    required this.nome,
+    required this.minsan,
+    required this.quantity,
+  });
+
+  final String nome;
+  final String minsan;
+  final int quantity;
 }
 
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
@@ -117,6 +143,19 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     return 0;
   }
 
+  List<Map<String, dynamic>> _normalizeEntries(dynamic rawEntries) {
+    if (rawEntries is Iterable) {
+      return rawEntries
+          .whereType<Map>()
+          .map(
+            (element) =>
+                element.map((key, value) => MapEntry(key.toString(), value)),
+          )
+          .toList(growable: false);
+    }
+    return <Map<String, dynamic>>[];
+  }
+
   int _parseQuantity(dynamic value) {
     if (value is int) return value;
     if (value is num) return value.toInt();
@@ -150,6 +189,282 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     await FirebaseFirestore.instance.collection('users').doc(uid).update({
       'liste': FieldValue.arrayRemove([listaDaEliminare]),
     });
+  }
+
+  Future<void> _scaricaListeSelezionate() async {
+    if (_checkedLists.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleziona almeno una lista.')),
+      );
+      return;
+    }
+
+    final uid = _currentUid;
+    if (uid == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Effettua il login per scaricare le liste.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (!snapshot.exists) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile recuperare le liste selezionate.'),
+          ),
+        );
+        return;
+      }
+
+      final data = snapshot.data();
+      final rawListe = List<Map<String, dynamic>>.from(data?['liste'] ?? []);
+      final selected = <_ListExportData>[];
+
+      for (final rawLista in rawListe) {
+        final nome = (rawLista['nomeLista'] ?? '').toString();
+        if (!_checkedLists.contains(nome)) continue;
+
+        var entries = _normalizeEntries(rawLista['items']);
+        if (entries.isEmpty) {
+          entries = _normalizeEntries(rawLista['prodotti']);
+        }
+
+        final items = entries
+            .map((entry) {
+              final rawNome =
+                  entry['titolo'] ??
+                  entry['title'] ??
+                  entry['name'] ??
+                  entry['nome'] ??
+                  entry['description'] ??
+                  '';
+              final minsan = (entry['minsan'] ?? entry['id'] ?? '').toString();
+              final quantity = _parseQuantity(
+                entry['quantity'] ??
+                    entry['qty'] ??
+                    entry['pezzi'] ??
+                    entry['quantita'] ??
+                    entry['qta'],
+              );
+              return _ListExportItem(
+                nome: rawNome.toString(),
+                minsan: minsan,
+                quantity: quantity,
+              );
+            })
+            .where((item) => item.nome.isNotEmpty || item.minsan.isNotEmpty)
+            .toList(growable: false);
+
+        selected.add(_ListExportData(nome: nome, items: items));
+      }
+
+      if (selected.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nessuna lista selezionata disponibile.'),
+          ),
+        );
+        return;
+      }
+
+      final hasItems = selected.any((lista) => lista.items.isNotEmpty);
+      if (!hasItems) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le liste selezionate non contengono prodotti.'),
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      await _showExportSheet(selected);
+    } catch (error, stackTrace) {
+      _logger.e(
+        'Errore nel preparare lo scaricamento delle liste: $error',
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Errore durante la preparazione delle liste selezionate.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showExportSheet(List<_ListExportData> liste) async {
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf),
+                title: const Text('Scarica PDF'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _handleExport(() => _exportListeAsPdf(liste));
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.table_chart_outlined),
+                title: const Text('Scarica CSV'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _handleExport(() => _exportListeAsCsv(liste));
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleExport(Future<void> Function() exporter) async {
+    try {
+      await exporter();
+    } catch (error, stackTrace) {
+      _logger.e(
+        'Errore durante l\'esportazione delle liste selezionate: $error',
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Si è verificato un errore durante l\'esportazione.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportListeAsPdf(List<_ListExportData> liste) async {
+    final document = pw.Document();
+
+    document.addPage(
+      pw.MultiPage(
+        build: (context) {
+          final widgets = <pw.Widget>[
+            pw.Text(
+              'Liste selezionate',
+              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 16),
+          ];
+
+          for (final lista in liste) {
+            widgets.add(
+              pw.Text(
+                lista.nome,
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            );
+            widgets.add(pw.SizedBox(height: 8));
+
+            if (lista.items.isEmpty) {
+              widgets.add(
+                pw.Text(
+                  'Nessun prodotto nella lista',
+                  style: pw.TextStyle(fontSize: 12),
+                ),
+              );
+            } else {
+              widgets.add(
+                pw.TableHelper.fromTextArray(
+                  headers: ['Nome prodotto', 'Minsan', 'Pezzi'],
+                  data:
+                      lista.items
+                          .map(
+                            (item) => [
+                              item.nome,
+                              item.minsan,
+                              item.quantity.toString(),
+                            ],
+                          )
+                          .toList(),
+                ),
+              );
+            }
+
+            widgets.add(pw.SizedBox(height: 16));
+          }
+
+          return widgets;
+        },
+      ),
+    );
+
+    final bytes = await document.save();
+    await _saveAndShare(
+      bytes,
+      'liste_selezionate.pdf',
+      mimeType: 'application/pdf',
+    );
+  }
+
+  Future<void> _exportListeAsCsv(List<_ListExportData> liste) async {
+    final buffer = StringBuffer()..writeln('Lista;Nome prodotto;Minsan;Pezzi');
+
+    for (final lista in liste) {
+      if (lista.items.isEmpty) {
+        buffer.writeln('${_escapeCsv(lista.nome)};Nessun prodotto;;');
+        continue;
+      }
+
+      for (final item in lista.items) {
+        buffer.writeln(
+          '${_escapeCsv(lista.nome)};${_escapeCsv(item.nome)};${_escapeCsv(item.minsan)};${item.quantity}',
+        );
+      }
+    }
+
+    final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+    await _saveAndShare(bytes, 'liste_selezionate.csv', mimeType: 'text/csv');
+  }
+
+  Future<void> _saveAndShare(
+    Uint8List bytes,
+    String filename, {
+    required String mimeType,
+  }) async {
+    final directory = await getTemporaryDirectory();
+    final filePath = '${directory.path}/$filename';
+    final file = File(filePath);
+    await file.writeAsBytes(bytes, flush: true);
+
+    final xFile = XFile(file.path, mimeType: mimeType, name: filename);
+
+    await SharePlus.instance.share(
+      ShareParams(files: [xFile], subject: 'Liste selezionate'),
+    );
+  }
+
+  String _escapeCsv(String value) {
+    if (value.isEmpty) return value;
+    final escaped = value.replaceAll('"', '""');
+    final needsQuotes =
+        value.contains(';') || value.contains('"') || value.contains('\n');
+    return needsQuotes ? '"$escaped"' : value;
   }
 
   @override
@@ -711,11 +1026,8 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   title: 'Scarica liste selezionate',
                   titleColor: Colors.white,
                   backgroundColor: kPrimary,
-                  onPressed: () {},
-                  /* () => _scaricaListeSelezionate(
-                                  context,
-                                  listeView,
-                                ),*/
+                  onPressed:
+                      _checkedLists.isEmpty ? null : _scaricaListeSelezionate,
                 ),
               ),
             ],
