@@ -482,6 +482,14 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                               const EdgeInsets.symmetric(
                                                 horizontal: 8,
                                               ), // sinistra/destra
+                                          leading: Checkbox(
+                                            value: lista.isCompleted,
+                                            activeColor: kPrimary,
+                                            onChanged:
+                                                (_) => context
+                                                    .read<ListsCubit>()
+                                                    .toogleCompletion(lista),
+                                          ),
                                           title: Text(nomeLista),
                                           trailing: Container(
                                             padding: const EdgeInsets.symmetric(
