@@ -35,13 +35,10 @@ Future<void> main() async {
     ProdottoIsarSchema,
   ], directory: appDirectory.path);
 
-  // 🔹 4. Inizializza il carrello offline (Isar)
-  //await CarrelloIsar.instance.init(isar);
-
-  // 🔹 5. Inizializza i repository Isar
+  // 🔹 4. Inizializza i repository Isar
   final listsRepo = ListsIsarRepo(isar);
 
-  // 🔹 6. Avvia l’app
+  // 🔹 5. Avvia l’app
   runApp(
     legacy_provider.MultiProvider(
       providers: [
