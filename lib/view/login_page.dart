@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -66,6 +68,16 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<bool> _hasInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } on SocketException catch (error) {
+      logger.w('Nessuna connessione internet: $error');
+      return false;
+    }
+  }
+
   Future<void> _submitLogin() async {
     if (_isLoading) return;
 
@@ -73,6 +85,22 @@ class _LoginPageState extends State<LoginPage> {
     final password = _enteredPassword.trim();
 
     setState(() => _isLoading = true);
+
+    final hasInternet = await _hasInternetConnection();
+    if (!hasInternet) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('Connessione Internet assente. Controlla la rete.'),
+              backgroundColor: kRed,
+            ),
+          );
+      }
+      return;
+    }
 
     try {
       final userCredentials = await _firebase.signInWithEmailAndPassword(
