@@ -477,6 +477,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                           }
                                         },
                                         child: ListTile(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                              ), // sinistra/destra
                                           title: Text(nomeLista),
                                           trailing: Container(
                                             padding: const EdgeInsets.symmetric(
