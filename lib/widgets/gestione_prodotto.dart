@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/domain/repository/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
 import 'package:pharma_box/domain/models/prodotto.dart';
 import 'package:pharma_box/widgets/non_autorizzato.dart';

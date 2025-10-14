@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/domain/repository/carrello.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/domain/models/prodotto.dart';

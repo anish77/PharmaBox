@@ -17,7 +17,7 @@ import 'package:pharma_box/domain/models/prodotto.dart';
 import 'package:pharma_box/presentation/lists_cubit.dart';
 import 'package:pharma_box/view/login_page.dart';
 import 'package:pharma_box/view/crea_nuova_lista.dart';
-import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/domain/repository/carrello.dart';
 
 final bleScanningProvider = StateProvider<bool>((ref) => false);
 final bleStatusProvider = StateProvider<String>((ref) => '');

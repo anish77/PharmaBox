@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/web.dart';
-import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/domain/repository/carrello.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/domain/models/prodotto.dart';

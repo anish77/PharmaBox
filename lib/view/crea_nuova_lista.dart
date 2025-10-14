@@ -9,7 +9,7 @@ import 'package:pharma_box/view/info.dart';
 import 'package:pharma_box/view/invita_un_amico.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/view/stato_inviti.dart';
-import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/domain/repository/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
 
