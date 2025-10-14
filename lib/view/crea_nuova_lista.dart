@@ -9,6 +9,7 @@ import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
+import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
 
 class CreaNuovaLista extends StatefulWidget {
@@ -655,6 +656,20 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                       },
                     );
                   },
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  title: 'Scarica liste selezionate',
+                  titleColor: Colors.white,
+                  backgroundColor: kPrimary,
+                  onPressed: () {},
+                  /* () => _scaricaListeSelezionate(
+                                  context,
+                                  listeView,
+                                ),*/
                 ),
               ),
             ],
