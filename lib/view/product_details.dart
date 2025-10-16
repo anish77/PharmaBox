@@ -89,13 +89,17 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (codice.isEmpty) return null;
 
     try {
-      if (widget.prodotto.vendibile != 0) return isBit(widget.prodotto.vendibile,kBitProdottoVendibile);
+      if (widget.prodotto.vendibile != 0)
+        return isBit(widget.prodotto.vendibile, kBitProdottoVendibile);
       final vendibile = await loadVendibilita(codice);
       if (vendibile == null) {
         return null;
       }
-      widget.prodotto.vendibile = setBit(widget.prodotto.vendibile, vendibile ? kBitProdottoVendibile:kBitProdottoNonVendibile);
-      
+      widget.prodotto.vendibile = setBit(
+        widget.prodotto.vendibile,
+        vendibile ? kBitProdottoVendibile : kBitProdottoNonVendibile,
+      );
+
       return vendibile;
     } catch (error) {
       debugPrint('Errore durante il recupero dei dati rendibilita: $error');
@@ -130,7 +134,16 @@ class _ProductDetailsState extends State<ProductDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dettaglio"),
+        scrolledUnderElevation: 0,
+        title: Text(
+          "Dettaglio",
+          style: TextStyle(
+            color: kBluScuro,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: kBluScuro),
         centerTitle: false,
         titleSpacing: 2,
         backgroundColor: kBackGround,
