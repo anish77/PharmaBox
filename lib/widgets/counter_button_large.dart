@@ -135,9 +135,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
 }
 
 class _ManualCounterDialog extends StatefulWidget {
-  const _ManualCounterDialog({
-    required this.initialValue,
-  });
+  const _ManualCounterDialog({required this.initialValue});
 
   final int initialValue;
 
@@ -152,7 +150,7 @@ class _ManualCounterDialogState extends State<_ManualCounterDialog> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialValue.toString());
+    _controller = TextEditingController();
   }
 
   @override
@@ -180,10 +178,7 @@ class _ManualCounterDialogState extends State<_ManualCounterDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Annulla'),
         ),
-        TextButton(
-          onPressed: _submit,
-          child: const Text('Salva'),
-        ),
+        TextButton(onPressed: _submit, child: const Text('Salva')),
       ],
     );
   }
