@@ -169,7 +169,7 @@ class _ProdottoCellState extends State<ProdottoCell> {
                 ),
                 const SizedBox(width: 16),
                 Padding(
-                  padding: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.only(top: 8),
                   child: SizedBox(
                     width: actionWidth,
                     child:
@@ -181,7 +181,6 @@ class _ProdottoCellState extends State<ProdottoCell> {
                               ),
                               initialValue: widget.inListQty ?? 0,
                               height: actionHeight,
-                              width: actionWidth,
                               onChanged: (newValue) {
                                 Carrello.instance.aggiornaQuantita(
                                   widget.prodotto,
