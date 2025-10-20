@@ -167,21 +167,10 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
     if (_couponValid) {
       await _loadCurrentUserData();
       await _addAmiciInvitati();
-      final double basePrice = kAbbonamento.toDouble();
-      final double discountedPrice = basePrice * (1 - _discountPercent);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Buono applicato: da ${basePrice.toStringAsFixed(2)}€ a ${discountedPrice.toStringAsFixed(2)}€',
-            ),
-          ),
-        );
-      }
     }
 
     //dopo
-    // await _showPaymentOptions(context);
+    await _showPaymentOptions(context);
   }
 
   Future<void> _loadCurrentUserData() async {
