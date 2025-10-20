@@ -134,8 +134,4 @@ class GestioneProdotto {
       ),
     );
   }
-
-  Widget nonAutorizzato() {
-    return const NonAutorizzato();
-  }
 }

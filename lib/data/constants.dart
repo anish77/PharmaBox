@@ -10,8 +10,8 @@ const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
 const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
+const kNoScanCode = 'assets/noScanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
-const kNotAuthorized = 'assets/lock.png';
 const kCongratulazioni = 'assets/congratulazioni.png';
 
 //colors
