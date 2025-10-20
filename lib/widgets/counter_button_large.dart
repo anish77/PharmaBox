@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/widgets/manual_counter_dialog.dart';
 
 class CounterButtonLarge extends StatefulWidget {
   final int initialValue;
@@ -122,7 +123,7 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
   Future<void> _showManualEntryDialog() async {
     final newValue = await showDialog<int>(
       context: context,
-      builder: (_) => _ManualCounterDialog(initialValue: _counter),
+      builder: (_) => ManualCounterDialog(initialValue: _counter),
     );
 
     if (newValue != null && newValue != _counter) {
@@ -134,68 +135,3 @@ class _CounterButtonLargeState extends State<CounterButtonLarge> {
   }
 }
 
-class _ManualCounterDialog extends StatefulWidget {
-  const _ManualCounterDialog({
-    required this.initialValue,
-  });
-
-  final int initialValue;
-
-  @override
-  State<_ManualCounterDialog> createState() => _ManualCounterDialogState();
-}
-
-class _ManualCounterDialogState extends State<_ManualCounterDialog> {
-  late final TextEditingController _controller;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialValue.toString());
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Modifica quantità'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          labelText: 'Numero pezzi',
-          errorText: _errorMessage,
-        ),
-        onSubmitted: (_) => _submit(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annulla'),
-        ),
-        TextButton(
-          onPressed: _submit,
-          child: const Text('Salva'),
-        ),
-      ],
-    );
-  }
-
-  void _submit() {
-    final parsed = int.tryParse(_controller.text);
-    if (parsed == null || parsed < 0) {
-      setState(() {
-        _errorMessage = 'Inserisci un numero valido.';
-      });
-      return;
-    }
-    Navigator.of(context).pop(parsed);
-  }
-}
