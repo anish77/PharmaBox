@@ -380,7 +380,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                 ),
               ),
               const SizedBox(height: 12),
-              fallback,
+              // 👇 mostra la descrizione solo se esiste DAVVERO
+              if (widget.prodotto.description.isNotEmpty)
+                Text(widget.prodotto.description, style: textStyle),
             ],
           );
         }
@@ -391,23 +393,19 @@ class _ProductDetailsState extends State<ProductDetails> {
   }
 
   Widget _buildSection(String title, Widget child) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: kBluScuro,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: kBluScuro,
           ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
+        ),
+        child,
+      ],
     );
   }
 
@@ -455,11 +453,62 @@ class _ProductDetailsState extends State<ProductDetails> {
 
             // Forza background bianco e migliora leggibilità (font-size, immagini responsive)
             await controller.runJavaScript(
-              "(function(){var css='html,body{background:transparent !important;color:#111;min-height:100vh;}'+" +
-                  "'body{margin:0;padding:12px;font-size:16px;line-height:1.5;-webkit-text-size-adjust:110%;text-size-adjust:110%;}'+" +
-                  "'img,iframe,video{max-width:100% !important;height:auto !important;}table{width:100% !important;overflow:auto;}';" +
-                  "var s=document.createElement('style');s.type='text/css';s.appendChild(document.createTextNode(css));document.head.appendChild(s);document.documentElement.style.background='transparent';document.body.style.background='transparent';})();",
+              "(function(){var css='"
+                  // Imposta sfondo e testo
+                  +
+                  "html,body{background:transparent !important;color:#111;min-height:100vh;"
+                  // Tutto allineato a sinistra
+                  +
+                  "text-align:left;margin:0;padding:0;overflow:hidden;}"
+                  // Corpo con padding per staccare dal bordo sinistro
+                  +
+                  "body{padding:1px;font-size:16px;line-height:1.5;" +
+                  "-webkit-text-size-adjust:110%;text-size-adjust:110%;box-sizing:border-box;}"
+                  // Nascondi scrollbar
+                  +
+                  "::-webkit-scrollbar{display:none;}"
+                  // Immagini e tabelle responsive
+                  +
+                  "img,iframe,video{max-width:100% !important;height:auto !important;}" +
+                  "table{max-width:100% !important;width:auto !important;overflow:auto;}" +
+                  "';"
+                  // Applica il CSS
+                  +
+                  "var s=document.createElement('style');" +
+                  "s.type='text/css';" +
+                  "s.appendChild(document.createTextNode(css));" +
+                  "document.head.appendChild(s);" +
+                  "document.documentElement.style.background='transparent';" +
+                  "document.body.style.background='transparent';" +
+                  "})();",
             );
+
+            await controller.runJavaScript("""
+  (function() {
+    // 🔹 Rimuove immagini rotte (quelle che mostrano il "?")
+    document.querySelectorAll('img').forEach(function(img) {
+      if (!img.complete || img.naturalWidth === 0) {
+        img.remove();
+      }
+    });
+
+    // 🔹 Rimuove eventuali spazi vuoti rimasti dopo immagini eliminate
+    document.querySelectorAll('p, div, span').forEach(function(el) {
+      // Se il nodo non ha testo visibile e non contiene altri elementi significativi
+      if (el.innerText.trim() === '' && el.children.length === 0) {
+        el.remove();
+      }
+    });
+
+    // 🔹 Se il primo elemento visibile è troppo vicino al top, riduce il margine
+    const first = document.body.firstElementChild;
+    if (first && first.getBoundingClientRect().top > 20) {
+      first.style.marginTop = '0';
+      first.style.paddingTop = '0';
+    }
+  })();
+  """);
+
             // Calcola l'altezza del contenuto della pagina
             final result = await controller.runJavaScriptReturningResult(
               'Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)',
