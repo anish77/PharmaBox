@@ -150,17 +150,31 @@ class InvitaUnAmicoPage extends StatelessWidget {
                 ),
               ),
             ),
-            CustomButton(
-              title: 'Condividi ora',
-              titleColor: Colors.white,
-              backgroundColor: kPrimary,
-              onPressed: () {
-                final message =
-                    'Registrati su $kAppName e usa il mio codice $referralCode per ricevere lo $kBuonoSconto10 !';
-                SharePlus.instance.share(
-                  ShareParams(text: message, subject: kAppName),
-                );
-              },
+            Builder(
+              builder:
+                  (buttonContext) => CustomButton(
+                    title: 'Condividi ora',
+                    titleColor: Colors.white,
+                    backgroundColor: kPrimary,
+                    onPressed: () {
+                      final box =
+                          buttonContext.findRenderObject() as RenderBox?;
+                      final origin =
+                          box != null
+                              ? box.localToGlobal(Offset.zero) & box.size
+                              : const Rect.fromLTWH(0, 0, 1, 1);
+
+                      final message =
+                          'Registrati su $kAppName e usa il mio codice $referralCode per ricevere lo $kBuonoSconto10 !';
+                      SharePlus.instance.share(
+                        ShareParams(
+                          text: message,
+                          subject: kAppName,
+                          sharePositionOrigin: origin,
+                        ),
+                      );
+                    },
+                  ),
             ),
             const SizedBox(height: 45),
           ],
