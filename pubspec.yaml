@@ -68,11 +68,11 @@ flutter:
   assets:
     - assets/Logo.png
     - assets/noImage.png
-    - assets/lock.png
     - assets/scanCode.png
     - assets/bluetooth.png
     - assets/app_icon_512x512.png
     - assets/congratulazioni.png
+    - assets/noScanCode.png
  
 
   # An image asset can refer to one or more resolution-specific "variants", see
