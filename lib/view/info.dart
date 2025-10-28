@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/logic/open_email.dart';
@@ -12,9 +12,10 @@ class InfoPage extends StatelessWidget {
     return "${date.day}/${date.month}/${date.year}";
   }
 
+  // 🔹 Reimpostazione password
   Future<void> _handlePasswordReset(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final email = FirebaseAuth.instance.currentUser?.email;
+    final email = auth.FirebaseAuth.instance.currentUser?.email;
 
     if (email == null || email.isEmpty) {
       messenger.showSnackBar(
@@ -24,17 +25,149 @@ class InfoPage extends StatelessWidget {
     }
 
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      await auth.FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       messenger.showSnackBar(SnackBar(content: Text('Email inviata a $email')));
-    } on FirebaseAuthException catch (error) {
+    } on auth.FirebaseAuthException catch (error) {
       messenger.showSnackBar(
         SnackBar(content: Text(error.message ?? 'Errore durante l\'invio.')),
       );
     }
   }
 
+  // 🔹 Cambio email
+  Future<void> _handleChangeEmail(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final auth.User? currentUser = auth.FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Devi essere loggato per cambiare email.'),
+        ),
+      );
+      return;
+    }
+
+    final controller = TextEditingController(text: currentUser.email ?? '');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Cambia email'),
+            content: TextField(
+              controller: controller,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Nuovo indirizzo email',
+                hintText: 'esempio@email.com',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Annulla'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Conferma'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+    final newEmail = controller.text.trim();
+
+    if (newEmail.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Inserisci un indirizzo email valido.')),
+      );
+      return;
+    }
+
+    // 🔹 Funzione che invia la mail di verifica e aggiorna Firestore
+    Future<void> sendVerification() async {
+      await currentUser.verifyBeforeUpdateEmail(newEmail);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .update({'email': newEmail});
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Ti abbiamo inviato un’email a $newEmail. Conferma il cambio dall’email ricevuta.',
+          ),
+        ),
+      );
+    }
+
+    try {
+      await sendVerification();
+    } on auth.FirebaseAuthException catch (error) {
+      if (error.code == 'requires-recent-login') {
+        final passwordController = TextEditingController();
+        final retry = await showDialog<bool>(
+          context: context,
+          builder:
+              (dialogContext) => AlertDialog(
+                title: const Text('Reinserisci la password'),
+                content: TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Password'),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('Annulla'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: const Text('Conferma'),
+                  ),
+                ],
+              ),
+        );
+
+        if (retry == true) {
+          try {
+            final credential = auth.EmailAuthProvider.credential(
+              email: currentUser.email!,
+              password: passwordController.text.trim(),
+            );
+            await currentUser.reauthenticateWithCredential(credential);
+            await sendVerification();
+          } catch (_) {
+            messenger.showSnackBar(
+              const SnackBar(content: Text('Password errata o altro errore.')),
+            );
+          }
+        }
+      } else if (error.code == 'invalid-email') {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('L\'indirizzo email non è valido.')),
+        );
+      } else if (error.code == 'email-already-in-use') {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Questa email è già in uso.')),
+        );
+      } else {
+        messenger.showSnackBar(
+          SnackBar(content: Text(error.message ?? 'Errore sconosciuto.')),
+        );
+      }
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Errore imprevisto durante il cambio email.'),
+        ),
+      );
+    }
+  }
+
+  // 🔹 Cancellazione account
   Future<void> _confirmDeleteAccount(BuildContext context) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.FirebaseAuth.instance.currentUser;
     final messenger = ScaffoldMessenger.of(context);
 
     if (user == null) {
@@ -48,40 +181,49 @@ class InfoPage extends StatelessWidget {
       return;
     }
 
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder:
-              (dialogContext) => AlertDialog(
-                title: const Text('Conferma cancellazione'),
-                content: const Text(
-                  'Sei sicuro di voler cancellare definitivamente il tuo account? Questa azione non è reversibile.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(false),
-                    child: const Text('Annulla'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(true),
-                    child: const Text('Conferma'),
-                  ),
-                ],
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Conferma cancellazione'),
+            content: const Text(
+              'Sei sicuro di voler cancellare definitivamente il tuo account? '
+              'Questa azione non è reversibile.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Annulla'),
               ),
-        ) ??
-        false;
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Conferma'),
+              ),
+            ],
+          ),
+    );
 
-    if (!confirmed) return;
-
-    bool accountDeleted = false;
-
-    final String userId = user.uid;
+    if (confirmed != true) return;
 
     try {
       await user.delete();
-      accountDeleted = true;
-    } on FirebaseAuthException catch (error) {
-      String message = 'Impossibile cancellare l\'account in questo momento.';
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .delete();
+      await auth.FirebaseAuth.instance.signOut();
+
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Account cancellato con successo.')),
+      );
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    } on auth.FirebaseAuthException catch (error) {
+      String message = 'Impossibile cancellare l\'account.';
       if (error.code == 'requires-recent-login') {
         message =
             'Per cancellare l\'account effettua nuovamente l\'accesso e riprova.';
@@ -90,39 +232,20 @@ class InfoPage extends StatelessWidget {
     } catch (error) {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text(
-            'Si è verificato un errore inatteso durante la cancellazione.',
-          ),
+          content: Text('Errore inatteso durante la cancellazione.'),
         ),
       );
     }
-
-    if (!accountDeleted) return;
-
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(userId).delete();
-    } catch (error) {
-      debugPrint('Errore eliminando il documento utente: $error');
-    }
-
-    await FirebaseAuth.instance.signOut();
-    if (!context.mounted) return;
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Account cancellato con successo.')),
-    );
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (route) => false,
-    );
   }
 
+  // 🔹 Costruttore visivo delle sezioni
   Widget _buildSection({
     required IconData icon,
     required String title,
     String? subtitle,
     VoidCallback? onTap,
   }) {
-    final bool isDestructive = icon == Icons.delete_forever;
+    final isDestructive = icon == Icons.delete_forever;
     final Color avatarColor =
         isDestructive ? kRed.withValues(alpha: 0.12) : kSecondary;
     final Color iconColor = isDestructive ? kRed : kPrimary;
@@ -144,7 +267,7 @@ class InfoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -180,6 +303,11 @@ class InfoPage extends StatelessWidget {
                           'Accedi al tuo account per aggiornare la password.',
                     ),
                     _buildSection(
+                      icon: Icons.email_outlined,
+                      title: 'Cambia email',
+                      subtitle: 'Accedi per modificare la tua email.',
+                    ),
+                    _buildSection(
                       icon: Icons.calendar_today,
                       title: 'Quando scade l\'abbonamento',
                       subtitle:
@@ -202,10 +330,8 @@ class InfoPage extends StatelessWidget {
                     DateTime? expirationDate;
                     if (snapshot.hasData) {
                       final data =
-                          snapshot.data!.data() as Map<String, dynamic>? ??
-                          <String, dynamic>{};
-                      final Timestamp? ts =
-                          data['expirationDate'] as Timestamp?;
+                          snapshot.data!.data() as Map<String, dynamic>? ?? {};
+                      final ts = data['expirationDate'] as Timestamp?;
                       expirationDate = ts?.toDate();
                     }
 
@@ -215,7 +341,7 @@ class InfoPage extends StatelessWidget {
                       expirationSubtitle = 'Caricamento in corso...';
                     } else if (snapshot.hasError) {
                       expirationSubtitle =
-                          'Impossibile recuperare la scadenza in questo momento.';
+                          'Errore nel recupero della scadenza.';
                     } else if (expirationDate == null) {
                       expirationSubtitle =
                           'Nessuna data di scadenza disponibile.';
@@ -245,6 +371,13 @@ class InfoPage extends StatelessWidget {
                           subtitle:
                               'Ti invieremo un\'email per reimpostare la password.',
                           onTap: () => _handlePasswordReset(context),
+                        ),
+                        _buildSection(
+                          icon: Icons.email_outlined,
+                          title: 'Cambia email',
+                          subtitle:
+                              'Aggiorna l\'indirizzo associato al tuo account.',
+                          onTap: () => _handleChangeEmail(context),
                         ),
                         _buildSection(
                           icon: Icons.calendar_today,
