@@ -209,7 +209,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     }
   }
 
-  Widget _checkStatus(bool bleScanning) {
+  Widget _checkStatus(bool bleScanning, bool isBleConnected) {
     if (productToSearch.trim().isEmpty &&
         !_isFidelityLoading &&
         !_isAccountActive) {
@@ -236,18 +236,13 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () async {
-                final activated = await Navigator.push<bool>(
+              onPressed: () {
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const NonAutorizzato(),
                   ),
                 );
-
-                if (!mounted || activated != true) return;
-
-                setState(() => _isFidelityLoading = true);
-                await _loadFidelityStatus();
               },
               icon: const Icon(Icons.star, color: Colors.yellow),
               label: const Text(
@@ -269,54 +264,53 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
           ],
         ),
       );
-      // 🔹 Mostra immagine scanCode se campo vuoto e scanner attivo
-    } else if (productToSearch.trim().isEmpty && !bleScanning) {
+      // 🔹 Mostra immagine scanCode finché non rilevi la connessione BLE
+    } else if (productToSearch.trim().isEmpty && !isBleConnected) {
       return Padding(
         padding: const EdgeInsets.only(top: 40),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Tooltip(
-                message: 'Tocca per connettere lo scanner Bluetooth',
-                textStyle: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () async {
-                    if (!_isAccountActive) {
-                      if (!context.mounted) {
-                        return;
-                      }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Account non attivo')),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+                  if (!_isAccountActive) {
+                    if (!context.mounted) {
+                      logger.i(
+                        'Context non montato, impossibile mostrare SnackBar',
                       );
-                    } else {
-                      if (bleScanning) {
-                        FlutterBluePlus.stopScan();
-                        ref.read(bleScanningProvider.notifier).state = false;
-                        ref.read(bleStatusProvider.notifier).state =
-                            'Scansione interrotta';
-                      } else {
-                        bleStartScanAndListen(ref);
-                      }
+                      return;
                     }
-                  },
-                  child: Image.asset(
-                    kBluetoothImage,
-                    width: 200,
-                    fit: BoxFit.contain,
-                    color: kPrimary,
-                  ),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account non attivo')),
+                    );
+                  } else {
+                    if (bleScanning) {
+                      FlutterBluePlus.stopScan();
+                      ref.read(bleScanningProvider.notifier).state = false;
+                      ref.read(bleStatusProvider.notifier).state =
+                          'Scansione interrotta';
+                      logger.i('Stopped BLE scan from image tap');
+                    } else {
+                      logger.i('Starting BLE scan from image tap');
+                      bleStartScanAndListen(ref);
+                    }
+                  }
+                },
+                child: Image.asset(
+                  kBluetoothImage,
+                  width: 200,
+                  fit: BoxFit.contain,
+                  color: bleScanning ? null : kPrimary,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Scanner Bluetooth non connesso. \nClicca sull\'icona Bluetooth per connetterlo.',
-                style: TextStyle(
+              Text(
+                bleScanning
+                    ? 'Cerca Bluetooth in corso...\nInterrompi scansione Bluetooth toccando l\'icona.'
+                    : 'Scanner Bluetooth non connesso.\nClicca sull\'icona Bluetooth per connetterlo.',
+                style: const TextStyle(
                   color: kBluScuro,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -424,6 +418,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
     final bleScanning = ref.watch(bleScanningProvider);
     final bleStatus = ref.watch(bleStatusProvider);
+    final isBleConnected = ref.watch(bleConnected);
 
     return Stack(
       children: [
@@ -557,7 +552,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                         ),
                                         Column(
                                           children: [
-                                            _checkStatus(bleScanning),
+                                            _checkStatus(
+                                              bleScanning,
+                                              isBleConnected,
+                                            ),
 
                                             //button per attivare l'abbonamento
                                             // const NonAutorizzato(),
