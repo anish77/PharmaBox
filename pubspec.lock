@@ -105,6 +105,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  charcode:
+    dependency: transitive
+    description:
+      name: charcode
+      sha256: fb0f1107cac15a5ea6ef0a6ef71a807b9e4267c713bb93e00e92d737cc8dbd8a
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   checked_yaml:
     dependency: transitive
     description:
@@ -185,6 +193,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
+  csslib:
+    dependency: transitive
+    description:
+      name: csslib
+      sha256: "09bad715f418841f976c77db72d5398dc1253c21fb9c0c7f0b0b985860b2d58e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -218,7 +234,7 @@ packages:
     source: hosted
     version: "0.7.11"
   dio:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: dio
       sha256: d90ee57923d1828ac14e492ca49440f65477f4bb1263575900be731a3dac66a9
@@ -374,6 +390,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
+  flutter_credit_card:
+    dependency: "direct main"
+    description:
+      name: flutter_credit_card
+      sha256: a31154e62667e6e1f089ea357941e9285e4b42b9cb699392e55c978e19f864a0
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   flutter_inappwebview:
     dependency: transitive
     description:
@@ -518,6 +542,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  flutter_stripe:
+    dependency: "direct main"
+    description:
+      name: flutter_stripe
+      sha256: "4a4e5524ec047a27e415f8efc7ea15d8182f586e295b804287000d9dab1ebfdc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.1.0"
+  flutter_stripe_web:
+    dependency: "direct main"
+    description:
+      name: flutter_stripe_web
+      sha256: "4c1df35ed62c76bc5b1ef2a5459ec9025ef0c18cdd291b26f3e88a2af565505a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -528,6 +568,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  freezed_annotation:
+    dependency: transitive
+    description:
+      name: freezed_annotation
+      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0"
   glob:
     dependency: transitive
     description:
@@ -544,6 +592,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.3.1"
+  html:
+    dependency: transitive
+    description:
+      name: html
+      sha256: "6d1264f2dffa1b1101c25a91dff0dc2daee4c18e87cd8538729773c073dbf602"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.15.6"
   http:
     dependency: "direct main"
     description:
@@ -973,6 +1029,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  stripe_android:
+    dependency: transitive
+    description:
+      name: stripe_android
+      sha256: f9127544327fe5bf23772a9899a46c4af1c2eccd128eb548c09b4ce9d3c99d7b
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.1.0"
+  stripe_ios:
+    dependency: transitive
+    description:
+      name: stripe_ios
+      sha256: "82cd4c056730ce943a4f99d82433a358f8e09d871e6c71cb54bc053aa8f49a1d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.1.0"
+  stripe_js:
+    dependency: transitive
+    description:
+      name: stripe_js
+      sha256: "76e692d187ce2f63be2ef237fe3749dfdba24af28eee7b84b4eec34e8c864cbe"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.0"
+  stripe_platform_interface:
+    dependency: transitive
+    description:
+      name: stripe_platform_interface
+      sha256: "1661f45a7fca7444f27ac9b85db98ba6cc2169e6999143e0364d9d93bc51d0ff"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.1.0"
+  stripe_sdk:
+    dependency: "direct main"
+    description:
+      name: stripe_sdk
+      sha256: "5a163ebcd25ae2d1cbe8c5efbbf1079d59bce617f3f0809541beb62981467848"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
   term_glyph:
     dependency: transitive
     description:
@@ -1037,6 +1133,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.0"
+  universal_html:
+    dependency: transitive
+    description:
+      name: universal_html
+      sha256: "56536254004e24d9d8cfdb7dbbf09b74cf8df96729f38a2f5c238163e3d58971"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.4"
+  universal_io:
+    dependency: transitive
+    description:
+      name: universal_io
+      sha256: "1722b2dcc462b4b2f3ee7d188dad008b6eb4c40bbd03a3de451d82c78bba9aad"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.2"
   url_launcher:
     dependency: "direct main"
     description:
@@ -1214,5 +1326,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.8.0 <4.0.0"
+  dart: ">=3.8.1 <4.0.0"
   flutter: ">=3.29.0"

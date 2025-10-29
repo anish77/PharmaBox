@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/services/stripe_service.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -197,7 +198,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
           'Piano annuale',
           style: textTheme.labelSmall?.copyWith(
             letterSpacing: 0.4,
-            color: kBluScuro.withOpacity(0.7),
+            color: kBluScuro.withValues(alpha: 0.7),
           ),
           textAlign: TextAlign.center,
         ),
@@ -332,7 +333,10 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
         await _startPaypalPayment(context);
         break;
       case _PaymentOption.creditCard:
-        await _startCreditCardPayment(context);
+        await StripeService.instance.makePayment(
+          _effectivePrice.toInt(),
+          context: context,
+        );
         break;
     }
   }
@@ -552,110 +556,6 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
           _isProcessingPayment = false;
         });
       }
-    }
-  }
-
-  Future<void> _startCreditCardPayment(BuildContext context) async {
-    final formKey = GlobalKey<FormState>();
-    String cardNumber = '';
-    String holderName = '';
-    String expiration = '';
-    String cvv = '';
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Pagamento con carta'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Numero carta',
-                    ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 19,
-                    validator: (value) {
-                      if (value == null || value.trim().length < 16) {
-                        return 'Inserisci un numero di carta valido';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => cardNumber = value!.trim(),
-                  ),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Intestatario',
-                    ),
-                    textCapitalization: TextCapitalization.words,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Inserisci il nome dell\'intestatario';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => holderName = value!.trim(),
-                  ),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Scadenza (MM/AA)',
-                    ),
-                    keyboardType: TextInputType.datetime,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Inserisci la data di scadenza';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => expiration = value!.trim(),
-                  ),
-                  TextFormField(
-                    decoration: const InputDecoration(labelText: 'CVV'),
-                    keyboardType: TextInputType.number,
-                    obscureText: true,
-                    maxLength: 4,
-                    validator: (value) {
-                      if (value == null || value.trim().length < 3) {
-                        return 'Inserisci un CVV valido';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => cvv = value!.trim(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Annulla'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  formKey.currentState?.save();
-                  Navigator.of(dialogContext).pop(true);
-                }
-              },
-              child: const Text('Paga'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true && mounted) {
-      _showSnack('Pagamento con carta in elaborazione...');
-      debugPrint(
-        'Dati carta -> numero: $cardNumber, intestatario: $holderName, '
-        'scadenza: $expiration, cvv: $cvv',
-      );
-      // TODO: integrare la chiamata al gateway di pagamento per carte.
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/firebase/firebase_options.dart';
 import 'package:pharma_box/view/login_page.dart';
@@ -19,8 +20,15 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _setup();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const ProviderScope(child: MyApp()));
+}
+
+Future<void> _setup() async {
+  // Inizializza Stripe
+  Stripe.publishableKey = stripePublishableKey;
+  await Stripe.instance.applySettings();
 }
 
 class MyApp extends StatefulWidget {
