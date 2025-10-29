@@ -265,7 +265,20 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         ),
       );
       // 🔹 Mostra immagine scanCode finché non rilevi la connessione BLE
-    } else if (productToSearch.trim().isEmpty && !isBleConnected) {
+    } else if (productToSearch.trim().isEmpty) {
+      final bool bluetoothActive = isBleConnected;
+      final String statusText;
+      if (bluetoothActive) {
+        statusText =
+            'Scanner Bluetooth connesso.\nTocca l\'icona per disconnetterlo.';
+      } else if (bleScanning) {
+        statusText =
+            'Ricerca Bluetooth in corso...\nInterrompi la scansione toccando l\'icona.';
+      } else {
+        statusText =
+            'Scanner Bluetooth non connesso.\nClicca sull\'icona per avviare la connessione.';
+      }
+
       return Padding(
         padding: const EdgeInsets.only(top: 40),
         child: Center(
@@ -292,6 +305,9 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                       ref.read(bleStatusProvider.notifier).state =
                           'Scansione interrotta';
                       logger.i('Stopped BLE scan from image tap');
+                    } else if (bluetoothActive) {
+                      logger.i('Disconnecting BLE from image tap');
+                      await bleDisconnect(ref);
                     } else {
                       logger.i('Starting BLE scan from image tap');
                       bleStartScanAndListen(ref);
@@ -302,14 +318,12 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                   kBluetoothImage,
                   width: 200,
                   fit: BoxFit.contain,
-                  color: bleScanning ? null : kPrimary,
+                  color: bluetoothActive ? null : kPrimary,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                bleScanning
-                    ? 'Cerca Bluetooth in corso...\nInterrompi scansione Bluetooth toccando l\'icona.'
-                    : 'Scanner Bluetooth non connesso.\nClicca sull\'icona Bluetooth per connetterlo.',
+                statusText,
                 style: const TextStyle(
                   color: kBluScuro,
                   fontSize: 16,
@@ -437,14 +451,20 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             centerTitle: false,
             titleSpacing: 0,
             actions: [
-              IconButton(
+              /*IconButton(
                 icon: Icon(
-                  bleScanning ? Icons.bluetooth_searching : Icons.bluetooth,
-                  color: bleScanning ? kPrimary : kBluScuro,
+                  bleScanning
+                      ? Icons.bluetooth_searching
+                      : isBleConnected
+                      ? Icons.bluetooth_connected
+                      : Icons.bluetooth,
+                  color: bleScanning || isBleConnected ? kPrimary : kBluScuro,
                 ),
                 tooltip:
                     bleScanning
                         ? 'Interrompi scansione Bluetooth'
+                        : isBleConnected
+                        ? 'Disconnetti scanner Bluetooth'
                         : 'Connetti scanner Bluetooth',
                 onPressed: () async {
                   if (!_isAccountActive) {
@@ -458,12 +478,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                       ref.read(bleScanningProvider.notifier).state = false;
                       ref.read(bleStatusProvider.notifier).state =
                           'Scansione interrotta';
+                    } else if (isBleConnected) {
+                      await bleDisconnect(ref);
                     } else {
                       bleStartScanAndListen(ref);
                     }
                   }
                 },
-              ),
+              ),*/
             ],
           ),
           body: GestureDetector(
