@@ -236,13 +236,18 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final activated = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const NonAutorizzato(),
                   ),
                 );
+
+                if (!mounted || activated != true) return;
+
+                setState(() => _isFidelityLoading = true);
+                await _loadFidelityStatus();
               },
               icon: const Icon(Icons.star, color: Colors.yellow),
               label: const Text(

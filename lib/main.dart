@@ -81,6 +81,10 @@ class _MyAppState extends State<MyApp> {
 
       if (status == 'success') {
         await _activateSubscription(orderId);
+        final navigator = navigatorKey.currentState;
+        if (navigator != null) {
+          await navigator.maybePop(true);
+        }
         _showSnack('✅ Pagamento completato! Abbonamento attivato.');
       } else if (status == 'cancelled') {
         _showSnack('⚠️ Pagamento annullato.');

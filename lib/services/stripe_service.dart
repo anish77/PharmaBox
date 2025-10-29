@@ -43,7 +43,7 @@ class StripeService {
           content: Text('✅ Pagamento completato! Abbonamento attivato.'),
         ),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } on StripeException catch (e) {
       logger.e("Stripe error: ${e.error.localizedMessage}");
     } catch (e) {
@@ -78,17 +78,6 @@ class StripeService {
     } catch (e) {
       logger.e("Errore durante la creazione del Payment Intent: $e");
       return null;
-    }
-  }
-
-  Future<void> _processPayment() async {
-    try {
-      await Stripe.instance.presentPaymentSheet();
-      logger.i("Pagamento completato con successo");
-    } on StripeException catch (e) {
-      logger.e("Stripe error: ${e.error.localizedMessage}");
-    } catch (e) {
-      logger.e("Errore durante il processo di pagamento: $e");
     }
   }
 
