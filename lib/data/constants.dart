@@ -1,14 +1,10 @@
 import 'package:flutter/widgets.dart';
 
-const kAbbonamento = 199;
+const kAbbonamento = 1;
 const kBuonoSconto10 = "SCONTO di 10%";
 const kSconto10 = 0.10;
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
-const String stripePublishableKey =
-    'pk_test_51SNBHgC88VokJHQRe1nf0a2gmdYrKG7ubjVIt7qIr0CwJG9rXHMn5Sa0dqpQqmt1vM3jhexevq2tX2rvO7lHMZqM00QHX5jX2V';
-const String kStripeSecretKey =
-    'sk_test_51SNBHgC88VokJHQRD2HeBqszb5PPZquwY9vYGDR8SSDWrm2Fxy3A0TjdbGKvMwSnvqg4E0kYzJDmRoKi1Pos7PFh00KIsUHSwJ';
 
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';

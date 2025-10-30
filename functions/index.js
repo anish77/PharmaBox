@@ -1,38 +1,42 @@
-import * as functions from "firebase-functions";
 import fetch from "node-fetch";
+import * as functions from "firebase-functions";
+import Stripe from "stripe";
 
-const functions = require("firebase-functions");
-const stripe = require("stripe")(functions.config().stripe.secret); // chiave segreta salvata in config
-const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com"; // usa .paypal.com per produzione
+// === STRIPE ===
+export const createStripePaymentIntent = functions
+    .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
+    .https.onRequest(async (req, res) => {
+        try {
+            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-exports.createCardPayment = functions.https.onRequest(async (req, res) => {
-    try {
-        const { amount, currency, card } = req.body;
-        if (!amount || !card) {
-            return res.status(400).send({ success: false, message: "Dati mancanti" });
+            const { amount, currency } = req.body;
+            if (!amount || !currency) {
+                return res
+                    .status(400)
+                    .json({ success: false, message: "Dati mancanti: amount o currency" });
+            }
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: Math.round(parseFloat(amount)), // già in centesimi lato client
+                currency,
+                automatic_payment_methods: { enabled: true },
+            });
+
+            return res.status(200).json({
+                success: true,
+                id: paymentIntent.id,
+                client_secret: paymentIntent.client_secret,
+            });
+        } catch (error) {
+            console.error("Errore creazione PaymentIntent:", error);
+            return res
+                .status(500)
+                .json({ success: false, message: error.message || "Errore Stripe" });
         }
+    });
 
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(parseFloat(amount) * 100), // in centesimi
-            currency,
-            payment_method_data: {
-                type: "card",
-                card: {
-                    number: card.number,
-                    exp_month: card.expiration.split("/")[0],
-                    exp_year: "20" + card.expiration.split("/")[1],
-                    cvc: card.cvv,
-                },
-            },
-            confirm: true,
-        });
-
-        res.status(200).send({ success: true, paymentId: paymentIntent.id });
-    } catch (error) {
-        console.error("Errore pagamento:", error);
-        res.status(500).send({ success: false, message: error.message });
-    }
-});
+// === PAYPAL ===
+const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com"; // Usa .paypal.com per produzione
 
 export const createPaypalOrder = functions
     .runWith({ secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_SECRET_KEY"] })
@@ -46,7 +50,7 @@ export const createPaypalOrder = functions
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Basic ${auth}`,
+                    Authorization: `Basic ${auth}`,
                 },
                 body: JSON.stringify({
                     intent: "CAPTURE",
@@ -54,18 +58,25 @@ export const createPaypalOrder = functions
                         {
                             amount: {
                                 currency_code: "EUR",
-                                value: "1.00",
+                                value: req.body.amount || "1.00",
                             },
                             description: "Abbonamento annuale PharmaBox",
                         },
                     ],
+                    application_context: {
+                        return_url:
+                            "https://europe-west1-pharmabox-1c149.cloudfunctions.net/paypalReturn",
+                        cancel_url:
+                            "https://europe-west1-pharmabox-1c149.cloudfunctions.net/paypalCancel",
+                    },
                 }),
             });
 
             const data = await response.json();
-            res.json(data);
+            return res.json(data);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error("Errore PayPal:", error);
+            return res.status(500).json({ error: error.message });
         }
     });
 
@@ -74,29 +85,48 @@ export const capturePaypalOrder = functions
     .https.onRequest(async (req, res) => {
         try {
             const { orderId } = req.query;
+            if (!orderId) {
+                return res.status(400).json({ error: "orderId mancante" });
+            }
+
             const auth = Buffer.from(
                 `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET_KEY}`
             ).toString("base64");
 
-            const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Basic ${auth}`,
-                },
-            });
+            const response = await fetch(
+                `${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Basic ${auth}`,
+                    },
+                }
+            );
 
             const data = await response.json();
-            res.json(data);
+            return res.json(data);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error("Errore cattura PayPal:", error);
+            return res.status(500).json({ error: error.message });
         }
     });
-const functions = require("firebase-functions");
 
-exports.testRunWith = functions
-    .runWith({ secrets: ["PAYPAL_CLIENT_ID"] })
+// === TEST SECRETS ===
+export const testRunWith = functions
+    .runWith({ secrets: ["PAYPAL_CLIENT_ID", "STRIPE_SECRET_KEY"] })
     .https.onRequest((req, res) => {
-        const ok = !!process.env.PAYPAL_CLIENT_ID;
-        res.status(ok ? 200 : 500).send(ok ? "runWith funziona ✅" : "❌ secret mancante");
+        const paypalOk = !!process.env.PAYPAL_CLIENT_ID;
+        const stripeOk = !!process.env.STRIPE_SECRET_KEY;
+
+        if (paypalOk && stripeOk) {
+            res.status(200).send("✅ Secrets caricati correttamente");
+        } else {
+            res
+                .status(500)
+                .send(
+                    `❌ Mancano segreti: ${!paypalOk ? "PAYPAL" : ""} ${!stripeOk ? "STRIPE" : ""
+                    }`
+                );
+        }
     });

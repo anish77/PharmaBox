@@ -1,11 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pharma_box/view/selected_list_page.dart';
 
 class StripeService {
   StripeService._(); //private constractor
@@ -56,27 +54,27 @@ class StripeService {
     String currency,
   ) async {
     try {
-      final Dio dio = Dio();
-      Map<String, dynamic> data = {
-        'amount': _calculateAmount(amount),
-        'currency': currency,
-      };
-      var response = await dio.post(
-        'https://api.stripe.com/v1/payment_intents',
-        data: data,
+      final dio = Dio();
+      final response = await dio.post(
+        'https://europe-west1-pharmabox-1c149.cloudfunctions.net/createStripePaymentIntent',
         options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-          headers: {'Authorization': 'Bearer $kStripeSecretKey'},
+          contentType: Headers.jsonContentType,
+          headers: {'Accept': 'application/json'},
         ),
+        data: {
+          'amount': _calculateAmount(amount), // centesimi
+          'currency': currency,
+        },
       );
-      if (response.data != null) {
-        logger.i("Payment Intent creato con successo");
-        logger.d(response.data['client_secret']);
+      if (response.statusCode == 200) {
+        logger.i("✅ Payment Intent creato tramite Cloud Function");
         return response.data;
+      } else {
+        logger.e("❌ Errore: ${response.data}");
+        return null;
       }
-      return null;
     } catch (e) {
-      logger.e("Errore durante la creazione del Payment Intent: $e");
+      logger.e("Errore chiamando la funzione Cloud: $e");
       return null;
     }
   }
