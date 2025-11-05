@@ -80,6 +80,8 @@ flutter:
     - assets/app_icon_512x512.png
     - assets/congratulazioni.png
     - assets/noScanCode.png
+    - assets/fonts/Roboto-Regular.ttf
+    - assets/fonts/Roboto-Bold.ttf
  
 
   # An image asset can refer to one or more resolution-specific "variants", see
