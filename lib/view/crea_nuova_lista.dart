@@ -1,18 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:logger/web.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/view/info.dart';
 import 'package:pharma_box/view/invita_un_amico.dart';
-import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
+import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
@@ -54,11 +53,11 @@ class _ListExportItem {
 
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
   final Logger _logger = Logger(printer: PrettyPrinter());
-  int? selectedIndex;
   final Set<String> _checkedLists = <String>{};
+  int? selectedIndex;
+  String referralCode = '';
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
-  String referralCode = "";
 
   @override
   void initState() {
@@ -69,7 +68,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   Future<void> _caricaReferralCode() async {
     final uid = _currentUid;
     if (uid == null) {
-      _logger.w('_caricaReferralCode invoked without authenticated user');
+      _logger.w('_caricaReferralCode invocato senza utente autenticato');
       return;
     }
 
@@ -78,23 +77,23 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (!snapshot.exists) return;
 
-      final data = snapshot.data();
-      final rawCode = data?['codiceInvito'];
+      final rawCode = snapshot.data()?['codiceInvito'];
       final codice = rawCode is String ? rawCode : rawCode?.toString() ?? '';
 
       if (!mounted) return;
-      setState(() {
-        referralCode = codice;
-      });
-    } catch (errore, stackTrace) {
-      _logger.e('Errore nel recuperare il codice invito, $errore, $stackTrace');
+      setState(() => referralCode = codice);
+    } catch (error, stackTrace) {
+      _logger.e(
+        'Errore nel recupero del codice invito: $error',
+        stackTrace: stackTrace,
+      );
     }
   }
 
   Stream<List<_ListaViewData>> getListeStream() {
     final uid = _currentUid;
     if (uid == null) {
-      _logger.w('getListeStream invoked without authenticated user');
+      _logger.w('getListeStream invocato senza utente autenticato');
       return Stream<List<_ListaViewData>>.value(const []);
     }
 
@@ -104,17 +103,17 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         .snapshots()
         .map((doc) {
           if (!doc.exists) return const <_ListaViewData>[];
-          final data = doc.data();
-          final rawListe = data?['liste'] ?? [];
-          final liste = List<Map<String, dynamic>>.from(rawListe);
-          return liste
-              .map((l) {
-                final nomeLista = (l['nomeLista'] ?? '') as String;
-                if (nomeLista.isEmpty) return null;
-                final totaleItems = _sommaQuantita(l['items']);
-                final totaleProdotti = _sommaQuantita(l['prodotti']);
+          final rawListe = List<Map<String, dynamic>>.from(
+            doc.data()?['liste'] ?? [],
+          );
+          return rawListe
+              .map((lista) {
+                final nome = (lista['nomeLista'] ?? '').toString();
+                if (nome.isEmpty) return null;
+                final totaleItems = _sommaQuantita(lista['items']);
+                final totaleProdotti = _sommaQuantita(lista['prodotti']);
                 final totale = totaleItems > 0 ? totaleItems : totaleProdotti;
-                return _ListaViewData(nome: nomeLista, totalePezzi: totale);
+                return _ListaViewData(nome: nome, totalePezzi: totale);
               })
               .whereType<_ListaViewData>()
               .toList(growable: false);
@@ -166,28 +165,25 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   Future<void> eliminaLista(String nomeLista) async {
     final uid = _currentUid;
     if (uid == null) {
-      _logger.w('eliminaLista invoked without authenticated user');
+      _logger.w('eliminaLista invocato senza utente autenticato');
       return;
     }
 
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
     if (!doc.exists) return;
 
-    final data = doc.data();
-    final rawListe = data?['liste'] ?? [];
+    final rawListe = doc.data()?['liste'] ?? [];
     final liste = List<Map<String, dynamic>>.from(rawListe);
-
-    final listaDaEliminare = liste.firstWhere(
-      (l) => l['nomeLista'] == nomeLista,
+    final target = liste.firstWhere(
+      (lista) => lista['nomeLista'] == nomeLista,
       orElse: () => <String, dynamic>{},
     );
 
-    if (listaDaEliminare.isEmpty) return;
+    if (target.isEmpty) return;
 
     await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'liste': FieldValue.arrayRemove([listaDaEliminare]),
+      'liste': FieldValue.arrayRemove([target]),
     });
   }
 
@@ -224,18 +220,17 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         return;
       }
 
-      final data = snapshot.data();
-      final rawListe = List<Map<String, dynamic>>.from(data?['liste'] ?? []);
-      final selected = <_ListExportData>[];
+      final rawListe = List<Map<String, dynamic>>.from(
+        snapshot.data()?['liste'] ?? [],
+      );
+      final exportListe = <_ListExportData>[];
 
       for (final rawLista in rawListe) {
         final nome = (rawLista['nomeLista'] ?? '').toString();
         if (!_checkedLists.contains(nome)) continue;
 
         var entries = _normalizeEntries(rawLista['items']);
-        if (entries.isEmpty) {
-          entries = _normalizeEntries(rawLista['prodotti']);
-        }
+        if (entries.isEmpty) entries = _normalizeEntries(rawLista['prodotti']);
 
         final items = entries
             .map((entry) {
@@ -263,10 +258,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             .where((item) => item.nome.isNotEmpty || item.minsan.isNotEmpty)
             .toList(growable: false);
 
-        selected.add(_ListExportData(nome: nome, items: items));
+        exportListe.add(_ListExportData(nome: nome, items: items));
       }
 
-      if (selected.isEmpty) {
+      if (exportListe.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -276,7 +271,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         return;
       }
 
-      final hasItems = selected.any((lista) => lista.items.isNotEmpty);
+      final hasItems = exportListe.any((lista) => lista.items.isNotEmpty);
       if (!hasItems) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -288,7 +283,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
       }
 
       if (!mounted) return;
-      await _showExportSheet(selected);
+      await _showExportSheet(exportListe);
     } catch (error, stackTrace) {
       _logger.e(
         'Errore nel preparare lo scaricamento delle liste: $error',
@@ -357,9 +352,16 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
   Future<void> _exportListeAsPdf(List<_ListExportData> liste) async {
     final document = pw.Document();
+    final fontRegular = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/Roboto-Regular.ttf'),
+    );
+    final fontBold = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/Roboto-Bold.ttf'),
+    );
 
     document.addPage(
       pw.MultiPage(
+        theme: pw.ThemeData.withFont(base: fontRegular, bold: fontBold),
         build: (context) {
           final widgets = <pw.Widget>[
             pw.Text(
@@ -430,7 +432,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         buffer.writeln('${_escapeCsv(lista.nome)};Nessun prodotto;;');
         continue;
       }
-
       for (final item in lista.items) {
         buffer.writeln(
           '${_escapeCsv(lista.nome)};${_escapeCsv(item.nome)};${_escapeCsv(item.minsan)};${item.quantity}',
@@ -447,16 +448,50 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     String filename, {
     required String mimeType,
   }) async {
-    final directory = await getTemporaryDirectory();
-    final filePath = '${directory.path}/$filename';
-    final file = File(filePath);
-    await file.writeAsBytes(bytes, flush: true);
-
-    final xFile = XFile(file.path, mimeType: mimeType, name: filename);
-
-    await SharePlus.instance.share(
-      ShareParams(files: [xFile], subject: 'Liste selezionate'),
+    // Mostra il loader a schermo intero
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder:
+          (_) =>
+              const Center(child: CircularProgressIndicator(color: kPrimary)),
     );
+
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/$filename';
+      final file = File(filePath);
+
+      // Scrivi il file
+      await file.writeAsBytes(bytes, flush: true);
+      await Future.delayed(const Duration(milliseconds: 300)); // per sicurezza
+
+      final xFile = XFile(file.path, mimeType: mimeType, name: filename);
+
+      // Chiudi il loader PRIMA di aprire la share sheet
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      // Apri la Share Sheet
+      await Share.shareXFiles(
+        [xFile],
+        subject: 'Liste selezionate',
+        text: 'Ecco le liste esportate da PharmaBox.',
+      );
+
+      // (opzionale) elimina dopo qualche secondo
+      Future.delayed(const Duration(seconds: 10), () async {
+        if (await file.exists()) await file.delete();
+      });
+    } catch (error, stack) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // chiudi loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Errore durante la condivisione.')),
+        );
+      }
+      debugPrint('Errore share: $error\n$stack');
+    }
   }
 
   String _escapeCsv(String value) {
@@ -471,7 +506,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false, // niente icona automatica a sinistra
+        automaticallyImplyLeading: false,
         scrolledUnderElevation: 0,
         title: Padding(
           padding: const EdgeInsets.only(left: 8),
@@ -497,7 +532,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   icon: Padding(
                     padding: const EdgeInsets.only(right: 16),
                     child: Icon(Icons.menu, color: kPrimary),
-                  ), // colore che vuoi
+                  ),
                   onPressed: () => Scaffold.of(context).openEndDrawer(),
                 ),
           ),
@@ -509,7 +544,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: kPrimary),
-              child: Text(
+              child: const Text(
                 'Menu',
                 style: TextStyle(
                   color: Colors.white,
@@ -544,7 +579,9 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => StatoInvitiPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const StatoInvitiPage(),
+                  ),
                 );
               },
             ),
@@ -554,13 +591,13 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => InfoPage()),
+                  MaterialPageRoute(builder: (context) => const InfoPage()),
                 );
               },
             ),
             ListTile(
               leading: const Icon(Icons.logout, color: kRed),
-              title: Text(
+              title: const Text(
                 'Log out',
                 style: TextStyle(
                   fontSize: 18,
@@ -568,9 +605,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   color: kRed,
                 ),
               ),
-              onTap: () {
-                LogoutPopup().showLogout(context);
-              },
+              onTap: () => LogoutPopup().showLogout(context),
             ),
           ],
         ),
@@ -582,7 +617,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
-              // Intestazione Liste
               Container(
                 width: double.infinity,
                 color: kSecondary,
@@ -594,7 +628,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      "Liste",
+                      'Liste',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -607,17 +641,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                         color: kBluScuro,
                         size: 35,
                       ),
-                      /*
-                      icon: Text(
-                        '+',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: kGreen,
-                        ),
-                      ),
-                      */
-                      tooltip: "Crea nuova lista",
+                      tooltip: 'Crea nuova lista',
                       splashRadius: 20,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -626,19 +650,16 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   ],
                 ),
               ),
-
-              // Lista
               Expanded(
                 child: Builder(
-                  builder: (scaffoldContext) {
-                    // context sicuro
+                  builder: (safeContext) {
                     return StreamBuilder<List<_ListaViewData>>(
                       stream: getListeStream(),
                       builder: (context, snapshot) {
                         final liste = snapshot.data ?? const <_ListaViewData>[];
                         final totaleGlobal = liste.fold<int>(
                           0,
-                          (sum, e) => sum + e.totalePezzi,
+                          (sum, entry) => sum + entry.totalePezzi,
                         );
 
                         return Column(
@@ -662,6 +683,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                               selectedIndex == index;
                                           final isChecked = _checkedLists
                                               .contains(nomeLista);
+
                                           return Dismissible(
                                             key: Key(nomeLista),
                                             direction:
@@ -693,9 +715,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                             confirmDismiss: (direction) async {
                                               if (direction ==
                                                   DismissDirection.startToEnd) {
-                                                // Edit lista
-                                                final TextEditingController
-                                                controller =
+                                                final controller =
                                                     TextEditingController(
                                                       text: nomeLista,
                                                     );
@@ -706,7 +726,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                   builder:
                                                       (context) => AlertDialog(
                                                         title: const Text(
-                                                          "Modifica nome lista",
+                                                          'Modifica nome lista',
                                                         ),
                                                         content: TextField(
                                                           controller:
@@ -714,24 +734,21 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                           decoration:
                                                               const InputDecoration(
                                                                 labelText:
-                                                                    "Nuovo nome",
+                                                                    'Nuovo nome',
                                                               ),
                                                         ),
                                                         actions: [
                                                           TextButton(
-                                                            child: const Text(
-                                                              "Annulla",
-                                                            ),
                                                             onPressed:
                                                                 () =>
                                                                     Navigator.of(
                                                                       context,
                                                                     ).pop(null),
+                                                            child: const Text(
+                                                              'Annulla',
+                                                            ),
                                                           ),
                                                           TextButton(
-                                                            child: const Text(
-                                                              "Salva",
-                                                            ),
                                                             onPressed:
                                                                 () => Navigator.of(
                                                                   context,
@@ -740,6 +757,9 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                                       .text
                                                                       .trim(),
                                                                 ),
+                                                            child: const Text(
+                                                              'Salva',
+                                                            ),
                                                           ),
                                                         ],
                                                       ),
@@ -762,6 +782,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                     );
                                                     return false;
                                                   }
+
                                                   final docRef =
                                                       FirebaseFirestore.instance
                                                           .collection('users')
@@ -775,10 +796,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                     >.from(data['liste'] ?? []);
                                                     final indexLista = liste
                                                         .indexWhere(
-                                                          (l) =>
-                                                              l['nomeLista'] ==
+                                                          (lista) =>
+                                                              lista['nomeLista'] ==
                                                               nomeLista,
                                                         );
+
                                                     if (indexLista >= 0) {
                                                       final wasChecked =
                                                           _checkedLists.remove(
@@ -800,48 +822,50 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                     }
                                                   }
                                                 }
-                                                return false; // importante: non chiudere il Dismissible
+                                                return false;
                                               }
 
-                                              // Se swipe verso sinistra → conferma eliminazione
                                               if (direction ==
                                                   DismissDirection.endToStart) {
-                                                return await showDialog(
-                                                  context: context,
-                                                  builder:
-                                                      (context) => AlertDialog(
-                                                        title: const Text(
-                                                          "Conferma eliminazione",
-                                                        ),
-                                                        content: Text(
-                                                          'Vuoi davvero cancellare la lista "$nomeLista"?',
-                                                        ),
-                                                        actions: [
-                                                          TextButton(
-                                                            child: const Text(
-                                                              "Annulla",
+                                                return await showDialog<bool>(
+                                                      context: context,
+                                                      builder:
+                                                          (
+                                                            context,
+                                                          ) => AlertDialog(
+                                                            title: const Text(
+                                                              'Conferma eliminazione',
                                                             ),
-                                                            onPressed:
-                                                                () =>
-                                                                    Navigator.of(
+                                                            content: Text(
+                                                              'Vuoi davvero cancellare la lista "$nomeLista"?',
+                                                            ),
+                                                            actions: [
+                                                              TextButton(
+                                                                onPressed:
+                                                                    () => Navigator.of(
                                                                       context,
                                                                     ).pop(
                                                                       false,
                                                                     ),
-                                                          ),
-                                                          TextButton(
-                                                            child: const Text(
-                                                              "Elimina",
-                                                            ),
-                                                            onPressed:
-                                                                () =>
-                                                                    Navigator.of(
+                                                                child:
+                                                                    const Text(
+                                                                      'Annulla',
+                                                                    ),
+                                                              ),
+                                                              TextButton(
+                                                                onPressed:
+                                                                    () => Navigator.of(
                                                                       context,
                                                                     ).pop(true),
+                                                                child:
+                                                                    const Text(
+                                                                      'Elimina',
+                                                                    ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                        ],
-                                                      ),
-                                                );
+                                                    ) ??
+                                                    false;
                                               }
 
                                               return false;
@@ -862,11 +886,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                   );
                                                 }
                                                 if (mounted) {
-                                                  setState(() {
-                                                    _checkedLists.remove(
+                                                  setState(
+                                                    () => _checkedLists.remove(
                                                       nomeLista,
-                                                    );
-                                                  });
+                                                    ),
+                                                  );
                                                 }
                                               }
                                             },
@@ -874,14 +898,12 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                               contentPadding:
                                                   const EdgeInsets.symmetric(
                                                     horizontal: 1,
-                                                  ), // sinistra/destra
+                                                  ),
                                               leading: Checkbox(
                                                 value: isChecked,
                                                 activeColor: kPrimary,
                                                 onChanged: (value) {
-                                                  if (value == null) {
-                                                    return;
-                                                  }
+                                                  if (value == null) return;
                                                   setState(() {
                                                     if (value) {
                                                       _checkedLists.add(
@@ -925,14 +947,13 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                       )
                                                       : null,
                                               onTap: () async {
-                                                setState(() {
-                                                  selectedIndex = index;
-                                                });
-                                                // Imposta la lista corrente nel carrello
+                                                setState(
+                                                  () => selectedIndex = index,
+                                                );
                                                 Carrello.instance.usaLista(
                                                   nomeLista,
                                                 );
-                                                // Carica prodotti salvati su Firestore per questa lista
+
                                                 final uid = _currentUid;
                                                 if (uid != null) {
                                                   await Carrello.instance
@@ -948,6 +969,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                     ),
                                                   );
                                                 }
+
                                                 if (context.mounted) {
                                                   Navigator.push(
                                                     context,
