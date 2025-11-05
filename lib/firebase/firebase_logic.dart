@@ -106,10 +106,7 @@ class FirebaseLogic {
     );
     final idx = items.indexWhere((e) => e['minsan'] == item['minsan']);
     if (idx >= 0) {
-      items[idx] = {
-        ...items[idx],
-        ...item,
-      };
+      items[idx] = {...items[idx], ...item};
     } else {
       items.add(item);
     }
@@ -146,6 +143,24 @@ class FirebaseLogic {
       items.add({'minsan': minsan, 'quantity': quantity});
     }
     liste[indexLista]['items'] = items;
+    await docRef.update({'liste': liste});
+  }
+
+  Future<void> svuotaListaUtente({
+    required String uid,
+    required String nomeLista,
+  }) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    final liste = List<Map<String, dynamic>>.from(data['liste'] ?? []);
+    final index = liste.indexWhere((l) => l['nomeLista'] == nomeLista);
+    if (index < 0) return;
+
+    liste[index]['items'] = [];
+    liste[index]['prodotti'] = [];
     await docRef.update({'liste': liste});
   }
 }

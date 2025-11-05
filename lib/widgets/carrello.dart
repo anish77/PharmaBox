@@ -53,6 +53,22 @@ class Carrello {
     }
   }
 
+  void svuotaLista() {
+    final notifier = prodotti;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    // Svuota la lista locale
+    notifier.value = [];
+
+    // Se l'utente è autenticato, elimina gli elementi da Firestore
+    if (uid != null) {
+      FirebaseLogic.instance.svuotaListaUtente(
+        uid: uid,
+        nomeLista: _listaCorrente,
+      );
+    }
+  }
+
   void aggiornaQuantita(Prodotto prodotto, int newQuantity) {
     final notifier = prodotti;
     final list = List<Prodotto>.from(notifier.value);
