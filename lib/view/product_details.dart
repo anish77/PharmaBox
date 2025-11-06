@@ -89,8 +89,9 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (codice.isEmpty) return null;
 
     try {
-      if (widget.prodotto.vendibile != 0)
+      if (widget.prodotto.vendibile != 0) {
         return isBit(widget.prodotto.vendibile, kBitProdottoVendibile);
+      }
       final vendibile = await loadVendibilita(codice);
       if (vendibile == null) {
         return null;

@@ -73,16 +73,12 @@ class ProdottiSearchDelegate extends SearchDelegate<Prodotto?> {
         }
         return ListView.separated(
           itemCount: results.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
+          separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (context, i) {
             final p = results[i];
             return ListTile(
               dense: true,
-              title: Text(
-                p.nome ?? "",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              title: Text(p.nome, maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(
                 p.codice,
                 maxLines: 1,

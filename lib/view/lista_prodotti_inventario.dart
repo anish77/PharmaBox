@@ -21,18 +21,6 @@ class ListaProdottiInventario extends StatefulWidget {
       _ListaProdottiInventarioState();
 }
 
-class _ExportEntry {
-  const _ExportEntry({
-    required this.name,
-    required this.minsan,
-    required this.quantity,
-  });
-
-  final String name;
-  final String minsan;
-  final int quantity;
-}
-
 class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
   int? _highlightedIndex;
 

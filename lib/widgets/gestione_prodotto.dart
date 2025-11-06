@@ -4,7 +4,6 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
 import 'package:pharma_box/models/prodotto.dart';
-import 'package:pharma_box/widgets/non_autorizzato.dart';
 
 class GestioneProdotto {
   var logger = Logger(printer: PrettyPrinter());

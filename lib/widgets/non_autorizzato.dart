@@ -148,7 +148,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
         Text(
           'Inseriscilo qui sotto per ottenere subito uno sconto del 10% sul primo anno.',
           style: textTheme.bodySmall?.copyWith(
-            color: kBluScuro.withOpacity(0.7),
+            color: kBluScuro.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 16),
@@ -196,7 +196,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
           'Piano annuale',
           style: textTheme.labelSmall?.copyWith(
             letterSpacing: 0.4,
-            color: kBluScuro.withOpacity(0.7),
+            color: kBluScuro.withValues(alpha: 0.7),
           ),
           textAlign: TextAlign.center,
         ),

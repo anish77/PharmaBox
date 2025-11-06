@@ -452,7 +452,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder:
           (_) =>
               const Center(child: CircularProgressIndicator(color: kPrimary)),
@@ -659,7 +659,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                         final liste = snapshot.data ?? const <_ListaViewData>[];
                         final totaleGlobal = liste.fold<int>(
                           0,
-                          (sum, entry) => sum + entry.totalePezzi,
+                          (soma, entry) => soma + entry.totalePezzi,
                         );
 
                         return Column(
