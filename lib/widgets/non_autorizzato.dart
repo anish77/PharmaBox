@@ -25,7 +25,6 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       'https://europe-west1-pharmabox-1c149.cloudfunctions.net/createPaypalOrder';
   static const String _stripeCreateIntentEndpoint =
       'https://europe-west1-pharmabox-1c149.cloudfunctions.net/createStripePaymentIntent';
-  static const String _paypalRedirectTarget = 'pharmabox://payment/paypal';
 
   // 🔹 Coupon e utente
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -35,9 +34,6 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
 
   _CouponStatus _couponStatus = _CouponStatus.idle;
   String? _couponStatusMessage;
-  String? _inviterUid;
-  String? _couponFirstName;
-  String? _couponLastName;
   bool _isProcessingPayment = false;
 
   static const double _discountPercent = 0.10;
@@ -285,7 +281,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       final response = await http.post(
         Uri.parse(_stripeCreateIntentEndpoint),
         headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'amount': amount, 'currency': 'EUR'}),
+        body: jsonEncode({'amount': amount, 'currency': 'EUR', 'mode': 'live'}),
       );
 
       if (response.statusCode != 200) {
@@ -295,6 +291,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
 
       final data = jsonDecode(response.body);
       final clientSecret = data['client_secret'];
+      final paymentIntentId = data['id']?.toString();
 
       if (clientSecret == null) {
         _showSnack('Errore: client_secret mancante.');
@@ -309,12 +306,18 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       );
 
       await Stripe.instance.presentPaymentSheet();
+      await _activateSubscription(
+        provider: 'Stripe',
+        paymentId: paymentIntentId,
+      );
+
       _showSnack('✅ Pagamento completato!');
+      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       _showSnack('Errore durante il pagamento con carta.');
       debugPrint('Stripe error: $e');
     } finally {
-      setState(() => _isProcessingPayment = false);
+      if (mounted) setState(() => _isProcessingPayment = false);
     }
   }
 
@@ -356,6 +359,31 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   }
 
   // ---------------------------- UTIL ----------------------------
+
+  Future<void> _activateSubscription({
+    required String provider,
+    String? paymentId,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      debugPrint(
+        'Nessun utente autenticato, impossibile aggiornare l\'abbonamento.',
+      );
+      return;
+    }
+
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'isActive': true,
+        'activationDate': DateTime.now(),
+        'expirationDate': DateTime.now().add(const Duration(days: 365)),
+        'paymentProvider': provider,
+        if (paymentId != null) 'paymentId': paymentId,
+      });
+    } catch (e) {
+      debugPrint('Errore aggiornando lo stato di abbonamento: $e');
+    }
+  }
 
   OutlineInputBorder _inputBorder(Color color, {double width = 1}) =>
       OutlineInputBorder(
@@ -413,7 +441,6 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
     setState(() {
       _couponStatus = _CouponStatus.idle;
       _couponStatusMessage = null;
-      _inviterUid = null;
     });
   }
 

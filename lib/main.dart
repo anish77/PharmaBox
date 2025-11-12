@@ -23,36 +23,44 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await _setupStripe(); // ✅ inizializzazione dinamica
+  await _setupStripe(mode: 'live'); // ✅ inizializzazione dinamica
   runApp(const ProviderScope(child: MyApp()));
+  debugPrint("🔧 Stripe.publishableKey: ${Stripe.publishableKey}");
 }
 
 /// ✅ Ottiene la chiave pubblica Stripe dal backend in modo sicuro
-Future<void> _setupStripe() async {
+Future<void> _setupStripe({String mode = 'test'}) async {
+  String? publishableKey;
   try {
-    final response = await http.get(
-      Uri.parse(
-        'https://europe-west1-pharmabox-1c149.cloudfunctions.net/getStripePublishableKey',
-      ),
-    );
+    final uri = Uri.parse(
+      'https://europe-west1-pharmabox-1c149.cloudfunctions.net/getStripePublishableKey',
+    ).replace(queryParameters: {'mode': mode});
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final key = data['key'];
-      if (key == null || key.toString().isEmpty) {
-        throw Exception("Chiave Stripe non trovata nel server.");
-      }
+    final response = await http.get(uri);
 
-      Stripe.publishableKey = key;
-      await Stripe.instance.applySettings();
-      debugPrint('✅ Stripe inizializzato con chiave remota.');
-    } else {
+    if (response.statusCode != 200) {
       throw Exception(
-        "Errore ottenendo la chiave Stripe: ${response.statusCode}",
+        'Errore ottenendo la chiave Stripe: ${response.statusCode}',
       );
     }
-  } catch (e) {
-    debugPrint("❌ Impossibile inizializzare Stripe: $e");
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    publishableKey = data['key']?.toString().trim();
+
+    if (publishableKey == null ||
+        publishableKey.isEmpty ||
+        publishableKey.startsWith('sk_')) {
+      throw Exception('Chiave Stripe non valida dal server.');
+    }
+
+    Stripe.publishableKey = publishableKey;
+    await Stripe.instance.applySettings();
+    debugPrint('✅ Stripe inizializzato con chiave $mode.');
+  } catch (e, st) {
+    debugPrint(
+      '❌ Impossibile inizializzare Stripe ($mode): $e Key: ${publishableKey ?? '<unset>'}',
+    );
+    debugPrint('$st');
   }
 }
 
@@ -121,16 +129,20 @@ class _MyAppState extends State<MyApp> {
           'https://europe-west1-pharmabox-1c149.cloudfunctions.net/verifyStripePaymentIntent',
         ),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'paymentIntentId': paymentIntentId}),
+        body: jsonEncode({'paymentIntentId': paymentIntentId, 'mode': 'test'}),
       );
 
-      if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
         await _activateSubscription('Stripe', paymentIntentId);
+        _showSnack('✅ Pagamento completato e verificato!');
       } else {
-        debugPrint('❌ Verifica Stripe fallita: ${response.body}');
+        debugPrint('❌ Pagamento non completato: ${data['status']}');
+        _showSnack('❌ Pagamento non completato: ${data['status']}');
       }
     } catch (e) {
       debugPrint('Errore verifica Stripe: $e');
+      _showSnack('❌ Errore durante la verifica del pagamento.');
     }
   }
 

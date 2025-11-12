@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:pharma_box/include/ble_functions.dart';
@@ -64,11 +65,22 @@ class StripeService {
         data: {
           'amount': _calculateAmount(amount), // centesimi
           'currency': currency,
+          'mode': 'test', // <- invia test
         },
       );
+
       if (response.statusCode == 200) {
         logger.i("✅ Payment Intent creato tramite Cloud Function");
-        return response.data;
+
+        // assicurati che sia una Map
+        final data =
+            response.data is String
+                ? Map<String, dynamic>.from(jsonDecode(response.data))
+                : Map<String, dynamic>.from(response.data);
+
+        logger.i("📦 PaymentIntent ricevuto: $data");
+
+        return data;
       } else {
         logger.e("❌ Errore: ${response.data}");
         return null;
@@ -103,7 +115,7 @@ class StripeService {
             'paymentIntentId': paymentIntentId,
           });
       logger.i('✅ Abbonamento Stripe attivato per ${user.uid}');
-    } catch (e, st) {
+    } catch (e) {
       logger.e('Errore aggiornando Firestore: $e');
     }
   }

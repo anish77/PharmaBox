@@ -16,7 +16,6 @@ import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:pharma_box/widgets/carrello.dart';
-import 'package:pharma_box/widgets/gestione_prodotto.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import '../include/general_functions.dart';
 
@@ -52,7 +51,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
-  final GestioneProdotto _gestioneProdotto = GestioneProdotto();
 
   @override
   void initState() {
@@ -111,8 +109,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     // se in futuro aggiungi altri gruppi, chiamali qui con addItems
     return ordered.where((f) => _selectedFilters.contains(f)).toList();
   }
-
-  int get _totaleQta => _qta.values.fold(0, (a, b) => a + b);
 
   void _aggiungi(Prodotto p, {bool clearSearchState = true}) {
     // Aggiungi/aggiorna nel carrello (fonte verità usata dalla tab Lista)
@@ -236,13 +232,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final activated = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const NonAutorizzato(),
                   ),
                 );
+                if (activated == true) await _loadFidelityStatus();
               },
               icon: const Icon(Icons.star, color: Colors.yellow),
               label: const Text(
@@ -431,7 +428,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     });
 
     final bleScanning = ref.watch(bleScanningProvider);
-    final bleStatus = ref.watch(bleStatusProvider);
+    //final bleStatus = ref.watch(bleStatusProvider);
     final isBleConnected = ref.watch(bleConnected);
 
     return Stack(

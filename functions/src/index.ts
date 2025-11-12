@@ -1,17 +1,32 @@
 import type { Request, Response } from "express";
 import { onRequest } from "firebase-functions/v2/https";
-import { defineSecret, defineString } from "firebase-functions/params";
+import {
+  defineSecret,
+  defineString,
+} from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import Stripe from "stripe";
 
-/* Config comune */
+/* ------------------------------------------------------------------ */
+/*  Shared configuration                                               */
+/* ------------------------------------------------------------------ */
 const defaultRegion = "europe-west1";
 
-/* Stripe */
-const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
-const stripePublishableKey = defineString("STRIPE_PUBLISHABLE_KEY", { default: "" });
+/* ------------------------------------------------------------------ */
+/*  Stripe configuration                                               */
+/* ------------------------------------------------------------------ */
+const stripeSecretKeyLive = defineSecret("STRIPE_SECRET_KEY");
+const stripeSecretKeyTest = defineSecret("STRIPE_SECRET_KEY_TEST");
+const stripePublishableKeyLive = defineString("STRIPE_PUBLISHABLE_KEY", {
+  default: "",
+});
+const stripePublishableKeyTest = defineString("STRIPE_PUBLISHABLE_KEY_TEST", {
+  default: "",
+});
 
-/* PayPal */
+/* ------------------------------------------------------------------ */
+/*  PayPal configuration                                               */
+/* ------------------------------------------------------------------ */
 const paypalClientId = defineSecret("PAYPAL_CLIENT_ID");
 const paypalSecret = defineSecret("PAYPAL_SECRET_KEY");
 const paypalMode = defineString("PAYPAL_MODE", { default: "sandbox" });
@@ -28,10 +43,17 @@ const paypalCancelRedirect = defineString("PAYPAL_CANCEL_REDIRECT", {
   default: "pharmabox://payment/paypal",
 });
 
-/* Helpers */
+/* ------------------------------------------------------------------ */
+/*  Utility helpers                                                    */
+/* ------------------------------------------------------------------ */
+type StripeMode = "live" | "test";
+
 const withCors = (res: Response) => {
   res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With",
+  );
   res.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
 };
 
@@ -60,9 +82,14 @@ const normalizeAmount = (value: unknown) => {
 };
 
 const baseUrlFor = (mode: string) =>
-  mode.toLowerCase() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+  mode.toLowerCase() === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
 
-const buildRedirectUrl = (base: string | undefined, params: Record<string, string | undefined>) => {
+const buildRedirectUrl = (
+  base: string | undefined,
+  params: Record<string, string | undefined>,
+) => {
   const trimmed = (base ?? "").trim();
   if (!trimmed) return "";
 
@@ -76,7 +103,7 @@ const buildRedirectUrl = (base: string | undefined, params: Record<string, strin
     const hasQuery = trimmed.includes("?");
     const separator = hasQuery ? "&" : "?";
     const filteredEntries = Object.entries(params).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined
+      (entry): entry is [string, string] => entry[1] !== undefined,
     );
     const query = new URLSearchParams(filteredEntries);
     return `${trimmed}${separator}${query.toString()}`;
@@ -129,7 +156,8 @@ const renderResultPage = (title: string, message: string, redirectUrl: string) =
       <p>${message}</p>
       ${redirectUrl
       ? `<a href="${redirectUrl}">Torna all'app</a>`
-      : '<a href="https://pharmabox.app">Visita PharmaBox</a>'}
+      : '<a href="https://pharmabox.app">Visita PharmaBox</a>'
+    }
     </div>
   </body>
 </html>`;
@@ -169,8 +197,34 @@ const captureOrder = async (baseUrl: string, orderId: string, accessToken: strin
   return { ok: response.ok, body };
 };
 
+const getStripeMode = (raw: unknown): StripeMode => {
+  const value = (raw ?? "live").toString().toLowerCase();
+  logger.log(`getStripeMode: ${value}`);
+  return value === "test" ? "test" : "live";
+};
+
+const getStripeSecret = (mode: StripeMode) => {
+  const secret =
+    mode === "test" ? stripeSecretKeyTest.value() : stripeSecretKeyLive.value();
+  if (!secret) {
+    throw new Error(`STRIPE_SECRET_KEY_${mode.toUpperCase()}_MISSING`);
+  }
+  return secret;
+};
+
+const getStripeClient = (mode: StripeMode) => {
+  const apiKey = getStripeSecret(mode);
+  return new Stripe(apiKey);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Stripe Functions                                                   */
+/* ------------------------------------------------------------------ */
 export const createStripePaymentIntent = onRequest(
-  { region: defaultRegion, secrets: [stripeSecretKey] },
+  {
+    region: defaultRegion,
+    secrets: [stripeSecretKeyLive, stripeSecretKeyTest],
+  },
   async (req, res) => {
     withCors(res);
 
@@ -183,15 +237,23 @@ export const createStripePaymentIntent = onRequest(
       return;
     }
 
-    const body = parseBody<{ amount?: number | string; currency?: string; description?: string }>(req);
+    const body = parseBody<{
+      amount?: number | string;
+      currency?: string;
+      description?: string;
+      mode?: string;
+    }>(req);
+
     const amount = normalizeAmount(body.amount);
     if (!amount) {
       res.status(400).json({ error: "invalid-amount" });
       return;
     }
 
+    const mode = getStripeMode(body.mode);
+
     try {
-      const stripe = new Stripe(stripeSecretKey.value());
+      const stripe = getStripeClient(mode);
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: (body.currency ?? "eur").toString().toLowerCase(),
@@ -205,16 +267,20 @@ export const createStripePaymentIntent = onRequest(
         status: paymentIntent.status,
         amount: paymentIntent.amount,
         currency: paymentIntent.currency,
+        mode,
       });
     } catch (error) {
       logger.error("createStripePaymentIntent error", error);
       res.status(500).json({ error: "stripe-intent-failed" });
     }
-  }
+  },
 );
 
 export const createCardPayment = onRequest(
-  { region: defaultRegion, secrets: [stripeSecretKey] },
+  {
+    region: defaultRegion,
+    secrets: [stripeSecretKeyLive, stripeSecretKeyTest],
+  },
   async (req, res) => {
     withCors(res);
 
@@ -231,6 +297,7 @@ export const createCardPayment = onRequest(
       amount?: number | string;
       currency?: string;
       card?: { number?: string; expiration?: string; cvv?: string };
+      mode?: string;
     }>(req);
 
     const minorUnits = toMinorUnits(body.amount);
@@ -249,15 +316,17 @@ export const createCardPayment = onRequest(
     const expMonth = Number.parseInt(expMonthRaw ?? "", 10);
     const expYear = Number.parseInt(
       expYearRaw?.length === 2 ? `20${expYearRaw}` : expYearRaw ?? "",
-      10
+      10,
     );
     if (!Number.isFinite(expMonth) || !Number.isFinite(expYear)) {
       res.status(400).json({ error: "invalid-expiration-date" });
       return;
     }
 
+    const mode = getStripeMode(body.mode);
+
     try {
-      const stripe = new Stripe(stripeSecretKey.value());
+      const stripe = getStripeClient(mode);
 
       const paymentMethod = await stripe.paymentMethods.create({
         type: "card",
@@ -281,16 +350,22 @@ export const createCardPayment = onRequest(
         success: true,
         paymentId: paymentIntent.id,
         status: paymentIntent.status,
+        mode,
       });
     } catch (error) {
       logger.error("createCardPayment error", error);
-      res.status(500).json({ success: false, message: "stripe-card-payment-failed" });
+      res
+        .status(500)
+        .json({ success: false, message: "stripe-card-payment-failed" });
     }
-  }
+  },
 );
 
 export const verifyStripePaymentIntent = onRequest(
-  { region: defaultRegion, secrets: [stripeSecretKey] },
+  {
+    region: defaultRegion,
+    secrets: [stripeSecretKeyLive, stripeSecretKeyTest],
+  },
   async (req, res) => {
     withCors(res);
     if (req.method === "OPTIONS") {
@@ -302,52 +377,73 @@ export const verifyStripePaymentIntent = onRequest(
       return;
     }
 
-    const { paymentIntentId } = parseBody<{ paymentIntentId?: string }>(req);
+    const { paymentIntentId, mode: rawMode } = parseBody<{
+      paymentIntentId?: string;
+      mode?: string;
+    }>(req);
+
     const trimmedId = paymentIntentId?.trim();
     if (!trimmedId) {
       res.status(400).json({ error: "missing-payment-intent-id" });
       return;
     }
 
+    const mode = getStripeMode(rawMode);
+
     try {
-      const stripe = new Stripe(stripeSecretKey.value());
+      const stripe = getStripeClient(mode);
+      logger.log(`🔎 verifyStripePaymentIntent: mode=${mode}, id=${trimmedId}`);
       const intent = await stripe.paymentIntents.retrieve(trimmedId);
       res.status(200).json({
         status: intent.status,
         paymentIntentId: intent.id,
         amount: intent.amount,
         currency: intent.currency,
+        mode,
       });
     } catch (error) {
       logger.error("verifyStripePaymentIntent error", error);
       res.status(500).json({ error: "stripe-verify-failed" });
     }
-  }
+  },
 );
 
-export const getStripePublishableKey = onRequest({ region: defaultRegion }, (req, res) => {
-  withCors(res);
+export const getStripePublishableKey = onRequest(
+  {
+    region: defaultRegion,
+    secrets: [
+      stripePublishableKeyLive,
+      stripePublishableKeyTest,
+    ],
+  },
+  (req, res) => {
+    withCors(res);
 
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-  if (req.method !== "GET") {
-    res.status(405).json({ error: "method-not-allowed" });
-    return;
-  }
+    const mode = req.query.mode === "live" ? "live" : "test";
 
-  const key = stripePublishableKey.value().trim();
-  if (!key) {
-    res.status(404).json({ error: "missing-publishable-key" });
-    return;
-  }
+    logger.log(`----- Requested Stripe publishable key for mode: ${mode}`);
+    const key =
+      mode === "live"
+        ? stripePublishableKeyLive.value()
+        : stripePublishableKeyTest.value();
+    logger.log(`getStripePublishableKey for mode: ${mode}`);
+    if (!key) {
+      res.status(500).json({ error: `Chiave non trovata per ${mode}` });
+      return;
+    }
 
-  res.status(200).json({ key });
-});
+    res.status(200).json({ key, mode });
+  },
+);
 
+/* ------------------------------------------------------------------ */
+/*  PayPal Functions                                                   */
+/* ------------------------------------------------------------------ */
 export const createPaypalOrder = onRequest(
-  { region: defaultRegion, secrets: [paypalClientId, paypalSecret] },
+  {
+    region: defaultRegion,
+    secrets: [paypalClientId, paypalSecret],
+  },
   async (req, res) => {
     withCors(res);
 
@@ -379,11 +475,14 @@ export const createPaypalOrder = onRequest(
       return;
     }
 
-    const currency = (body.currency ?? "EUR").toString().trim().toUpperCase() || "EUR";
+    const currency =
+      (body.currency ?? "EUR").toString().trim().toUpperCase() || "EUR";
     const successRedirect =
-      (body.redirect ?? "").toString().trim() || paypalSuccessRedirect.value();
+      (body.redirect ?? "").toString().trim() ||
+      paypalSuccessRedirect.value();
     const cancelRedirect =
-      (body.cancelRedirect ?? "").toString().trim() || paypalCancelRedirect.value();
+      (body.cancelRedirect ?? "").toString().trim() ||
+      paypalCancelRedirect.value();
 
     const returnUrl = (
       body.returnUrl ??
@@ -397,7 +496,11 @@ export const createPaypalOrder = onRequest(
 
     try {
       const baseUrl = baseUrlFor(paypalMode.value());
-      const accessToken = await getAccessToken(baseUrl, paypalClientId.value(), paypalSecret.value());
+      const accessToken = await getAccessToken(
+        baseUrl,
+        paypalClientId.value(),
+        paypalSecret.value(),
+      );
 
       const orderPayload = {
         intent: "CAPTURE",
@@ -437,7 +540,9 @@ export const createPaypalOrder = onRequest(
         return;
       }
 
-      const approvalUrl = (orderBody.links ?? []).find((link) => link.rel === "approve")?.href;
+      const approvalUrl = (orderBody.links ?? []).find(
+        (link) => link.rel === "approve",
+      )?.href;
       if (!approvalUrl) {
         logger.error("Missing approval URL", orderBody);
         res.status(502).json({ error: "approval-link-missing", details: orderBody });
@@ -457,11 +562,14 @@ export const createPaypalOrder = onRequest(
         message: "Unable to create PayPal order right now.",
       });
     }
-  }
+  },
 );
 
 export const capturePaypalOrder = onRequest(
-  { region: defaultRegion, secrets: [paypalClientId, paypalSecret] },
+  {
+    region: defaultRegion,
+    secrets: [paypalClientId, paypalSecret],
+  },
   async (req, res) => {
     withCors(res);
 
@@ -483,7 +591,11 @@ export const capturePaypalOrder = onRequest(
 
     try {
       const baseUrl = baseUrlFor(paypalMode.value());
-      const accessToken = await getAccessToken(baseUrl, paypalClientId.value(), paypalSecret.value());
+      const accessToken = await getAccessToken(
+        baseUrl,
+        paypalClientId.value(),
+        paypalSecret.value(),
+      );
 
       const capture = await captureOrder(baseUrl, orderId, accessToken);
       if (!capture.ok) {
@@ -500,11 +612,14 @@ export const capturePaypalOrder = onRequest(
         message: "Unable to capture PayPal order right now.",
       });
     }
-  }
+  },
 );
 
 export const paypalReturn = onRequest(
-  { region: defaultRegion, secrets: [paypalClientId, paypalSecret] },
+  {
+    region: defaultRegion,
+    secrets: [paypalClientId, paypalSecret],
+  },
   async (req, res) => {
     withCors(res);
 
@@ -521,86 +636,123 @@ export const paypalReturn = onRequest(
     if (!orderId) {
       res
         .status(400)
-        .send(renderResultPage("Pagamento PayPal", "Token mancante nella risposta di PayPal.", ""));
+        .send(
+          renderResultPage(
+            "Pagamento PayPal",
+            "Token mancante nella risposta di PayPal.",
+            "",
+          ),
+        );
       return;
     }
 
     const redirectTarget =
-      (req.query.redirect as string | undefined)?.trim() || paypalSuccessRedirect.value();
+      (req.query.redirect as string | undefined)?.trim() ||
+      paypalSuccessRedirect.value();
 
     try {
       const baseUrl = baseUrlFor(paypalMode.value());
-      const accessToken = await getAccessToken(baseUrl, paypalClientId.value(), paypalSecret.value());
+      const accessToken = await getAccessToken(
+        baseUrl,
+        paypalClientId.value(),
+        paypalSecret.value(),
+      );
 
       const capture = await captureOrder(baseUrl, orderId, accessToken);
       if (!capture.ok) {
         logger.error("PayPal redirect capture failed", capture.body);
-        res.status(502).send(
-          renderResultPage(
-            "Pagamento PayPal",
-            "Non siamo riusciti a confermare il pagamento.",
-            buildRedirectUrl(redirectTarget, { status: "error", orderId })
-          )
-        );
+        res
+          .status(502)
+          .send(
+            renderResultPage(
+              "Pagamento PayPal",
+              "Non siamo riusciti a confermare il pagamento.",
+              buildRedirectUrl(redirectTarget, { status: "error", orderId }),
+            ),
+          );
         return;
       }
 
-      res.status(200).send(
-        renderResultPage(
-          "Pagamento completato",
-          "Grazie! Il pagamento è stato confermato con successo.",
-          buildRedirectUrl(redirectTarget, { status: "success", orderId })
-        )
-      );
+      res
+        .status(200)
+        .send(
+          renderResultPage(
+            "Pagamento completato",
+            "Grazie! Il pagamento è stato confermato con successo.",
+            buildRedirectUrl(redirectTarget, { status: "success", orderId }),
+          ),
+        );
     } catch (error) {
       logger.error("paypalReturn error", error);
-      res.status(500).send(
-        renderResultPage(
-          "Pagamento PayPal",
-          "Si è verificato un problema inatteso.",
-          buildRedirectUrl(redirectTarget, { status: "error", orderId })
-        )
-      );
+      res
+        .status(500)
+        .send(
+          renderResultPage(
+            "Pagamento PayPal",
+            "Si è verificato un problema inatteso.",
+            buildRedirectUrl(redirectTarget, { status: "error", orderId }),
+          ),
+        );
     }
-  }
+  },
 );
 
-export const paypalCancel = onRequest({ region: defaultRegion }, (req, res) => {
-  withCors(res);
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-  if (req.method !== "GET") {
-    res.status(405).send("Method not allowed");
-    return;
-  }
+export const paypalCancel = onRequest(
+  {
+    region: defaultRegion,
+  },
+  (req, res) => {
+    withCors(res);
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "GET") {
+      res.status(405).send("Method not allowed");
+      return;
+    }
 
-  const redirectTarget =
-    (req.query.redirect as string | undefined)?.trim() || paypalCancelRedirect.value();
+    const redirectTarget =
+      (req.query.redirect as string | undefined)?.trim() ||
+      paypalCancelRedirect.value();
 
-  res.status(200).send(
-    renderResultPage(
-      "Pagamento annullato",
-      "Hai annullato il pagamento. Puoi riprovare in qualsiasi momento.",
-      buildRedirectUrl(redirectTarget, { status: "cancelled" })
-    )
-  );
-});
+    res
+      .status(200)
+      .send(
+        renderResultPage(
+          "Pagamento annullato",
+          "Hai annullato il pagamento. Puoi riprovare in qualsiasi momento.",
+          buildRedirectUrl(redirectTarget, { status: "cancelled" }),
+        ),
+      );
+  },
+);
 
+/* ------------------------------------------------------------------ */
+/*  Diagnostics                                                        */
+/* ------------------------------------------------------------------ */
 export const checkSecrets = onRequest(
-  { region: defaultRegion, secrets: [paypalClientId, paypalSecret, stripeSecretKey] },
+  {
+    region: defaultRegion,
+    secrets: [
+      paypalClientId,
+      paypalSecret,
+      stripeSecretKeyLive,
+      stripeSecretKeyTest,
+    ],
+  },
   (_req, res) => {
     withCors(res);
     const okPaypalId = !!process.env.PAYPAL_CLIENT_ID;
     const okPaypalSecret = !!process.env.PAYPAL_SECRET_KEY;
-    const okStripe = !!process.env.STRIPE_SECRET_KEY;
+    const okStripeLive = !!process.env.STRIPE_SECRET_KEY;
+    const okStripeTest = !!process.env.STRIPE_SECRET_KEY_TEST;
 
-    if (okPaypalId && okPaypalSecret && okStripe) {
+    if (okPaypalId && okPaypalSecret && okStripeLive && okStripeTest) {
       res.status(200).send("✅ Secrets OK");
       return;
     }
 
     res.status(500).send("❌ Secrets missing");
-  }
+  },
 );
