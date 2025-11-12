@@ -5,6 +5,7 @@ const kBuonoSconto10 = "SCONTO di 10%";
 const kSconto10 = 0.10;
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
+const kDebugMode = 'live'; // 'test' or 'live'
 
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';

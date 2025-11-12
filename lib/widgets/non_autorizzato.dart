@@ -281,7 +281,11 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
       final response = await http.post(
         Uri.parse(_stripeCreateIntentEndpoint),
         headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'amount': amount, 'currency': 'EUR', 'mode': 'live'}),
+        body: jsonEncode({
+          'amount': amount,
+          'currency': 'EUR',
+          'mode': kDebugMode,
+        }),
       );
 
       if (response.statusCode != 200) {
