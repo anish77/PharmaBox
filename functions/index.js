@@ -71,7 +71,7 @@ logger.i("🆔 PaymentIntent ID: ${paymentIntent['id']}");
 logger.i("🧩 Client Secret: ${paymentIntent['client_secret']}");
 
 // === PAYPAL ===
-const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com"; // Usa .paypal.com per produzione
+const PAYPAL_API_BASE = "https://api-m.paypal.com"; // Usa .paypal.com per produzione
 
 export const createPaypalOrder = functions
     .runWith({ secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_SECRET_KEY"] })

@@ -26,6 +26,8 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   static const String _stripeCreateIntentEndpoint =
       'https://europe-west1-pharmabox-1c149.cloudfunctions.net/createStripePaymentIntent';
 
+  static const String _paypalRedirectTarget = 'pharmabox://payment/paypal';
+
   // 🔹 Coupon e utente
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -326,39 +328,60 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   }
 
   Future<void> _startPaypalPayment(BuildContext context) async {
-    setState(() => _isProcessingPayment = true);
+    if (!mounted) return;
+
+    setState(() {
+      _isProcessingPayment = true;
+    });
+
     final amount = _effectivePrice.toStringAsFixed(2);
 
     try {
       final response = await http.post(
         Uri.parse(_paypalCreateOrderEndpoint),
         headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'amount': amount, 'currency': 'EUR'}),
+        body: jsonEncode({
+          'amount': amount,
+          'currency': 'EUR',
+          'redirect': _paypalRedirectTarget,
+          'cancelRedirect': _paypalRedirectTarget,
+        }),
       );
 
-      final data = jsonDecode(response.body);
-      final approvalUrl =
-          data['approvalUrl'] ??
-          (data['links'] as List<dynamic>?)
-              ?.whereType<Map<String, dynamic>>()
-              .firstWhere(
-                (link) => link['rel'] == 'approve',
-                orElse: () => const {},
-              )['href'];
-
-      if (approvalUrl != null) {
-        await launchUrl(
-          Uri.parse(approvalUrl),
-          mode: LaunchMode.externalApplication,
+      if (response.statusCode != 200) {
+        debugPrint(
+          'PayPal order failed ${response.statusCode}: ${response.body}',
         );
-      } else {
-        _showSnack('Errore nel pagamento PayPal.');
+        _showSnack('Errore nella creazione dell\'ordine PayPal.');
+        return;
       }
-    } catch (e) {
-      _showSnack('Errore durante la connessione a PayPal.');
-      debugPrint('PayPal error: $e');
+
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      final approvalUrl = payload['approvalUrl'] as String?;
+
+      if (approvalUrl == null || approvalUrl.isEmpty) {
+        debugPrint('PayPal response missing approvalUrl: $payload');
+        _showSnack('Risposta PayPal non valida.');
+        return;
+      }
+
+      final launched = await launchUrl(
+        Uri.parse(approvalUrl),
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        _showSnack('Impossibile aprire PayPal.');
+      }
+    } catch (error, stackTrace) {
+      debugPrint('PayPal order exception: $error\n$stackTrace');
+      _showSnack('Errore di rete durante la creazione dell\'ordine PayPal.');
     } finally {
-      setState(() => _isProcessingPayment = false);
+      if (mounted) {
+        setState(() {
+          _isProcessingPayment = false;
+        });
+      }
     }
   }
 
