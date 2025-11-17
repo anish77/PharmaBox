@@ -108,6 +108,7 @@ class _MyAppState extends State<MyApp> {
     if (status == 'success') {
       if (uri.path == '/paypal') {
         await _activateSubscription('PayPal', orderId);
+        _closeActiveFlow(true);
       } else if (uri.path == '/stripe') {
         await _verifyStripePayment(paymentIntent);
       }
@@ -135,7 +136,7 @@ class _MyAppState extends State<MyApp> {
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         await _activateSubscription('Stripe', paymentIntentId);
-        _showSnack('✅ Pagamento completato e verificato!');
+        _showSnack('✅ Pagamento completato! Abbonamento attivato.');
       } else {
         debugPrint('❌ Pagamento non completato: ${data['status']}');
         _showSnack('❌ Pagamento non completato: ${data['status']}');
@@ -173,6 +174,13 @@ class _MyAppState extends State<MyApp> {
         ..showSnackBar(
           SnackBar(content: Text(message), backgroundColor: kPrimary),
         );
+    }
+  }
+
+  void _closeActiveFlow([bool activated = true]) {
+    final nav = navigatorKey.currentState;
+    if (nav != null && nav.canPop()) {
+      nav.maybePop(activated);
     }
   }
 
