@@ -60,7 +60,7 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                 final inListQty = idx >= 0 ? lista[idx].pezzi.value : 0;
                 return ValueListenableBuilder<int>(
                   valueListenable: prodotto.pezzi,
-                  builder: (context, value, __) {
+                  builder: (context, value, _) {
                     return ProdottoCell(
                       key: ValueKey(prodotto.minsan),
                       prodotto: prodotto,

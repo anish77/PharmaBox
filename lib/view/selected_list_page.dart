@@ -11,12 +11,11 @@ import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
-import 'package:pharma_box/widgets/scan_tab.dart';
+import 'package:pharma_box/widgets/non_autorizzato.dart';
 import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:pharma_box/widgets/carrello.dart';
-import 'package:pharma_box/widgets/gestione_prodotto.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import '../include/general_functions.dart';
 
@@ -52,7 +51,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
-  final GestioneProdotto _gestioneProdotto = GestioneProdotto();
 
   @override
   void initState() {
@@ -111,8 +109,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     // se in futuro aggiungi altri gruppi, chiamali qui con addItems
     return ordered.where((f) => _selectedFilters.contains(f)).toList();
   }
-
-  int get _totaleQta => _qta.values.fold(0, (a, b) => a + b);
 
   void _aggiungi(Prodotto p, {bool clearSearchState = true}) {
     // Aggiungi/aggiorna nel carrello (fonte verità usata dalla tab Lista)
@@ -208,38 +204,139 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       }
     }
   }
-  /*
-  void _rimuoviByIndex(int i) {
-    final p = _selezionati[i];
-    setState(() {
-      _selezionati.removeAt(i);
-      _codiciSelezionati.remove(p.codice);
-      _qta.remove(p.codice);
-    });
-  }*/
-  /*
-  void _svuotaSelezionati() {
-    setState(() {
-      _selezionati.clear();
-      _codiciSelezionati.clear();
-      _qta.clear();
-    });
-  }*/
-  /*
-  void _incQta(String codice) {
-    setState(() {
-      _qta[codice] = (_qta[codice] ?? 0) + 1;
-    });
-  }*/
-  /*
-  void _decQta(String codice) {
-    setState(() {
-      final cur = _qta[codice] ?? 0;
-      if (cur > 1) {
-        _qta[codice] = cur - 1;
+
+  Widget _checkStatus(bool bleScanning, bool isBleConnected) {
+    if (productToSearch.trim().isEmpty &&
+        !_isFidelityLoading &&
+        !_isAccountActive) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 40),
+        child: Column(
+          children: [
+            Center(
+              child: Image.asset(
+                kNoScanCode, // assicurati che il path sia corretto nel pubspec.yaml
+                width: 240,
+                fit: BoxFit.contain,
+              ),
+            ),
+
+            Text(
+              'Attiva il tuo abbonamento per utilizzare lo scanner Bluetooth.',
+              style: TextStyle(
+                color: kBluScuro,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final activated = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NonAutorizzato(),
+                  ),
+                );
+                if (activated == true) await _loadFidelityStatus();
+              },
+              icon: const Icon(Icons.star, color: Colors.yellow),
+              label: const Text(
+                'Attiva',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      // 🔹 Mostra immagine scanCode finché non rilevi la connessione BLE
+    } else if (productToSearch.trim().isEmpty) {
+      final bool bluetoothActive = isBleConnected;
+      final String statusText;
+      if (bluetoothActive) {
+        statusText =
+            'Scanner Bluetooth connesso.\nTocca l\'icona per disconnetterlo.';
+      } else if (bleScanning) {
+        statusText =
+            'Ricerca Bluetooth in corso...\nInterrompi la scansione toccando l\'icona.';
+      } else {
+        statusText =
+            'Scanner Bluetooth non connesso.\nClicca sull\'icona per avviare la connessione.';
       }
-    });
-  }*/
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 40),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+                  if (!_isAccountActive) {
+                    if (!context.mounted) {
+                      logger.i(
+                        'Context non montato, impossibile mostrare SnackBar',
+                      );
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account non attivo')),
+                    );
+                  } else {
+                    if (bleScanning) {
+                      FlutterBluePlus.stopScan();
+                      ref.read(bleScanningProvider.notifier).state = false;
+                      ref.read(bleStatusProvider.notifier).state =
+                          'Scansione interrotta';
+                      logger.i('Stopped BLE scan from image tap');
+                    } else if (bluetoothActive) {
+                      logger.i('Disconnecting BLE from image tap');
+                      await bleDisconnect(ref);
+                    } else {
+                      logger.i('Starting BLE scan from image tap');
+                      bleStartScanAndListen(ref);
+                    }
+                  }
+                },
+                child: Image.asset(
+                  kBluetoothImage,
+                  width: 200,
+                  fit: BoxFit.contain,
+                  color: bluetoothActive ? null : kPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                statusText,
+                style: const TextStyle(
+                  color: kBluScuro,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // 🔹 Caso predefinito: restituisci qualcosa anche se non entra nell'if
+      return const SizedBox.shrink(); // widget vuoto (non occupa spazio)
+    }
+  }
 
   Widget opzioni(String title, List<String> kFiltro) {
     // Calcola gli item visibili per questo gruppo (escludendo i già selezionati)
@@ -331,7 +428,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     });
 
     final bleScanning = ref.watch(bleScanningProvider);
-    final bleStatus = ref.watch(bleStatusProvider);
+    //final bleStatus = ref.watch(bleStatusProvider);
+    final isBleConnected = ref.watch(bleConnected);
 
     return Stack(
       children: [
@@ -350,14 +448,20 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
             centerTitle: false,
             titleSpacing: 0,
             actions: [
-              IconButton(
+              /*IconButton(
                 icon: Icon(
-                  bleScanning ? Icons.bluetooth_searching : Icons.bluetooth,
-                  color: bleScanning ? kPrimary : kBluScuro,
+                  bleScanning
+                      ? Icons.bluetooth_searching
+                      : isBleConnected
+                      ? Icons.bluetooth_connected
+                      : Icons.bluetooth,
+                  color: bleScanning || isBleConnected ? kPrimary : kBluScuro,
                 ),
                 tooltip:
                     bleScanning
                         ? 'Interrompi scansione Bluetooth'
+                        : isBleConnected
+                        ? 'Disconnetti scanner Bluetooth'
                         : 'Connetti scanner Bluetooth',
                 onPressed: () async {
                   if (!_isAccountActive) {
@@ -371,12 +475,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                       ref.read(bleScanningProvider.notifier).state = false;
                       ref.read(bleStatusProvider.notifier).state =
                           'Scansione interrotta';
+                    } else if (isBleConnected) {
+                      await bleDisconnect(ref);
                     } else {
                       bleStartScanAndListen(ref);
                     }
                   }
                 },
-              ),
+              ),*/
             ],
           ),
           body: GestureDetector(
@@ -463,41 +569,57 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                             }
                                           },
                                         ),
-                                        if (_selectedFilters.isNotEmpty)
-                                          Align(
-                                            alignment: Alignment.topLeft,
-                                            child: Wrap(
-                                              alignment: WrapAlignment.start,
-                                              spacing: 8,
-                                              runSpacing: 8,
-                                              children:
-                                                  _selectedInOriginalOrder()
-                                                      .map(
-                                                        (f) => ContainerOpzione(
-                                                          key: ValueKey(
-                                                            'sel-$f',
-                                                          ),
-                                                          nomeOpione: f,
-                                                          selected: true,
-                                                          onSelectedChanged: (
-                                                            isSel,
-                                                          ) {
-                                                            if (!isSel) {
-                                                              setState(() {
-                                                                _selectedFilters
-                                                                    .remove(f);
-                                                              });
-                                                            }
-                                                          },
-                                                        ),
-                                                      )
-                                                      .toList(),
+                                        Column(
+                                          children: [
+                                            _checkStatus(
+                                              bleScanning,
+                                              isBleConnected,
                                             ),
-                                          ),
-                                        RisultatiRicerca(
-                                          risultati: _risultati,
-                                          listaTitolo: widget.titolo,
-                                          nrListe: widget.nrListe,
+
+                                            //button per attivare l'abbonamento
+                                            // const NonAutorizzato(),
+                                            if (_selectedFilters.isNotEmpty)
+                                              Align(
+                                                alignment: Alignment.topLeft,
+                                                child: Wrap(
+                                                  alignment:
+                                                      WrapAlignment.start,
+                                                  spacing: 8,
+                                                  runSpacing: 8,
+                                                  children:
+                                                      _selectedInOriginalOrder()
+                                                          .map(
+                                                            (
+                                                              f,
+                                                            ) => ContainerOpzione(
+                                                              key: ValueKey(
+                                                                'sel-$f',
+                                                              ),
+                                                              nomeOpione: f,
+                                                              selected: true,
+                                                              onSelectedChanged: (
+                                                                isSel,
+                                                              ) {
+                                                                if (!isSel) {
+                                                                  setState(() {
+                                                                    _selectedFilters
+                                                                        .remove(
+                                                                          f,
+                                                                        );
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                          )
+                                                          .toList(),
+                                                ),
+                                              ),
+                                            RisultatiRicerca(
+                                              risultati: _risultati,
+                                              listaTitolo: widget.titolo,
+                                              nrListe: widget.nrListe,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),

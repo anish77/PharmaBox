@@ -1,17 +1,19 @@
 import 'package:flutter/widgets.dart';
 
-const kAbbonamento = 199;
+const kAbbonamento = 1;
 const kBuonoSconto10 = "SCONTO di 10%";
 const kSconto10 = 0.10;
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
+const kDebugMode = 'live'; // 'test' or 'live'
+const kWebsiteURL = 'https://www.doublecore.it';
 
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
 const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
+const kNoScanCode = 'assets/noScanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
-const kNotAuthorized = 'assets/lock.png';
 const kCongratulazioni = 'assets/congratulazioni.png';
 
 //colors

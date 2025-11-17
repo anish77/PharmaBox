@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ManualCounterDialog extends StatefulWidget {
-  const ManualCounterDialog({required this.initialValue});
+  const ManualCounterDialog({super.key, required this.initialValue});
 
   final int initialValue;
 

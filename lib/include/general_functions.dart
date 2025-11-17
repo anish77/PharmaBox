@@ -190,12 +190,12 @@ Future<List<Prodotto>> doSearch(String q) async {
       // 1) lookup EAN
       final cached = eanToProdottiCache[q];
       if (cached != null) {
-        final List<Prodotto> MinsanCached = [];
+        final List<Prodotto> minsanCached = [];
 
         for (var prodotto in cached) {
           logger.i(prodotto);
           // buona
-          MinsanCached.add(
+          minsanCached.add(
             Prodotto(
               codice: prodotto.codice,
               nome: prodotto.nome,
@@ -214,7 +214,7 @@ Future<List<Prodotto>> doSearch(String q) async {
             ),
           );
         }
-        return MinsanCached;
+        return minsanCached;
       }
 
       String xmlEanBody = buildSearchXml(q, kind: SearchKind.ean);
@@ -223,7 +223,7 @@ Future<List<Prodotto>> doSearch(String q) async {
       if (inner == null) return [];
       List<Prodotto> listaEan = parseInnerProductsXml(inner, DatasetKind.tr001);
 
-      List<Prodotto> Minsan = [];
+      List<Prodotto> minsan = [];
 
       for (var prodotto in listaEan) {
         String xmlBody = buildSearchXml(
@@ -233,18 +233,18 @@ Future<List<Prodotto>> doSearch(String q) async {
         String xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);
         String? inner = _extractInnerXmlFromSoap(xmlResp);
         if (inner != null) {
-          Minsan.add(parseInnerProductsXml(inner, DatasetKind.tr001).first);
+          minsan.add(parseInnerProductsXml(inner, DatasetKind.tr001).first);
           /*
           getOrPutImage(
             parseInnerProductsXml(inner, DatasetKind.tr001).first.codice,
           );*/
         }
       }
-      eanToProdottiCache[q] = Minsan;
+      eanToProdottiCache[q] = minsan;
       //logger.i(Minsan.length);
 
       logger.i(DateTime.now().difference(start));
-      return Minsan;
+      return minsan;
     }
     final xmlBody = buildSearchXml(q, kind: SearchKind.prodotti);
     final xmlResp = await postXml(kFarmadatiEndpoint, xmlBody);

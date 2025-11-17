@@ -38,6 +38,13 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   isar: ^3.1.0+1
   isar_flutter_libs: ^3.1.0+1
+  flutter_paypal_payment: ^1.0.8
+  uni_links: ^0.5.1
+  flutter_credit_card: ^4.1.0
+  stripe_sdk: ^5.0.0
+  flutter_stripe: ^12.1.0
+  flutter_stripe_web: ^7.1.0
+  dio: ^5.9.0
 
 
 dev_dependencies:
@@ -68,11 +75,13 @@ flutter:
   assets:
     - assets/Logo.png
     - assets/noImage.png
-    - assets/lock.png
     - assets/scanCode.png
     - assets/bluetooth.png
     - assets/app_icon_512x512.png
     - assets/congratulazioni.png
+    - assets/noScanCode.png
+    - assets/fonts/Roboto-Regular.ttf
+    - assets/fonts/Roboto-Bold.ttf
  
 
   # An image asset can refer to one or more resolution-specific "variants", see

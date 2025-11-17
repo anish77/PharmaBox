@@ -299,3 +299,13 @@ Future<void> _bleDispose() async {
     } catch (_) {}
   }
 }
+
+Future<void> bleDisconnect(WidgetRef ref) async {
+  try {
+    await FlutterBluePlus.stopScan();
+  } catch (_) {}
+  ref.read(bleScanningProvider.notifier).state = false;
+  await _bleDispose();
+  ref.read(bleConnected.notifier).state = false;
+  ref.read(bleStatusProvider.notifier).state = 'Disconnesso';
+}

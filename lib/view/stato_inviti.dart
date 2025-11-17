@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -53,52 +55,41 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
           );
         }
 
-        final DocumentSnapshot<Object?> currentSnapshot = effectiveSnapshot;
-
-        final data =
-            currentSnapshot.data() as Map<String, dynamic>? ??
-            <String, dynamic>{};
-
-        // Recupero amiciInvitati come lista di stringhe
+        final data = effectiveSnapshot.data() as Map<String, dynamic>? ?? {};
         final List<String> invitedFriendsNames =
-            List<String>.from(data['amiciInvitati'] ?? []).map((amico) {
-              final parts = amico.split(' - ');
-              return parts.first;
-            }).toList();
+            List<String>.from(
+              data['amiciInvitati'] ?? [],
+            ).map((amico) => amico.split(' - ').first).toList();
 
         final int invitedFriends = invitedFriendsNames.length;
 
-        // 👉 Recupero expirationDate come Timestamp e lo converto
         final Timestamp? ts = data['expirationDate'];
         final DateTime? expirationDate = ts?.toDate();
         final DateTime? extendedExpirationDate = expirationDate?.add(
           const Duration(days: 365),
         );
 
-        String? computedFormattedDateOld;
-        if (expirationDate != null) {
-          computedFormattedDateOld = _formatDate(expirationDate);
-        }
-
-        String? computedFormattedDate;
-        if (extendedExpirationDate != null) {
-          computedFormattedDate = _formatDate(extendedExpirationDate);
-        }
+        final String? computedFormattedDateOld =
+            expirationDate != null ? _formatDate(expirationDate) : null;
+        final String? computedFormattedDate =
+            extendedExpirationDate != null
+                ? _formatDate(extendedExpirationDate)
+                : null;
 
         final String? displayFormattedDateOld =
             _formattedDateOld ?? computedFormattedDateOld;
         final String? displayFormattedDate =
             _formattedDateNew ?? computedFormattedDate;
-        // Calcolo sconto
-        final double discountPerFriend = kSconto10; // es. 0.1 = 10%
-        double discount = invitedFriends * discountPerFriend;
-        if (discount > 1) discount = 1; // max 100%
 
-        final double toPay = 1 - discount;
-        final double percentToPay = toPay.clamp(0.0, 1.0).toDouble();
+        final double discountPerFriend = kSconto10; // 10%
+        double discount = invitedFriends * discountPerFriend;
+        if (discount > 1) discount = 1;
+
+        //final double toPay = 1 - discount;
+        final double percentDiscount = discount; //toPay.clamp(0.0, 1.0);
         final bool canPop = Navigator.of(context).canPop();
 
-        final showsCongratulation = percentToPay <= 0.0;
+        final showsCongratulation = percentDiscount >= 1.0;
 
         return Scaffold(
           appBar: AppBar(
@@ -110,7 +101,7 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                     )
                     : null,
             title: const Text(
-              kInviti,
+              "Sconto abbonamento",
               style: TextStyle(
                 color: kBluScuro,
                 fontWeight: FontWeight.bold,
@@ -124,220 +115,227 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                if (showsCongratulation)
-                  Column(
-                    children: [
-                      Image.asset(kCongratulazioni, height: 250, width: 250),
-                      SizedBox(height: 12),
-                      Text(
-                        kAbbonamentoOmaggio,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: kBluScuro,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      CustomButton(
-                        title: "Attiva omaggio",
-                        titleColor: kWhite,
-                        backgroundColor: kPrimary,
-                        onPressed:
-                            _omaggioAttivato
-                                ? null
-                                : () async {
-                                  final DateTime baseExpiration =
-                                      expirationDate ?? DateTime.now();
-                                  final DateTime newExpirationDate =
-                                      baseExpiration.add(
-                                        const Duration(days: 365),
-                                      );
-                                  final String? oldDateText =
-                                      expirationDate != null
-                                          ? _formatDate(baseExpiration)
-                                          : null;
-                                  final String newDateText = _formatDate(
-                                    newExpirationDate,
-                                  );
-
-                                  setState(() {
-                                    _omaggioAttivato = true;
-                                    _freezeSnapshot = true;
-                                    _formattedDateOld = oldDateText;
-                                    _formattedDateNew = newDateText;
-                                    _cachedSnapshot ??= currentSnapshot;
-                                  });
-
-                                  try {
-                                    await FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(uid)
-                                        .update({
-                                          'amiciInvitati': [],
-                                          'expirationDate': Timestamp.fromDate(
-                                            newExpirationDate,
-                                          ),
-                                        });
-                                    debugPrint(
-                                      'Inviti azzerati, nuova scadenza: $newDateText',
-                                    );
-                                  } catch (error) {
-                                    if (!mounted) return;
-                                    setState(() {
-                                      _omaggioAttivato = false;
-                                      _freezeSnapshot = false;
-                                      _formattedDateOld = null;
-                                      _formattedDateNew = null;
-                                      _cachedSnapshot = null;
-                                    });
-                                    debugPrint(
-                                      'Errore durante il reset degli inviti: $error',
-                                    );
-                                  }
-                                },
-                      ),
-                      if (_omaggioAttivato)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: 12,
-                            left: 24,
-                            right: 24,
+            child: Center(
+              // ✅ questo forza la centratura orizzontale di tutto
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (showsCongratulation)
+                    Column(
+                      children: [
+                        Image.asset(kCongratulazioni, height: 250, width: 250),
+                        const SizedBox(height: 12),
+                        Text(
+                          kAbbonamentoOmaggio,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: kBluScuro,
                           ),
-                          child:
-                              displayFormattedDate != null
-                                  ? Table(
-                                    columnWidths: const {
-                                      0: IntrinsicColumnWidth(),
-                                    },
-                                    defaultVerticalAlignment:
-                                        TableCellVerticalAlignment.middle,
-                                    children: [
-                                      TableRow(
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsets.only(bottom: 4),
-                                            child: Text(
-                                              'Scadenza precedente: ',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: kBluScuro,
-                                              ),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 4,
-                                            ),
-                                            child: Text(
-                                              displayFormattedDateOld ?? '-',
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                color: kBluScuro,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      TableRow(
-                                        children: [
-                                          const Text(
-                                            'Nuova scadenza:',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: kBluScuro,
-                                            ),
-                                          ),
-                                          Text(
-                                            displayFormattedDate,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              color: kBluScuro,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  )
-                                  : const Text(
-                                    "La data di scadenza dell'abbonamento non è disponibile.",
-                                    textAlign: TextAlign.start,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: kBluScuro,
-                                    ),
-                                  ),
                         ),
-                    ],
-                  )
-                else
-                  CircularPercentIndicator(
-                    radius: 100.0,
-                    lineWidth: 16.0,
-                    percent: percentToPay,
-                    center: Text(
-                      "${(percentToPay * 100).toInt()}%",
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    progressColor: kPrimary,
-                    backgroundColor: Colors.deepPurple.shade100,
-                    circularStrokeCap: CircularStrokeCap.round,
-                  ),
-
-                const SizedBox(height: 10),
-
-                if (!showsCongratulation)
-                  // Testo sotto il cerchio
-                  Text(
-                    invitedFriends == 0
-                        ? kNessunInvito
-                        : "Hai invitato $invitedFriends amic${invitedFriends == 1 ? 'o' : 'i'}",
-                    style: const TextStyle(fontSize: 18),
-                  ),
-
-                if (!showsCongratulation) const SizedBox(height: 20),
-
-                // Lista amici invitati
-                if (invitedFriendsNames.isNotEmpty && !showsCongratulation)
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: invitedFriendsNames.length,
-                      itemBuilder: (context, index) {
-                        final name = invitedFriendsNames[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          child: ListTile(
-                            leading: const Icon(Icons.person),
-                            title: Text(name),
-                            subtitle: const Text(kRegCompletata),
+                        const SizedBox(height: 40),
+                        CustomButton(
+                          title: "Attiva omaggio",
+                          titleColor: kWhite,
+                          backgroundColor: kPrimary,
+                          onPressed:
+                              _omaggioAttivato
+                                  ? null
+                                  : () => _attivaOmaggio(uid, expirationDate),
+                        ),
+                        if (_omaggioAttivato)
+                          _buildDateTable(
+                            displayFormattedDateOld,
+                            displayFormattedDate,
                           ),
-                        );
-                      },
+                      ],
+                    )
+                  else
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularPercentIndicator(
+                          radius: 100.0,
+                          lineWidth: 16.0,
+                          percent: percentDiscount,
+                          center: Text(
+                            "${(percentDiscount * 100).toInt()}%",
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          progressColor: kPrimary,
+                          backgroundColor: Colors.deepPurple.shade100,
+                          circularStrokeCap: CircularStrokeCap.round,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          invitedFriends == 0
+                              ? 'Invita i tuoi primi amici e ottieni subito il tuo sconto abbonamento!'
+                              : "Hai invitato $invitedFriends amic${invitedFriends == 1 ? 'o' : 'i'}",
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600, // semibold
+                            height: 1.3, // più leggibile
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        if (invitedFriends == 0)
+                          Text(
+                            '• Ogni amico = 10% di sconto\n'
+                            '• Con 10 amici = abbonamento GRATIS',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.4,
+                              color: Colors.black87,
+                            ),
+                            textAlign: TextAlign.start,
+                          ),
+                      ],
                     ),
-                  )
-                else
-                  const Spacer(),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                if (!showsCongratulation)
-                  Text(
-                    kInvitaAltriAmici,
-                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                    textAlign: TextAlign.center,
-                  ),
+                  if (invitedFriends > 0 && !showsCongratulation)
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: invitedFriendsNames.length,
+                        itemBuilder: (context, index) {
+                          final name = invitedFriendsNames[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            child: ListTile(
+                              leading: const Icon(Icons.person),
+                              title: Text(name),
+                              subtitle: const Text(kRegCompletata),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    const Spacer(),
 
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 20),
+
+                  if (invitedFriends > 0 && !showsCongratulation)
+                    Text(
+                      kInvitaAltriAmici,
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                      textAlign: TextAlign.center,
+                    ),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Future<void> _attivaOmaggio(String uid, DateTime? expirationDate) async {
+    final DateTime baseExpiration = expirationDate ?? DateTime.now();
+    final DateTime newExpirationDate = baseExpiration.add(
+      const Duration(days: 365),
+    );
+
+    final String? oldDateText =
+        expirationDate != null ? _formatDate(baseExpiration) : null;
+    final String newDateText = _formatDate(newExpirationDate);
+
+    setState(() {
+      _omaggioAttivato = true;
+      _freezeSnapshot = true;
+      _formattedDateOld = oldDateText;
+      _formattedDateNew = newDateText;
+      _cachedSnapshot ??= _cachedSnapshot;
+    });
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'amiciInvitati': [],
+        'expirationDate': Timestamp.fromDate(newExpirationDate),
+      });
+      debugPrint('Inviti azzerati, nuova scadenza: $newDateText');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _omaggioAttivato = false;
+        _freezeSnapshot = false;
+        _formattedDateOld = null;
+        _formattedDateNew = null;
+        _cachedSnapshot = null;
+      });
+      debugPrint('Errore durante il reset degli inviti: $error');
+    }
+  }
+
+  Widget _buildDateTable(String? oldDate, String? newDate) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, left: 24, right: 24),
+      child:
+          newDate != null
+              ? Table(
+                columnWidths: const {0: IntrinsicColumnWidth()},
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  TableRow(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          'Scadenza precedente:',
+                          style: TextStyle(fontSize: 16, color: kBluScuro),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            oldDate ?? '-',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: kBluScuro,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
+                      const Text(
+                        'Nuova scadenza:',
+                        style: TextStyle(fontSize: 16, color: kBluScuro),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          newDate,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: kBluScuro,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+              : const Text(
+                "La data di scadenza dell'abbonamento non è disponibile.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: kBluScuro),
+              ),
     );
   }
 }

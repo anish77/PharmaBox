@@ -5,6 +5,23 @@ import 'package:url_launcher/url_launcher.dart';
 class OpenEmail {
   const OpenEmail();
 
+  Future<void> openWebsite(String url) async {
+    final uri = Uri.parse(url);
+    final canLaunch = await canLaunchUrl(uri);
+    if (!canLaunch) {
+      debugPrint('Impossibile aprire il sito web: $url');
+      return;
+    }
+
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      debugPrint('Launch fallito per: $url');
+    }
+  }
+
   VoidCallback contattaci(
     BuildContext context,
     String subject,
