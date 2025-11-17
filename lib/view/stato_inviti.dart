@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -204,7 +206,7 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
 
                   const SizedBox(height: 20),
 
-                  if (invitedFriends > 0)
+                  if (invitedFriends > 0 && !showsCongratulation)
                     Text(
                       kInvitaAltriAmici,
                       style: TextStyle(fontSize: 16, color: Colors.grey[700]),
@@ -278,11 +280,14 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                       ),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          oldDate ?? '-',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: kBluScuro,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            oldDate ?? '-',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: kBluScuro,
+                            ),
                           ),
                         ),
                       ),
@@ -294,9 +299,15 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                         'Nuova scadenza:',
                         style: TextStyle(fontSize: 16, color: kBluScuro),
                       ),
-                      Text(
-                        newDate,
-                        style: const TextStyle(fontSize: 16, color: kBluScuro),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          newDate,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: kBluScuro,
+                          ),
+                        ),
                       ),
                     ],
                   ),
