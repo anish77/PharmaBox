@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
 import 'package:http/http.dart' as http;
+import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,15 +39,21 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   String? _couponStatusMessage;
   bool _isProcessingPayment = false;
 
-  static const double _discountPercent = 0.10;
+  static const double _couponDiscountPercent = 0.10;
   double get _basePrice => kAbbonamento.toDouble();
+  double get _friendDiscount => _inviteProgress.clamp(0.0, 1.0);
+  double get _priceAfterFriendDiscount => _basePrice * (1 - _friendDiscount);
   double get _effectivePrice =>
-      _couponValid ? _basePrice * (1 - _discountPercent) : _basePrice;
+      _couponValid
+          ? _priceAfterFriendDiscount * (1 - _couponDiscountPercent)
+          : _priceAfterFriendDiscount;
 
   bool get _couponValid => _couponStatus == _CouponStatus.valid;
   bool get _isValidatingCoupon => _couponStatus == _CouponStatus.validating;
   bool? _isNewMember;
   bool _loadingNewMember = true;
+  List<String> _invitedFriendsNames = [];
+  double _inviteProgress = 0.0;
 
   @override
   void initState() {
@@ -64,14 +71,29 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   Future<void> _loadNewMemberFlag() async {
     final user = _auth.currentUser;
     bool result = false;
+    List<String> friendNames = [];
+    double inviteProgress = 0.0;
+
     if (user != null) {
       final doc = await _firestore.collection('users').doc(user.uid).get();
-      result = (doc.data()?['newMember'] as bool?) ?? false;
+      final data = doc.data() ?? <String, dynamic>{};
+      result = (data['newMember'] as bool?) ?? false;
+
+      final invitesRaw = List<String>.from(data['amiciInvitati'] ?? []);
+      friendNames =
+          invitesRaw.map((entry) => entry.split(' - ').first).toList();
+
+      final discountPerFriend = kSconto10;
+      double discount = friendNames.length * discountPerFriend;
+      if (discount > 1) discount = 1;
+      inviteProgress = discount; // quanto sconto hai accumulato
     }
     if (!mounted) return;
     setState(() {
       _isNewMember = result;
       _loadingNewMember = false;
+      _invitedFriendsNames = friendNames;
+      _inviteProgress = inviteProgress;
     });
   }
   // ---------------------------- UI ----------------------------
@@ -79,6 +101,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final invitedFriends = _invitedFriendsNames.length;
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
@@ -117,6 +140,8 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
                       const SizedBox.shrink()
                     else if (_isNewMember == true)
                       _buildCouponSection(context),
+                    const SizedBox(height: 24),
+                    if (invitedFriends > 0) _buildAmiciInvitati(),
                   ],
                 ),
               ),
@@ -136,7 +161,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
                       title:
                           _isProcessingPayment
                               ? 'Attendere...'
-                              : 'Diventa membro',
+                              : 'Attiva abbonamento',
                       titleColor: kWhite,
                       backgroundColor: kPrimary,
                       onPressed:
@@ -151,6 +176,38 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAmiciInvitati() {
+    final invitedFriends = _invitedFriendsNames.length;
+    final invitePercent = _inviteProgress.clamp(0.0, 1.0);
+    final percentLabel = (invitePercent * 100).round();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircularPercentIndicator(
+          radius: 100.0,
+          lineWidth: 16.0,
+          percent: invitePercent == 0 ? 0.01 : invitePercent,
+          center: Text(
+            '$percentLabel%',
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          progressColor: kPrimary,
+          backgroundColor: Colors.deepPurple.shade100,
+          circularStrokeCap: CircularStrokeCap.round,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          invitedFriends == 0
+              ? kNessunInvito
+              : 'Hai invitato $invitedFriends amic${invitedFriends == 1 ? 'o' : 'i'}',
+          style: const TextStyle(fontSize: 18),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -209,7 +266,20 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
   Widget _buildPriceSummary(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final basePrice = _basePrice;
-    final effectivePrice = _effectivePrice;
+    final afterFriends = _priceAfterFriendDiscount;
+    final finalPrice = _effectivePrice;
+    final hasFriendDiscount = _friendDiscount > 0;
+    final hasCoupon = _couponValid;
+
+    final priceSegments = <String>['${basePrice.toStringAsFixed(2)}€'];
+    if (hasFriendDiscount)
+      priceSegments.add('${afterFriends.toStringAsFixed(2)}€');
+    if (hasCoupon) priceSegments.add('${finalPrice.toStringAsFixed(2)}€');
+
+    final discountLabel =
+        hasFriendDiscount
+            ? '-${(_friendDiscount * 100).round()}% dagli amici invitati'
+            : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -224,15 +294,27 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
         ),
         const SizedBox(height: 4),
         Text(
-          _couponValid
-              ? '${basePrice.toStringAsFixed(2)}€ → ${effectivePrice.toStringAsFixed(2)}€'
-              : '${effectivePrice.toStringAsFixed(2)}€',
+          priceSegments.join(' → '),
           style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: _couponValid ? kGreen : kBluScuro,
+            color: hasFriendDiscount || hasCoupon ? kGreen : kBluScuro,
           ),
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 4),
+        Text(
+          discountLabel,
+          style: textTheme.bodySmall?.copyWith(
+            color: kBluScuro.withValues(alpha: 0.7),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        if (hasCoupon)
+          Text(
+            '-${(_couponDiscountPercent * 100).round()}% coupon attivo',
+            style: textTheme.bodySmall?.copyWith(color: kGreen),
+            textAlign: TextAlign.center,
+          ),
       ],
     );
   }
@@ -429,6 +511,8 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
         'activationDate': DateTime.now(),
         'expirationDate': DateTime.now().add(const Duration(days: 365)),
         'paymentProvider': provider,
+        'newMember': false,
+        'amiciInvitati': <String>[],
         if (paymentId != null) 'paymentId': paymentId,
       });
     } catch (e) {

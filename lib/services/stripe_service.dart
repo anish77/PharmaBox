@@ -113,6 +113,8 @@ class StripeService {
             'activationDate': DateTime.now(),
             'expirationDate': DateTime.now().add(const Duration(days: 365)),
             'paymentIntentId': paymentIntentId,
+            'newMember': false,
+            'amiciInvitati': <String>[],
           });
       logger.i('✅ Abbonamento Stripe attivato per ${user.uid}');
     } catch (e) {

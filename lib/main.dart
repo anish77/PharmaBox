@@ -158,6 +158,8 @@ class _MyAppState extends State<MyApp> {
         'activationDate': DateTime.now(),
         'expirationDate': DateTime.now().add(const Duration(days: 365)),
         'paymentProvider': provider,
+        'newMember': false,
+        'amiciInvitati': <String>[],
         if (id != null) 'paymentId': id,
       });
       debugPrint('✅ Abbonamento attivato con $provider per ${user.uid}');
