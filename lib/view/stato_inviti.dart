@@ -85,11 +85,11 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
         double discount = invitedFriends * discountPerFriend;
         if (discount > 1) discount = 1;
 
-        final double toPay = 1 - discount;
-        final double percentToPay = toPay.clamp(0.0, 1.0);
+        //final double toPay = 1 - discount;
+        final double percentDiscount = discount; //toPay.clamp(0.0, 1.0);
         final bool canPop = Navigator.of(context).canPop();
 
-        final showsCongratulation = percentToPay <= 0.0;
+        final showsCongratulation = percentDiscount >= 1.0;
 
         return Scaffold(
           appBar: AppBar(
@@ -101,7 +101,7 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                     )
                     : null,
             title: const Text(
-              kInviti,
+              "Sconto abbonamento",
               style: TextStyle(
                 color: kBluScuro,
                 fontWeight: FontWeight.bold,
@@ -159,9 +159,9 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                         CircularPercentIndicator(
                           radius: 100.0,
                           lineWidth: 16.0,
-                          percent: percentToPay,
+                          percent: percentDiscount,
                           center: Text(
-                            "${(percentToPay * 100).toInt()}%",
+                            "${(percentDiscount * 100).toInt()}%",
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -174,11 +174,29 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                         const SizedBox(height: 10),
                         Text(
                           invitedFriends == 0
-                              ? kNessunInvito
+                              ? 'Invita i tuoi primi amici e ottieni subito il tuo sconto abbonamento!'
                               : "Hai invitato $invitedFriends amic${invitedFriends == 1 ? 'o' : 'i'}",
-                          style: const TextStyle(fontSize: 18),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600, // semibold
+                            height: 1.3, // più leggibile
+                          ),
                           textAlign: TextAlign.center,
                         ),
+
+                        const SizedBox(height: 12),
+
+                        if (invitedFriends == 0)
+                          Text(
+                            '• Ogni amico = 10% di sconto\n'
+                            '• Con 10 amici = abbonamento GRATIS',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.4,
+                              color: Colors.black87,
+                            ),
+                            textAlign: TextAlign.start,
+                          ),
                       ],
                     ),
 
