@@ -293,8 +293,7 @@ class InfoPage extends StatelessWidget {
                     _buildSection(
                       icon: Icons.mail_outline,
                       title: 'Contattaci',
-                      subtitle:
-                          'Scrivici a support@pharmabox.it oppure al numero 800 123 456.',
+                      subtitle: 'Scrivici a support@pharmabox.it',
                     ),
                     _buildSection(
                       icon: Icons.lock_reset,
@@ -352,6 +351,12 @@ class InfoPage extends StatelessWidget {
 
                     return ListView(
                       children: [
+                        _buildSection(
+                          icon: Icons.web,
+                          title: 'Website',
+                          subtitle: 'Visita il nostro sito web',
+                          onTap: () => OpenEmail().openWebsite(kWebsiteURL),
+                        ),
                         _buildSection(
                           icon: Icons.mail_outline,
                           title: 'Contattaci',

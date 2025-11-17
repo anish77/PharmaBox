@@ -6,6 +6,7 @@ const kSconto10 = 0.10;
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
 const kDebugMode = 'live'; // 'test' or 'live'
+const kWebsiteURL = 'https://www.doublecore.it';
 
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
