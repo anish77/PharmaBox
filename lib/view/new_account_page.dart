@@ -52,6 +52,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
         'password': _enteredPassword,
         'liste': [],
         'isActive': false,
+        'newMember': true,
         'expirationDate': Timestamp.fromDate(expirationDate),
         'codiceInvito': codiceInvito,
         'amiciInvitati': [],

@@ -45,6 +45,14 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
 
   bool get _couponValid => _couponStatus == _CouponStatus.valid;
   bool get _isValidatingCoupon => _couponStatus == _CouponStatus.validating;
+  bool? _isNewMember;
+  bool _loadingNewMember = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNewMemberFlag();
+  }
 
   @override
   void dispose() {
@@ -53,6 +61,19 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
     super.dispose();
   }
 
+  Future<void> _loadNewMemberFlag() async {
+    final user = _auth.currentUser;
+    bool result = false;
+    if (user != null) {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      result = (doc.data()?['newMember'] as bool?) ?? false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _isNewMember = result;
+      _loadingNewMember = false;
+    });
+  }
   // ---------------------------- UI ----------------------------
 
   @override
@@ -65,7 +86,7 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
         titleSpacing: 0,
         centerTitle: false,
         title: const Text(
-          'Diventa membro',
+          'Attiva abbonamento',
           style: TextStyle(
             color: kBluScuro,
             fontWeight: FontWeight.bold,
@@ -92,7 +113,10 @@ class _NonAutorizzatoState extends State<NonAutorizzato> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _buildCouponSection(context),
+                    if (_loadingNewMember)
+                      const SizedBox.shrink()
+                    else if (_isNewMember == true)
+                      _buildCouponSection(context),
                   ],
                 ),
               ),
