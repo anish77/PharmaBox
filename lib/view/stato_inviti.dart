@@ -189,7 +189,7 @@ class _StatoInvitiPageState extends State<StatoInvitiPage> {
                         if (invitedFriends == 0)
                           Text(
                             '• Ogni amico = 10% di sconto\n'
-                            '• Con 10 amici = abbonamento GRATIS',
+                            '• Con 10 amici = abbonamento GRATIS!',
                             style: const TextStyle(
                               fontSize: 16,
                               height: 1.4,

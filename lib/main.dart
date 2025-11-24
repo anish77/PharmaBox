@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,7 +10,6 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/firebase/firebase_options.dart';
 import 'package:pharma_box/view/login_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_links/uni_links.dart';
 import 'package:http/http.dart' as http;
 
 // Provider BLE globali
@@ -71,7 +71,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  StreamSubscription? _linkSub;
+  AppLinks? _appLinks;
+  StreamSubscription<Uri>? _linkSub;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -83,16 +84,19 @@ class _MyAppState extends State<MyApp> {
 
   /// 🔹 Ascolta deep link (PayPal o Stripe)
   Future<void> _initDeepLinkListener() async {
+    _appLinks ??= AppLinks();
     try {
-      final initialUri = await getInitialUri();
+      final initialUri = await _appLinks!.getInitialLink();
       if (initialUri != null) await _handleUri(initialUri);
     } catch (e) {
       debugPrint('Errore iniziale URI: $e');
     }
 
-    _linkSub = uriLinkStream.listen((uri) async {
-      if (uri != null) await _handleUri(uri);
-    }, onError: (err) => debugPrint('Errore deep link: $err'));
+    await _linkSub?.cancel();
+    _linkSub = _appLinks!.uriLinkStream.listen(
+      (uri) async => _handleUri(uri),
+      onError: (err) => debugPrint('Errore deep link: $err'),
+    );
   }
 
   /// 🔹 Gestisce i deep link
