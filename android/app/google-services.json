@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:53295815532:android:cd533c5ba9bd5003a63149",
+        "mobilesdk_app_id": "1:53295815532:android:e6e5a77eea9adbf3a63149",
         "android_client_info": {
-          "package_name": "com.example.pharma_box"
+          "package_name": "com.pharma_box"
         }
       },
       "oauth_client": [],
