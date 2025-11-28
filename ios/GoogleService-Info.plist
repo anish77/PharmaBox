@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.pharmaBox</string>
+	<string>com.pharmabox</string>
 	<key>PROJECT_ID</key>
 	<string>pharmabox-1c149</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:53295815532:ios:25d49d455a1bc89ca63149</string>
+	<string>1:53295815532:ios:b3b7e339008db440a63149</string>
 </dict>
 </plist>
