@@ -184,6 +184,7 @@ class _LoginPageState extends State<LoginPage> {
                               CustomTextFormField(
                                 label: 'Password',
                                 obscureText: true,
+                                enableVisibilityToggle: true,
                                 controller: _passwordController,
                                 validator: (value) {
                                   if (value == null ||

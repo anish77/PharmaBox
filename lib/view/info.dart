@@ -106,15 +106,31 @@ class InfoPage extends StatelessWidget {
     } on auth.FirebaseAuthException catch (error) {
       if (error.code == 'requires-recent-login') {
         final passwordController = TextEditingController();
+        bool obscurePassword = true;
         final retry = await showDialog<bool>(
           context: context,
-          builder:
-              (dialogContext) => AlertDialog(
+          builder: (dialogContext) {
+            return StatefulBuilder(
+              builder: (context, setState) => AlertDialog(
                 title: const Text('Reinserisci la password'),
                 content: TextField(
                   controller: passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  obscureText: obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscurePassword = !obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
                 ),
                 actions: [
                   TextButton(
@@ -127,6 +143,8 @@ class InfoPage extends StatelessWidget {
                   ),
                 ],
               ),
+            );
+          },
         );
 
         if (retry == true) {

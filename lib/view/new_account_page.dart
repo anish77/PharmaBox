@@ -210,6 +210,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
                           label: 'Password',
                           labelStyle: const TextStyle(color: kBluScuro),
                           obscureText: true,
+                          enableVisibilityToggle: true,
                           validator: (value) {
                             if (value != null &&
                                 isPasswordSecure(value) == false) {
