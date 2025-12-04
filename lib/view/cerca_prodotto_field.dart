@@ -67,25 +67,36 @@ class CercaProdottoBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isValid = query.trim().length >= 3;
-    return Padding(
-      padding: const EdgeInsets.only(top: 18, bottom: 45, left: 24, right: 24),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: isValid ? onPressed : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(32),
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      bottom: true,
+      child: Padding(
+        padding: const EdgeInsets.only(
+          top: 18,
+          bottom: 16,
+          left: 24,
+          right: 24,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: isValid ? onPressed : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(32),
+              ),
             ),
-          ),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),

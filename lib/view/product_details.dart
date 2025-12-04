@@ -156,7 +156,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -283,48 +283,54 @@ class _ProductDetailsState extends State<ProductDetails> {
             ),
 
             // bottone fisso in basso
-            Padding(
-              padding: const EdgeInsets.only(top: 24, bottom: 24),
-              child: ValueListenableBuilder<List<Prodotto>>(
-                valueListenable: Carrello.instance.prodotti,
-                builder: (context, prodotti, _) {
-                  final index = prodotti.indexWhere(
-                    (p) => p.minsan == widget.prodotto.minsan,
-                  );
-                  final isInList = index >= 0;
+            SafeArea(
+              top: false,
+              left: false,
+              right: false,
+              bottom: true,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 24, bottom: 16),
+                child: ValueListenableBuilder<List<Prodotto>>(
+                  valueListenable: Carrello.instance.prodotti,
+                  builder: (context, prodotti, _) {
+                    final index = prodotti.indexWhere(
+                      (p) => p.minsan == widget.prodotto.minsan,
+                    );
+                    final isInList = index >= 0;
 
-                  if (isInList) {
-                    final currentQty = prodotti[index].pezzi.value;
-                    return CounterButtonLarge(
-                      key: ValueKey(currentQty),
-                      initialValue: currentQty,
-                      onChanged: (newValue) {
-                        // Aggiorna la quantità nel carrello
-                        Carrello.instance.aggiornaQuantita(
-                          prodotti[index],
-                          newValue,
-                        );
+                    if (isInList) {
+                      final currentQty = prodotti[index].pezzi.value;
+                      return CounterButtonLarge(
+                        key: ValueKey(currentQty),
+                        initialValue: currentQty,
+                        onChanged: (newValue) {
+                          // Aggiorna la quantità nel carrello
+                          Carrello.instance.aggiornaQuantita(
+                            prodotti[index],
+                            newValue,
+                          );
+                        },
+                      );
+                    }
+
+                    return CustomButton(
+                      title: kAddToList,
+                      titleColor: kWhite,
+                      backgroundColor: kPrimary,
+                      onPressed: () {
+                        // Se non presente, aggiunge con quantità almeno 1
+                        if (widget.prodotto.pezzi.value <= 0) {
+                          widget.prodotto.pezzi.value = 1;
+                        }
+                        Carrello.instance.aggiungiProdotto(widget.prodotto);
+                        // Torna indietro automaticamente solo se richiesto
+                        if (widget.popOnAdd) {
+                          Navigator.pop(context);
+                        }
                       },
                     );
-                  }
-
-                  return CustomButton(
-                    title: kAddToList,
-                    titleColor: kWhite,
-                    backgroundColor: kPrimary,
-                    onPressed: () {
-                      // Se non presente, aggiunge con quantità almeno 1
-                      if (widget.prodotto.pezzi.value <= 0) {
-                        widget.prodotto.pezzi.value = 1;
-                      }
-                      Carrello.instance.aggiungiProdotto(widget.prodotto);
-                      // Torna indietro automaticamente solo se richiesto
-                      if (widget.popOnAdd) {
-                        Navigator.pop(context);
-                      }
-                    },
-                  );
-                },
+                  },
+                ),
               ),
             ),
           ],

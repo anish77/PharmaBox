@@ -204,7 +204,8 @@ class _LoginPageState extends State<LoginPage> {
                                 contentPadding: EdgeInsets.zero,
                                 value: _rememberCredentials,
                                 activeColor: kPrimary,
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                                 title: const Text('Ricorda credenziali'),
                                 onChanged: (value) {
                                   setState(() {
@@ -256,9 +257,11 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   // Bottone crea account
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 45),
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 16,
+                    ),
                     child: CustomButton(
-                      title: "Crea nuovo account",
+                      title: 'Crea nuovo account',
                       titleColor: kPrimary,
                       backgroundColor: kSecondary,
                       onPressed: () {

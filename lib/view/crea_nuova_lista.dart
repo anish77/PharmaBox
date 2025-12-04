@@ -1042,14 +1042,25 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  title: 'Scarica liste selezionate',
-                  titleColor: Colors.white,
-                  backgroundColor: kPrimary,
-                  onPressed:
-                      _checkedLists.isEmpty ? null : _scaricaListeSelezionate,
+              SafeArea(
+                top: false,
+                left: false,
+                right: false,
+                bottom: true,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      title: 'Scarica liste selezionate',
+                      titleColor: Colors.white,
+                      backgroundColor: kPrimary,
+                      onPressed:
+                          _checkedLists.isEmpty
+                              ? null
+                              : _scaricaListeSelezionate,
+                    ),
+                  ),
                 ),
               ),
             ],

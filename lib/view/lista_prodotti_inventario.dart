@@ -89,24 +89,31 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
             },
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 24, bottom: 45),
-          child: ValueListenableBuilder<List<Prodotto>>(
-            valueListenable: Carrello.instance.prodotti,
-            builder: (context, prodotti, _) {
-              final sorted = List<Prodotto>.from(prodotti)..sort(
-                (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
-              );
-              return CustomButton(
-                title: 'Svuota lista',
-                titleColor: kWhite,
-                backgroundColor: kPrimary,
-                onPressed:
-                    sorted.isEmpty
-                        ? null
-                        : () => {Carrello.instance.svuotaLista()},
-              );
-            },
+        SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          bottom: true,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 24, bottom: 16),
+            child: ValueListenableBuilder<List<Prodotto>>(
+              valueListenable: Carrello.instance.prodotti,
+              builder: (context, prodotti, _) {
+                final sorted = List<Prodotto>.from(prodotti)..sort(
+                  (a, b) =>
+                      a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+                );
+                return CustomButton(
+                  title: 'Svuota lista',
+                  titleColor: kWhite,
+                  backgroundColor: kPrimary,
+                  onPressed:
+                      sorted.isEmpty
+                          ? null
+                          : () => Carrello.instance.svuotaLista(),
+                );
+              },
+            ),
           ),
         ),
       ],
