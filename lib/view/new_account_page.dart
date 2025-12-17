@@ -56,6 +56,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
         'expirationDate': Timestamp.fromDate(expirationDate),
         'codiceInvito': codiceInvito,
         'amiciInvitati': [],
+        'rinnovoAutomatico': false,
       });
 
       logger.i('Account created: $userCredential');

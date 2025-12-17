@@ -11,7 +11,6 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/view/info.dart';
 import 'package:pharma_box/view/invita_un_amico.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
-import 'package:pharma_box/view/stato_inviti.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
@@ -566,21 +565,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                     builder:
                         (context) =>
                             InvitaUnAmicoPage(referralCode: referralCode),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.leaderboard, color: kPrimary),
-              title: const Text(
-                'Stato inviti',
-                style: TextStyle(color: kBluScuro),
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const StatoInvitiPage(),
                   ),
                 );
               },

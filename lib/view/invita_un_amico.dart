@@ -165,7 +165,7 @@ class InvitaUnAmicoPage extends StatelessWidget {
                               : const Rect.fromLTWH(0, 0, 1, 1);
 
                       final message =
-                          'Registrati su $kAppName e usa il mio codice $referralCode per ricevere lo $kBuonoSconto10 !';
+                          'Registrati su $kAppName e usa il mio codice $referralCode per ricevere 1 mese gratuito!';
                       SharePlus.instance.share(
                         ShareParams(
                           text: message,

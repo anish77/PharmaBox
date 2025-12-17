@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/login_page.dart';
+import 'package:pharma_box/view/stato_abbonamento.dart';
 
 class InfoPage extends StatelessWidget {
   const InfoPage({super.key});
@@ -111,38 +112,39 @@ class InfoPage extends StatelessWidget {
           context: context,
           builder: (dialogContext) {
             return StatefulBuilder(
-              builder: (context, setState) => AlertDialog(
-                title: const Text('Reinserisci la password'),
-                content: TextField(
-                  controller: passwordController,
-                  obscureText: obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+              builder:
+                  (context, setState) => AlertDialog(
+                    title: const Text('Reinserisci la password'),
+                    content: TextField(
+                      controller: passwordController,
+                      obscureText: obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              obscurePassword = !obscurePassword;
+                            });
+                          },
+                        ),
                       ),
-                      onPressed: () {
-                        setState(() {
-                          obscurePassword = !obscurePassword;
-                        });
-                      },
                     ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: const Text('Annulla'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: const Text('Conferma'),
+                      ),
+                    ],
                   ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(false),
-                    child: const Text('Annulla'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(true),
-                    child: const Text('Conferma'),
-                  ),
-                ],
-              ),
             );
           },
         );
@@ -326,9 +328,8 @@ class InfoPage extends StatelessWidget {
                     ),
                     _buildSection(
                       icon: Icons.calendar_today,
-                      title: 'Quando scade l\'abbonamento',
-                      subtitle:
-                          'Accedi per visualizzare la tua data di scadenza.',
+                      title: 'Abbonamento',
+                      subtitle: 'Dettagli piano',
                     ),
                     _buildSection(
                       icon: Icons.delete_forever,
@@ -404,8 +405,14 @@ class InfoPage extends StatelessWidget {
                         ),
                         _buildSection(
                           icon: Icons.calendar_today,
-                          title: 'Quando scade l\'abbonamento',
-                          subtitle: expirationSubtitle,
+                          title: 'Abbonamento',
+                          subtitle: 'Dettagli piano',
+                          onTap:
+                              () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const StatoAbbonamentoPage(),
+                                ),
+                              ),
                         ),
                         _buildSection(
                           icon: Icons.delete_forever,
