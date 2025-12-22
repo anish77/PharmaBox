@@ -1,11 +1,9 @@
 import 'package:flutter/widgets.dart';
 
-const kAbbonamento = 199;
-const kBuonoSconto10 = "SCONTO di 10%";
-const kSconto10 = 0.10;
+const kAbbonamento = 250.00;
+const kstoreKeySubscription = 'prova_abbonamento';
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
-const kDebugMode = 'live'; // 'test' or 'live'
 const kWebsiteURL = 'https://www.doublecore.it';
 
 const kAppName = 'PharmaBox';
@@ -56,6 +54,7 @@ const kInvitaAltriAmici =
     'Invita altri amici per ridurre ancora il costo dell’abbonamento!';
 const kRegCompletata = 'Registrazione completata ✅';
 const kInviti = 'I miei inviti';
+const kAttivaAbbonamento = 'Attiva abbonamento';
 
 // Password sicura
 // Requisiti:
@@ -101,10 +100,10 @@ const kDiventaMembro = 'Diventa membro';
 //InviteFriendPage
 const kInvitaAmico = 'Invita un amico';
 const kInformazioni = 'Informazioni';
-const kSconto = 'Ottieni fino a 100% di sconto sul prossimo abbonamento!';
+const kSconto = 'Invita un’amico e ottieni mesi gratuiti!';
 const kLinkRiferimento = 'Condividi il tuo link di riferimento';
 const kInvitaAmici = 'Invita amici a registrarsi';
-const kGuadagna = 'Per ogni amico invitato guadagna 10% di sconto ';
+const kGuadagna = 'Per ogni amico invitata ottieni 1 mese gratuito';
 
 // API endpoints
 const kFarmadatiEndpoint =
