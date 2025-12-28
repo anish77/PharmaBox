@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
-import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/login_page.dart';
 import 'package:pharma_box/view/stato_abbonamento.dart';
 
@@ -106,6 +105,7 @@ class InfoPage extends StatelessWidget {
       await sendVerification();
     } on auth.FirebaseAuthException catch (error) {
       if (error.code == 'requires-recent-login') {
+        if (!context.mounted) return;
         final passwordController = TextEditingController();
         bool obscurePassword = true;
         final retry = await showDialog<bool>(
@@ -371,25 +371,6 @@ class InfoPage extends StatelessWidget {
                     return ListView(
                       children: [
                         _buildSection(
-                          icon: Icons.web,
-                          title: 'Website',
-                          subtitle: 'Visita il nostro sito web',
-                          onTap: () => OpenEmail().openWebsite(kWebsiteURL),
-                        ),
-                        _buildSection(
-                          icon: Icons.mail_outline,
-                          title: 'Contattaci',
-                          subtitle: 'Scrivici a support@pharmabox.it',
-                          onTap: OpenEmail().contattaci(
-                            context,
-                            kRichiestaAssistenza,
-                            kSupporto,
-                            fallbackMessage:
-                                "Impossibile aprire l'app email.\nContattaci all'indirizzo: $kMembershipEmail",
-                            onFailure: () => Navigator.of(context).maybePop(),
-                          ),
-                        ),
-                        _buildSection(
                           icon: Icons.lock_reset,
                           title: 'Cambia password',
                           subtitle:
@@ -414,6 +395,7 @@ class InfoPage extends StatelessWidget {
                                 ),
                               ),
                         ),
+
                         _buildSection(
                           icon: Icons.delete_forever,
                           title: 'Cancella il mio account',

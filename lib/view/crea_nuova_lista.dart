@@ -8,14 +8,16 @@ import 'package:logger/web.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/info.dart';
-import 'package:pharma_box/view/invita_un_amico.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
+import 'package:pharma_box/view/stato_abbonamento.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CreaNuovaLista extends StatefulWidget {
   const CreaNuovaLista({super.key});
@@ -423,6 +425,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     );
   }
 
+  // 🔹 Apri Privacy Policy
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    try {
+      await launchUrl(Uri.parse(kPrivacyPolicyUrl));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossibile aprire la Privacy Policy.')),
+      );
+    }
+  }
+
   Future<void> _exportListeAsCsv(List<_ListExportData> liste) async {
     final buffer = StringBuffer()..writeln('Lista;Nome prodotto;Minsan;Pezzi');
 
@@ -553,23 +567,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.group_add, color: kPrimary),
-              title: const Text(
-                'Invita un amico',
-                style: TextStyle(color: kBluScuro),
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            InvitaUnAmicoPage(referralCode: referralCode),
-                  ),
-                );
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.info, color: kPrimary),
               title: const Text('Info', style: TextStyle(color: kBluScuro)),
               onTap: () {
@@ -579,6 +576,49 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 );
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.web_asset, color: kPrimary),
+              title: const Text('Website', style: TextStyle(color: kBluScuro)),
+              onTap: () => {OpenEmail().openWebsite(kWebsiteURL)},
+            ),
+            ListTile(
+              leading: const Icon(Icons.mail_outline, color: kPrimary),
+              title: const Text(
+                'Contattaci',
+                style: TextStyle(color: kBluScuro),
+              ),
+              onTap: OpenEmail().contattaci(
+                context,
+                kRichiestaAssistenza,
+                kSupporto,
+                fallbackMessage:
+                    "Impossibile aprire l'app email.\nContattaci all'indirizzo: $kMembershipEmail",
+                onFailure: () => Navigator.of(context).maybePop(),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today, color: kPrimary),
+              title: const Text(
+                'Abbonamento',
+                style: TextStyle(color: kBluScuro),
+              ),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const StatoAbbonamentoPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip, color: kPrimary),
+              title: const Text(
+                'Privacy Policy',
+                style: TextStyle(color: kBluScuro),
+              ),
+              onTap: () => _openPrivacyPolicy(context),
+            ),
+
             ListTile(
               leading: const Icon(Icons.logout, color: kRed),
               title: const Text(
