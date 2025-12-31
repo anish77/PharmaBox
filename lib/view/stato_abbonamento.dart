@@ -86,7 +86,7 @@ class _StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
                       expirationSubtitle =
                           'Nessuna data di scadenza disponibile.';
                     } else {
-                      final d = expirationDate!.toLocal();
+                      final d = expirationDate.toLocal();
                       final formatted =
                           '${d.day.toString().padLeft(2, '0')}/'
                           '${d.month.toString().padLeft(2, '0')}/'
@@ -140,8 +140,11 @@ class _StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
                                               ),
                                               TextButton(
                                                 onPressed: () async {
+                                                  final navigator =
+                                                      Navigator.of(context);
+
                                                   await _rinnovoAutomatico();
-                                                  Navigator.pop(context);
+                                                  navigator.pop();
                                                 },
                                                 child: const Text('Conferma'),
                                               ),

@@ -1189,7 +1189,7 @@ PODS:
     - abseil/xcprivacy
   - abseil/xcprivacy (1.20240722.0)
   - app_links (6.4.1):
-    - Flutter
+    - FlutterMacOS
   - BoringSSL-GRPC (0.0.37):
     - BoringSSL-GRPC/Implementation (= 0.0.37)
     - BoringSSL-GRPC/Interface (= 0.0.37)
@@ -1197,9 +1197,10 @@ PODS:
     - BoringSSL-GRPC/Interface (= 0.0.37)
   - BoringSSL-GRPC/Interface (0.0.37)
   - cloud_firestore (6.1.0):
-    - Firebase/Firestore (= 12.4.0)
+    - Firebase/CoreOnly (~> 12.4.0)
+    - Firebase/Firestore (~> 12.4.0)
     - firebase_core
-    - Flutter
+    - FlutterMacOS
   - Firebase/Auth (12.4.0):
     - Firebase/CoreOnly
     - FirebaseAuth (~> 12.4.0)
@@ -1209,12 +1210,13 @@ PODS:
     - Firebase/CoreOnly
     - FirebaseFirestore (~> 12.4.0)
   - firebase_auth (6.1.2):
-    - Firebase/Auth (= 12.4.0)
+    - Firebase/Auth (~> 12.4.0)
+    - Firebase/CoreOnly (~> 12.4.0)
     - firebase_core
-    - Flutter
+    - FlutterMacOS
   - firebase_core (4.2.1):
-    - Firebase/CoreOnly (= 12.4.0)
-    - Flutter
+    - Firebase/CoreOnly (~> 12.4.0)
+    - FlutterMacOS
   - FirebaseAppCheckInterop (12.4.0)
   - FirebaseAuth (12.4.0):
     - FirebaseAppCheckInterop (~> 12.4.0)
@@ -1255,12 +1257,12 @@ PODS:
     - leveldb-library (~> 1.22)
     - nanopb (~> 3.30910.0)
   - FirebaseSharedSwift (12.4.0)
-  - Flutter (1.0.0)
   - flutter_blue_plus_darwin (0.0.2):
     - Flutter
     - FlutterMacOS
-  - flutter_secure_storage (6.0.0):
-    - Flutter
+  - flutter_secure_storage_macos (6.1.3):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
   - GoogleUtilities/AppDelegateSwizzler (8.1.0):
     - GoogleUtilities/Environment
     - GoogleUtilities/Logger
@@ -1387,94 +1389,34 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - permission_handler_apple (9.3.0):
-    - Flutter
   - purchases_flutter (9.10.1):
-    - Flutter
+    - FlutterMacOS
     - PurchasesHybridCommon (= 17.24.0)
   - PurchasesHybridCommon (17.24.0):
     - RevenueCat (= 5.50.1)
-  - RecaptchaInterop (101.0.0)
   - RevenueCat (5.50.1)
   - share_plus (0.0.1):
-    - Flutter
-  - Stripe (24.23.3):
-    - StripeApplePay (= 24.23.3)
-    - StripeCore (= 24.23.3)
-    - StripePayments (= 24.23.3)
-    - StripePaymentsUI (= 24.23.3)
-    - StripeUICore (= 24.23.3)
-  - stripe_ios (0.0.1):
-    - Flutter
-    - Stripe (~> 24.23.0)
-    - stripe_ios/stripe_ios (= 0.0.1)
-    - stripe_ios/stripe_objc (= 0.0.1)
-    - StripeApplePay (~> 24.23.0)
-    - StripeFinancialConnections (~> 24.23.0)
-    - StripePayments (~> 24.23.0)
-    - StripePaymentSheet (~> 24.23.0)
-    - StripePaymentsUI (~> 24.23.0)
-  - stripe_ios/stripe_ios (0.0.1):
-    - Flutter
-    - Stripe (~> 24.23.0)
-    - stripe_ios/stripe_objc
-    - StripeApplePay (~> 24.23.0)
-    - StripeFinancialConnections (~> 24.23.0)
-    - StripePayments (~> 24.23.0)
-    - StripePaymentSheet (~> 24.23.0)
-    - StripePaymentsUI (~> 24.23.0)
-  - stripe_ios/stripe_objc (0.0.1):
-    - Flutter
-    - Stripe (~> 24.23.0)
-    - StripeApplePay (~> 24.23.0)
-    - StripeFinancialConnections (~> 24.23.0)
-    - StripePayments (~> 24.23.0)
-    - StripePaymentSheet (~> 24.23.0)
-    - StripePaymentsUI (~> 24.23.0)
-  - StripeApplePay (24.23.3):
-    - StripeCore (= 24.23.3)
-  - StripeCore (24.23.3)
-  - StripeFinancialConnections (24.23.3):
-    - StripeCore (= 24.23.3)
-    - StripeUICore (= 24.23.3)
-  - StripePayments (24.23.3):
-    - StripeCore (= 24.23.3)
-    - StripePayments/Stripe3DS2 (= 24.23.3)
-  - StripePayments/Stripe3DS2 (24.23.3):
-    - StripeCore (= 24.23.3)
-  - StripePaymentSheet (24.23.3):
-    - StripeApplePay (= 24.23.3)
-    - StripeCore (= 24.23.3)
-    - StripePayments (= 24.23.3)
-    - StripePaymentsUI (= 24.23.3)
-  - StripePaymentsUI (24.23.3):
-    - StripeCore (= 24.23.3)
-    - StripePayments (= 24.23.3)
-    - StripeUICore (= 24.23.3)
-  - StripeUICore (24.23.3):
-    - StripeCore (= 24.23.3)
-  - url_launcher_ios (0.0.1):
-    - Flutter
+    - FlutterMacOS
+  - url_launcher_macos (0.0.1):
+    - FlutterMacOS
   - webview_flutter_wkwebview (0.0.1):
     - Flutter
     - FlutterMacOS
 
 DEPENDENCIES:
-  - app_links (from `.symlinks/plugins/app_links/ios`)
-  - cloud_firestore (from `.symlinks/plugins/cloud_firestore/ios`)
-  - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
-  - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
-  - Flutter (from `Flutter`)
-  - flutter_blue_plus_darwin (from `.symlinks/plugins/flutter_blue_plus_darwin/darwin`)
-  - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
-  - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/darwin`)
-  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
-  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-  - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
-  - share_plus (from `.symlinks/plugins/share_plus/ios`)
-  - stripe_ios (from `.symlinks/plugins/stripe_ios/ios`)
-  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
-  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
+  - app_links (from `Flutter/ephemeral/.symlinks/plugins/app_links/macos`)
+  - cloud_firestore (from `Flutter/ephemeral/.symlinks/plugins/cloud_firestore/macos`)
+  - firebase_auth (from `Flutter/ephemeral/.symlinks/plugins/firebase_auth/macos`)
+  - firebase_core (from `Flutter/ephemeral/.symlinks/plugins/firebase_core/macos`)
+  - flutter_blue_plus_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_blue_plus_darwin/darwin`)
+  - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - in_app_purchase_storekit (from `Flutter/ephemeral/.symlinks/plugins/in_app_purchase_storekit/darwin`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
+  - purchases_flutter (from `Flutter/ephemeral/.symlinks/plugins/purchases_flutter/macos`)
+  - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
+  - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
+  - webview_flutter_wkwebview (from `Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -1497,57 +1439,44 @@ SPEC REPOS:
     - leveldb-library
     - nanopb
     - PurchasesHybridCommon
-    - RecaptchaInterop
     - RevenueCat
-    - Stripe
-    - StripeApplePay
-    - StripeCore
-    - StripeFinancialConnections
-    - StripePayments
-    - StripePaymentSheet
-    - StripePaymentsUI
-    - StripeUICore
 
 EXTERNAL SOURCES:
   app_links:
-    :path: ".symlinks/plugins/app_links/ios"
+    :path: Flutter/ephemeral/.symlinks/plugins/app_links/macos
   cloud_firestore:
-    :path: ".symlinks/plugins/cloud_firestore/ios"
+    :path: Flutter/ephemeral/.symlinks/plugins/cloud_firestore/macos
   firebase_auth:
-    :path: ".symlinks/plugins/firebase_auth/ios"
+    :path: Flutter/ephemeral/.symlinks/plugins/firebase_auth/macos
   firebase_core:
-    :path: ".symlinks/plugins/firebase_core/ios"
-  Flutter:
-    :path: Flutter
+    :path: Flutter/ephemeral/.symlinks/plugins/firebase_core/macos
   flutter_blue_plus_darwin:
-    :path: ".symlinks/plugins/flutter_blue_plus_darwin/darwin"
-  flutter_secure_storage:
-    :path: ".symlinks/plugins/flutter_secure_storage/ios"
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_blue_plus_darwin/darwin
+  flutter_secure_storage_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
   in_app_purchase_storekit:
-    :path: ".symlinks/plugins/in_app_purchase_storekit/darwin"
+    :path: Flutter/ephemeral/.symlinks/plugins/in_app_purchase_storekit/darwin
   path_provider_foundation:
-    :path: ".symlinks/plugins/path_provider_foundation/darwin"
-  permission_handler_apple:
-    :path: ".symlinks/plugins/permission_handler_apple/ios"
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
   purchases_flutter:
-    :path: ".symlinks/plugins/purchases_flutter/ios"
+    :path: Flutter/ephemeral/.symlinks/plugins/purchases_flutter/macos
   share_plus:
-    :path: ".symlinks/plugins/share_plus/ios"
-  stripe_ios:
-    :path: ".symlinks/plugins/stripe_ios/ios"
-  url_launcher_ios:
-    :path: ".symlinks/plugins/url_launcher_ios/ios"
+    :path: Flutter/ephemeral/.symlinks/plugins/share_plus/macos
+  url_launcher_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
   webview_flutter_wkwebview:
-    :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
+    :path: Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin
 
 SPEC CHECKSUMS:
   abseil: a05cc83bf02079535e17169a73c5be5ba47f714b
-  app_links: 3dbc685f76b1693c66a6d9dd1e9ab6f73d97dc0a
+  app_links: 05a6ec2341985eb05e9f97dc63f5837c39895c3f
   BoringSSL-GRPC: dded2a44897e45f28f08ae87a55ee4bcd19bc508
-  cloud_firestore: 7a6d8a533ec7418a7fe46b3a5dabf55661a5b298
+  cloud_firestore: 70eeb80d0c7613ac5e0e72f7de9a2fead7a2e15a
   Firebase: f07b15ae5a6ec0f93713e30b923d9970d144af3e
-  firebase_auth: 9225db04db5d8e3b46dc8940e04bc6aec6833e27
-  firebase_core: f1aafb21c14f497e5498f7ffc4dc63cbb52b2594
+  firebase_auth: 87ea88759d0282ccf1e2afe96f88ff3c07547938
+  firebase_core: e054894ab56033ef9bcbe2d9eac9395e5306e2fc
   FirebaseAppCheckInterop: f734c802f21fe1da0837708f0f9a27218c8a4ed0
   FirebaseAuth: 4a2aed737c84114a9d9b33d11ae1b147d6b94889
   FirebaseAuthInterop: 858e6b754966e70740a4370dd1503dfffe6dbb49
@@ -1557,9 +1486,9 @@ SPEC CHECKSUMS:
   FirebaseFirestore: 2a6183381cf7679b1bb000eb76a8e3178e25dee2
   FirebaseFirestoreInternal: 6577a27cd5dc3722b900042527f86d4ea1626134
   FirebaseSharedSwift: 93426a1de92f19e1199fac5295a4f8df16458daa
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_blue_plus_darwin: 20a08bfeaa0f7804d524858d3d8744bcc1b6dbc3
-  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  flutter_secure_storage_macos: 7f45e30f838cf2659862a4e4e3ee1c347c2b3b54
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   "gRPC-C++": cc207623316fb041a7a3e774c252cf68a058b9e8
   gRPC-Core: 860978b7db482de8b4f5e10677216309b5ff6330
@@ -1568,24 +1497,13 @@ SPEC CHECKSUMS:
   leveldb-library: cc8b8f8e013647a295ad3f8cd2ddf49a6f19be19
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
-  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
-  purchases_flutter: 9aed1e2e783aaf62222c582f2e5624c72ad8d05d
+  purchases_flutter: e84310a9697c180a00d08dea1d6456059e5a8f8f
   PurchasesHybridCommon: 3b79d2602b94ed9ee3e8c4b31be4cd2a640c9dc9
-  RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RevenueCat: c676920ae9b3c9cd08c49d26e7cd4c04a0263069
-  share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
-  Stripe: a4b6584549bac3698733ed564e55b0b067cfda8a
-  stripe_ios: b720131bae6025a497bf7bb030e238a1a2781f18
-  StripeApplePay: c8b005f1b5a242c455f76b42eda08660e9e33102
-  StripeCore: 9a87da02c7fefc9b965218210a0902acd71157ab
-  StripeFinancialConnections: 331ece5b6446dbf6eac62b94f8e365d0af9e000a
-  StripePayments: 95ca9bc60eca45f02cd35b125a67a969c9d62ce7
-  StripePaymentSheet: 7bc20a0ab10d91acc06dc449ab61bb2cf221b0f4
-  StripePaymentsUI: 1590647b3f635a58fb0e7058d86d3e9ff89250d4
-  StripeUICore: a63d95d604e70a5895f9d6b09c49a46757e86353
-  url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
+  share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
+  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
-PODFILE CHECKSUM: 53a6aebc29ccee84c41f92f409fc20cd4ca011f1
+PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
 
 COCOAPODS: 1.16.2

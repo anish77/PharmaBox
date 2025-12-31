@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -118,8 +119,8 @@ Future<void> _bleEnsurePerms() async {
 
 String _bleDecode(List<int> bytes) {
   if (bytes.length == 17) {
-    String barcode = String.fromCharCodes(bytes).trim().substring(10,16);
-    print(barcode);
+    String barcode = String.fromCharCodes(bytes).trim().substring(10, 16);
+    log(barcode);
 
     return barcode;
   }
