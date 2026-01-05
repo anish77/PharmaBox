@@ -22,7 +22,6 @@ class RevenuecatService {
       logger.i('Offerings object: $offerings');
       logger.i('offerings.current: ${offerings.current}');
       logger.i('offerings.all keys: ${offerings.all.keys}');
-      logger.i('---------- 1111 ${offerings.all.keys.first}');
       return offerings;
     } catch (e) {
       logger.e('❌ Errore nel recupero delle offerte: $e');
@@ -52,6 +51,12 @@ class RevenuecatService {
       bool isPro = customerInfo.entitlements.active.containsKey(
         'PharmaBox Pro',
       );
+      customerInfo.entitlements.active.forEach((key, entitlement) {
+        logger.i('🟢 Entitlement attivo: $key');
+        logger.i('  productId: ${entitlement.productIdentifier}');
+        logger.i('  expirationDate: ${entitlement.expirationDate}');
+        logger.i('  willRenew: ${entitlement.willRenew}');
+      });
       logger.i('✅ Verifica stato pro user: $isPro');
       return isPro;
     } catch (e) {

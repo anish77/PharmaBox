@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
 import 'package:pharma_box/view/forgot_password.dart';
 import 'package:pharma_box/view/crea_nuova_lista.dart';
 import 'package:pharma_box/view/new_account_page.dart';
@@ -80,7 +82,6 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       logger.i('Login successful: ${userCredentials.user?.email}');
-
       if (_rememberCredentials) {
         await _secureStorage.write(key: 'login_email', value: email);
         await _secureStorage.write(key: 'login_password', value: password);
@@ -88,8 +89,12 @@ class _LoginPageState extends State<LoginPage> {
         await _secureStorage.delete(key: 'login_email');
         await _secureStorage.delete(key: 'login_password');
       }
+      if (!mounted) return;
+      final SubscribtionCubit subscribtionCubit =
+          context.read<SubscribtionCubit>();
+      await subscribtionCubit.checkProStatus();
+      if (!mounted) return;
       Navigator.push(
-        // ignore: use_build_context_synchronously
         context,
         MaterialPageRoute(builder: (ctx) => const CreaNuovaLista()),
       );
@@ -103,9 +108,7 @@ class _LoginPageState extends State<LoginPage> {
         message = 'Email non valida';
       }
 
-      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).clearSnackBars();
-      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );

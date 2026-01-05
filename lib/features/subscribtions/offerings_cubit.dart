@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pharma_box/features/subscribtions/offerings_state.dart';
 import 'package:pharma_box/features/subscribtions/revenuecat_service.dart';
+import 'package:pharma_box/include/general_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class OfferingsCubit extends Cubit<OfferingsState> {
@@ -93,7 +94,6 @@ class OfferingsCubit extends Cubit<OfferingsState> {
       final customerInfo = await RevenuecatService.purchasePackage(package);
 
       final entitlement = customerInfo?.entitlements.active['PharmaBox Pro'];
-
       if (entitlement != null) {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
@@ -116,5 +116,25 @@ class OfferingsCubit extends Cubit<OfferingsState> {
     } catch (e) {
       emit(PurchaseError('Errore durante l\'acquisto: $e'));
     }
+  }
+
+  Future<void> syncSubscriptionToFirebase() async {
+    final info = await Purchases.getCustomerInfo();
+    final entitlement = info.entitlements.active['pro'];
+
+    logger.i('Sincronizzazione stato abbonamento con Firebase...$entitlement');
+    /*
+  await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .set({
+        'isPro': entitlement != null,
+        'subscriptionExpiration':
+            entitlement?.expirationDate != null
+                ? Timestamp.fromDate(entitlement!.expirationDate!)
+                : null,
+        'lastRevenueCatSync': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      */
   }
 }

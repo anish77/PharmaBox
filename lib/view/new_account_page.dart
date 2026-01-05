@@ -39,24 +39,16 @@ class _NewAccountPageState extends State<NewAccountPage> {
       final codiceInvito =
           uid.substring(10, 16).toUpperCase(); // dalla posizione 11 fino a 16
       final firestore = FirebaseFirestore.instance;
-      final expirationDate = DateTime(
-        1970,
-      ); //--> Data espirata cosi deve fare l'upgrade
-
+      
       await firestore.collection('users').doc(uid).set({
         'firstName': _enteredFirstName,
         'lastName': _enteredLastName,
         'email': _enteredEmail,
         'phoneNumber': _enteredPhoneNumber,
         'uid': uid,
-        'password': _enteredPassword,
-        'liste': [],
-        'isActive': false,
-        'newMember': true,
-        'expirationDate': Timestamp.fromDate(expirationDate),
+        'liste': [], 
         'codiceInvito': codiceInvito,
-        'amiciInvitati': [],
-        'rinnovoAutomatico': false,
+        'subscription': [],
       });
 
       logger.i('Account created: $userCredential');

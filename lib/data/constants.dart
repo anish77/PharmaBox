@@ -5,6 +5,8 @@ const kstoreKeySubscription = 'prova_abbonamento';
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
 const kWebsiteURL = 'https://www.doublecore.it';
+const kPrivacyPolicyUrl = 'https://www.doublecore.it/privacy.htm';
+const kApiKeyApple = 'appl_KcHJKduAMoJsJlkfkugejJEmujK';
 
 const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
