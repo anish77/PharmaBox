@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/include/general_functions.dart';
 
-class _StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
+class StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
   // 🔹 Costruttore visivo delle sezioni
   Widget _buildSection({
     required IconData icon,
@@ -167,5 +167,5 @@ class StatoAbbonamentoPage extends StatefulWidget {
   const StatoAbbonamentoPage({super.key});
 
   @override
-  _StatoAbbonamentoPageState createState() => _StatoAbbonamentoPageState();
+  StatoAbbonamentoPageState createState() => StatoAbbonamentoPageState();
 }
