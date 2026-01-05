@@ -24,7 +24,6 @@ Future<void> main() async {
   // Inizializza RevenueCat (sostituisci la stringa con la tua API key)
   await RevenuecatService.configurRevenuecat(kApiKeyApple);
 
-  // await BillingService.instance.initialize();
   runApp(const ProviderScope(child: MyApp()));
 }
 
