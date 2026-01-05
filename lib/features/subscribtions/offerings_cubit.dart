@@ -2,16 +2,17 @@
 This cubit is responsible for fetching & purchasing offerings from revcat
 */
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:ui';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pharma_box/features/subscribtions/offerings_state.dart';
 import 'package:pharma_box/features/subscribtions/revenuecat_service.dart';
-import 'package:pharma_box/include/general_functions.dart';
+import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class OfferingsCubit extends Cubit<OfferingsState> {
-  OfferingsCubit() : super(OfferingsInitial());
+  OfferingsCubit(this._subscribtionCubit) : super(OfferingsInitial());
+
+  final SubscribtionCubit _subscribtionCubit;
 
   // catch the loaded packages
   List<Package> _packages = [];
@@ -59,82 +60,31 @@ class OfferingsCubit extends Cubit<OfferingsState> {
     }
   }
 
-  // purchase a package
-  /*
-  Future<void> purchasePackage(Package package, Function onSuccess) async {
+  Future<void> purchasePackage(Package package, VoidCallback onSuccess) async {
     emit(PurchaseLoading(_packages));
-    try {
-      CustomerInfo? customerInfo = await RevenuecatService.purchasePackage(
-        package,
-      );
-      if (customerInfo != null &&
-          customerInfo.entitlements.active.containsKey('subscriptions')) {
-        emit(OfferingsLoaded(_packages)); // Ricarica lo stato delle offerte
-        onSuccess(); // Callback per segnalare il successo
-      } else {
-        //user cancelled purchase flow
-        // revert to last known state/offerings
-        emit(OfferingsLoaded(_packages)); // Ricarica lo stato delle offerte
-      }
-    } on PlatformException catch (e) {
-      if (e.code == PurchasesErrorCode.purchaseCancelledError.name) {
-        // user canceled the purchase
-        // revert to last known state/offerings
-        emit(OfferingsLoaded(_packages)); // Ricarica lo stato delle offerte
-      } else {
-        print('❌ Errore durante l\'acquisto: ${e.message}');
-        emit(PurchaseError('Errore durante l\'acquisto: ${e.message}'));
-      }
-    }
-  }*/
 
-  Future<void> purchasePackage(Package package, Function onSuccess) async {
-    emit(PurchaseLoading(_packages));
     try {
       final customerInfo = await RevenuecatService.purchasePackage(package);
 
-      final entitlement = customerInfo?.entitlements.active['PharmaBox Pro'];
-      if (entitlement != null) {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-                'isPro': true,
-                'subscriptionActivatedAt': entitlement.latestPurchaseDate,
-                'expirationDate': entitlement.expirationDate,
-                'updatedAt': FieldValue.serverTimestamp(),
-              }, SetOptions(merge: true));
-        }
-
+      if (customerInfo == null) {
         emit(OfferingsLoaded(_packages));
-        onSuccess();
-      } else {
-        emit(OfferingsLoaded(_packages));
+        return;
       }
+
+      final entitlement = customerInfo.entitlements.active['Premium'];
+
+      if (entitlement == null || !entitlement.isActive) {
+        emit(OfferingsLoaded(_packages));
+        return;
+      }
+
+      // 🔹 DELEGA TUTTO al SubscribtionCubit
+      await _subscribtionCubit.checkProStatus();
+
+      emit(OfferingsLoaded(_packages));
+      onSuccess();
     } catch (e) {
       emit(PurchaseError('Errore durante l\'acquisto: $e'));
     }
-  }
-
-  Future<void> syncSubscriptionToFirebase() async {
-    final info = await Purchases.getCustomerInfo();
-    final entitlement = info.entitlements.active['pro'];
-
-    logger.i('Sincronizzazione stato abbonamento con Firebase...$entitlement');
-    /*
-  await FirebaseFirestore.instance
-      .collection('users')
-      .doc(uid)
-      .set({
-        'isPro': entitlement != null,
-        'subscriptionExpiration':
-            entitlement?.expirationDate != null
-                ? Timestamp.fromDate(entitlement!.expirationDate!)
-                : null,
-        'lastRevenueCatSync': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      */
   }
 }

@@ -1,67 +1,60 @@
+import 'package:flutter/services.dart';
 import 'package:pharma_box/include/general_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class RevenuecatService {
-  //configure rev cat
+  /// 🔹 Configure RevenueCat
   static Future<void> configurRevenuecat(String apiKey) async {
-    // Your configuration code here
     try {
       await Purchases.configure(PurchasesConfiguration(apiKey));
-
       logger.i('✅ RevenueCat configurato con successo');
     } catch (e) {
-      logger.e('❌ Errore nella configurazione di RevenueCat: $e');
+      logger.e('❌ Errore configurazione RevenueCat: $e');
+      rethrow;
     }
   }
 
-  // fetch offerings
+  /// 🔹 Fetch offerings
   static Future<Offerings?> fetchOfferings() async {
     try {
-      Offerings offerings = await Purchases.getOfferings();
-      logger.i('✅ Offerte recuperate con successo');
-      logger.i('Offerings object: $offerings');
-      logger.i('offerings.current: ${offerings.current}');
-      logger.i('offerings.all keys: ${offerings.all.keys}');
+      final offerings = await Purchases.getOfferings();
+      logger.i('✅ Offerte recuperate');
       return offerings;
     } catch (e) {
-      logger.e('❌ Errore nel recupero delle offerte: $e');
+      logger.e('❌ Errore recupero offerte: $e');
       return null;
     }
   }
 
-  // purchase package
   static Future<CustomerInfo?> purchasePackage(Package package) async {
     try {
       final result = await Purchases.purchase(PurchaseParams.package(package));
-      final CustomerInfo customerInfo = result.customerInfo;
 
-      logger.i('✅ Acquisto completato con successo: $customerInfo');
-      return customerInfo;
-    } catch (e) {
-      logger.e('❌ Errore generico per purchasePackage: $e');
-      return null;
+      logger.i('✅ Acquisto completato');
+      return result.customerInfo;
+    } on PlatformException catch (e) {
+      final code = PurchasesErrorHelper.getErrorCode(e);
+
+      // 🔹 Utente ha annullato
+      if (code == PurchasesErrorCode.purchaseCancelledError) {
+        logger.i('ℹ️ Acquisto annullato dall’utente');
+        return null;
+      }
+
+      // 🔹 Già acquistato (NON È ERRORE)
+      if (code == PurchasesErrorCode.productAlreadyPurchasedError) {
+        logger.i('ℹ️ Abbonamento già attivo, recupero CustomerInfo');
+        return await Purchases.getCustomerInfo();
+      }
+
+      logger.e('❌ Errore RevenueCat: ${e.message}');
+      rethrow;
     }
   }
 
-  // is pro user ?
-  static Future<bool> isProUser() async {
-    try {
-      CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-      //bool isPro = customerInfo.entitlements.all['pro']?.isActive ?? false;
-      bool isPro = customerInfo.entitlements.active.containsKey(
-        'PharmaBox Pro',
-      );
-      customerInfo.entitlements.active.forEach((key, entitlement) {
-        logger.i('🟢 Entitlement attivo: $key');
-        logger.i('  productId: ${entitlement.productIdentifier}');
-        logger.i('  expirationDate: ${entitlement.expirationDate}');
-        logger.i('  willRenew: ${entitlement.willRenew}');
-      });
-      logger.i('✅ Verifica stato pro user: $isPro');
-      return isPro;
-    } catch (e) {
-      logger.e('❌ Errore nella verifica dello stato pro user: $e');
-      return false;
-    }
+  /// 🔹 Get latest CustomerInfo (single source of truth)
+  static Future<CustomerInfo> getCustomerInfo() async {
+    final info = await Purchases.getCustomerInfo();
+    return info;
   }
 }

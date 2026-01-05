@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       final SubscribtionCubit subscribtionCubit =
           context.read<SubscribtionCubit>();
-      await subscribtionCubit.checkProStatus();
+      subscribtionCubit.checkProStatus();
       if (!mounted) return;
       Navigator.push(
         context,

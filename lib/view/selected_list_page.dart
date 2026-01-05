@@ -212,31 +212,28 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     if (productToSearch.trim().isEmpty &&
         !_isFidelityLoading &&
         !_isAccountActive) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 40),
-        child: Column(
-          children: [
-            Center(
-              child: Image.asset(
-                kNoScanCode, // assicurati che il path sia corretto nel pubspec.yaml
-                width: 240,
-                fit: BoxFit.contain,
-              ),
+      return Column(
+        children: [
+          Center(
+            child: Image.asset(
+              kNoScanCode, // assicurati che il path sia corretto nel pubspec.yaml
+              width: 240,
+              fit: BoxFit.contain,
             ),
+          ),
 
-            Text(
-              'Attiva il tuo abbonamento per utilizzare lo scanner Bluetooth.',
-              style: TextStyle(
-                color: kBluScuro,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
+          Text(
+            'Attiva il tuo abbonamento per utilizzare lo scanner Bluetooth.',
+            style: TextStyle(
+              color: kBluScuro,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: 12),
-            const Abbonamento(),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 8),
+          const Abbonamento(),
+        ],
       );
       // 🔹 Mostra immagine scanCode finché non rilevi la connessione BLE
     } else if (productToSearch.trim().isEmpty) {

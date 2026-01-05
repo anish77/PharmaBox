@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -20,6 +21,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🔒 BLOCCA L’APP IN PORTRAIT
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitUp,
+  ]);
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Inizializza RevenueCat (sostituisci la stringa con la tua API key)
   await RevenuecatService.configurRevenuecat(kApiKeyApple);
@@ -36,7 +44,10 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => SubscribtionCubit()),
         BlocProvider(
-          create: (_) => OfferingsCubit()..loadOfferings(), 
+          create:
+              (context) =>
+                  OfferingsCubit(context.read<SubscribtionCubit>())
+                    ..loadOfferings(),
         ),
       ],
       child: MaterialApp(

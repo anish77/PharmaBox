@@ -58,36 +58,65 @@ class Abbonamento extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(), // ⬅️
             itemCount: packages.length,
             itemBuilder: (context, i) {
-              final package = packages[i]!;
+              final package = packages[i];
               return Card(
                 color: Colors.transparent,
                 elevation: 0,
                 shadowColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent, // Material 3
-                child: ListTile(
-                  title: Text(package.storeProduct.title),
-                  subtitle: Text(package.storeProduct.priceString),
-                  trailing: ElevatedButton.icon(
-                    icon: const Icon(Icons.star, color: Colors.yellow),
-                    onPressed: () => _handlePurchase(context, package),
-                    label: const Text(
-                      'Attiva',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 🔹 TITOLO
+                      Text(
+                        package.storeProduct.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade600,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+
+                      const SizedBox(height: 8),
+
+                      // 🔹 SOTTOTITOLO / PREZZO
+                      Text(
+                        package.storeProduct.priceString,
+                        style: const TextStyle(fontSize: 16),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                      // 🔹 BOTTONE SOTTO
+                      Align(
+                        alignment: Alignment.center,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.star,
+                            color: Colors.yellow,
+                            size: 18,
+                          ),
+                          onPressed: () => _handlePurchase(context, package),
+                          label: const Text(
+                            'Attiva',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               );
