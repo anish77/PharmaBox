@@ -68,14 +68,13 @@ class StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
                           .doc(user.uid)
                           .snapshots(),
                   builder: (context, snapshot) {
-                    DateTime? expirationDate;
+                    Timestamp? expirationDate;
                     bool autoRenew = false;
 
                     if (snapshot.hasData) {
                       final data =
                           snapshot.data!.data() as Map<String, dynamic>? ?? {};
-                      expirationDate =
-                          (data['expirationDate'] as Timestamp?)?.toDate();
+                      expirationDate = (data['expirationDate'] as Timestamp?);
                       autoRenew = data['rinnovoAutomatico'] as bool? ?? false;
                     }
 
@@ -86,7 +85,7 @@ class StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
                       expirationSubtitle =
                           'Nessuna data di scadenza disponibile.';
                     } else {
-                      final d = expirationDate.toLocal();
+                      final d = expirationDate.toDate();
                       final formatted =
                           '${d.day.toString().padLeft(2, '0')}/'
                           '${d.month.toString().padLeft(2, '0')}/'

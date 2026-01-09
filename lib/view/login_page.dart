@@ -90,8 +90,8 @@ class _LoginPageState extends State<LoginPage> {
         await _secureStorage.delete(key: 'login_password');
       }
       if (!mounted) return;
-      final SubscribtionCubit subscribtionCubit =
-          context.read<SubscribtionCubit>();
+      final SubscriptionCubit subscribtionCubit =
+          context.read<SubscriptionCubit>();
       subscribtionCubit.checkProStatus();
       if (!mounted) return;
       Navigator.push(

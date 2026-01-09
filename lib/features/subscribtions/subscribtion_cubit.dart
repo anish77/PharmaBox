@@ -7,8 +7,8 @@ import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:pharma_box/include/general_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-class SubscribtionCubit extends Cubit<SubscribtionState> {
-  SubscribtionCubit() : super(SubscribtionInitial());
+class SubscriptionCubit extends Cubit<SubscribtionState> {
+  SubscriptionCubit() : super(SubscribtionInitial());
 
   /// 🔹 Chiamare dopo login, app start, acquisto, restore
   Future<void> checkProStatus() async {
@@ -37,10 +37,34 @@ class SubscribtionCubit extends Cubit<SubscribtionState> {
 
     if (user == null) return;
 
+    // Ensure we store a Firestore Timestamp for expirationDate
+    final Object? rawExpiration = entitlement?.expirationDate;
+    Timestamp? expirationTs;
+    if (rawExpiration != null) {
+      if (rawExpiration is Timestamp) {
+        expirationTs = rawExpiration;
+      } else if (rawExpiration is DateTime) {
+        expirationTs = Timestamp.fromDate(rawExpiration);
+      } else if (rawExpiration is int) {
+        // assume milliseconds since epoch
+        expirationTs = Timestamp.fromMillisecondsSinceEpoch(rawExpiration);
+      } else {
+        final s = rawExpiration.toString();
+        final parsed = DateTime.tryParse(s);
+        if (parsed != null) {
+          expirationTs = Timestamp.fromDate(parsed);
+        } else {
+          final ms = int.tryParse(s);
+          if (ms != null)
+            expirationTs = Timestamp.fromMillisecondsSinceEpoch(ms);
+        }
+      }
+    }
+
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'isPro': entitlement?.isActive ?? false,
       'subscriptionActivatedAt': entitlement?.latestPurchaseDate,
-      'expirationDate': entitlement?.expirationDate,
+      'expirationDate': expirationTs,
       'willRenew': entitlement?.willRenew,
       'platform': entitlement?.store.name,
       'updatedAt': FieldValue.serverTimestamp(),

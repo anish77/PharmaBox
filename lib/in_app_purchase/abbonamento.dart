@@ -11,7 +11,7 @@ class Abbonamento extends StatelessWidget {
 
   Future<void> _handlePurchase(BuildContext context, Package package) async {
     final offeringsCubit = context.read<OfferingsCubit>();
-    final subscriptionCubit = context.read<SubscribtionCubit>();
+    final subscriptionCubit = context.read<SubscriptionCubit>();
 
     offeringsCubit.purchasePackage(package, () async {
       subscriptionCubit.checkProStatus();

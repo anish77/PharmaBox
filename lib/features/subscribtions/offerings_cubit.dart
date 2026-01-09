@@ -10,9 +10,9 @@ import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class OfferingsCubit extends Cubit<OfferingsState> {
-  OfferingsCubit(this._subscribtionCubit) : super(OfferingsInitial());
+  OfferingsCubit(this._subscriptionCubit) : super(OfferingsInitial());
 
-  final SubscribtionCubit _subscribtionCubit;
+  final SubscriptionCubit _subscriptionCubit;
 
   // catch the loaded packages
   List<Package> _packages = [];
@@ -79,7 +79,7 @@ class OfferingsCubit extends Cubit<OfferingsState> {
       }
 
       // 🔹 DELEGA TUTTO al SubscribtionCubit
-      await _subscribtionCubit.checkProStatus();
+      await _subscriptionCubit.checkProStatus();
 
       emit(OfferingsLoaded(_packages));
       onSuccess();

@@ -405,7 +405,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     //final bleStatus = ref.watch(bleStatusProvider);
     final isBleConnected = ref.watch(bleConnected);
 
-    return BlocListener<SubscribtionCubit, SubscribtionState>(
+    return BlocListener<SubscriptionCubit, SubscribtionState>(
       listener: (context, state) {
         if (state is SubscribtionLoaded && state.isPro) {
           // 🔥 l’utente è diventato Pro → ricarica stato da Firebase
