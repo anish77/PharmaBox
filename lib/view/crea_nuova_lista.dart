@@ -12,6 +12,7 @@ import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/info.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/view/stato_abbonamento.dart';
+import 'package:pharma_box/view/termeni_eula.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
@@ -617,6 +618,17 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 style: TextStyle(color: kBluScuro),
               ),
               onTap: () => _openPrivacyPolicy(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: kPrimary),
+              title: const Text(
+                'Termini di Utilizzo',
+                style: TextStyle(color: kBluScuro),
+              ),
+              onTap:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const Termenieula()),
+                  ),
             ),
 
             ListTile(
