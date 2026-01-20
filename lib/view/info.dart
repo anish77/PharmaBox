@@ -327,11 +327,6 @@ class InfoPage extends StatelessWidget {
                       subtitle: 'Accedi per modificare la tua email.',
                     ),
                     _buildSection(
-                      icon: Icons.calendar_today,
-                      title: 'Abbonamento',
-                      subtitle: 'Dettagli piano',
-                    ),
-                    _buildSection(
                       icon: Icons.delete_forever,
                       title: 'Cancella il mio account',
                       subtitle: 'Accedi per cancellare il tuo account.',
@@ -361,18 +356,6 @@ class InfoPage extends StatelessWidget {
                               'Aggiorna l\'indirizzo associato al tuo account.',
                           onTap: () => _handleChangeEmail(context),
                         ),
-                        _buildSection(
-                          icon: Icons.calendar_today,
-                          title: 'Abbonamento',
-                          subtitle: 'Dettagli piano',
-                          onTap:
-                              () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const StatoAbbonamentoPage(),
-                                ),
-                              ),
-                        ),
-
                         _buildSection(
                           icon: Icons.delete_forever,
                           title: 'Cancella il mio account',
