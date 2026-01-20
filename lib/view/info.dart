@@ -345,29 +345,6 @@ class InfoPage extends StatelessWidget {
                           .doc(user.uid)
                           .snapshots(),
                   builder: (context, snapshot) {
-                    DateTime? expirationDate;
-                    if (snapshot.hasData) {
-                      final data =
-                          snapshot.data!.data() as Map<String, dynamic>? ?? {};
-                      final ts = data['expirationDate'] as Timestamp?;
-                      expirationDate = ts?.toDate();
-                    }
-
-                    String expirationSubtitle;
-                    if (snapshot.connectionState == ConnectionState.waiting &&
-                        !snapshot.hasData) {
-                      expirationSubtitle = 'Caricamento in corso...';
-                    } else if (snapshot.hasError) {
-                      expirationSubtitle =
-                          'Errore nel recupero della scadenza.';
-                    } else if (expirationDate == null) {
-                      expirationSubtitle =
-                          'Nessuna data di scadenza disponibile.';
-                    } else {
-                      expirationSubtitle =
-                          'Il tuo abbonamento scade il ${_formatDate(expirationDate)}.';
-                    }
-
                     return ListView(
                       children: [
                         _buildSection(

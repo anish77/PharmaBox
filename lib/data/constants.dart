@@ -134,3 +134,7 @@ const kBugiardinoMonografieBase = 'http://api.doublecore.it/pdf_html';
 const kBugiardinoUploadEndpoint = 'http://api.doublecore.it/uploader.php';
 
 enum DatasetKind { tr001, tdz, tdf, td1 }
+
+// Amazon Scanner
+const kAmazonScanner =
+    'https://www.amazon.it/Tera-lettore-codici-barre-wireless/dp/B0BZRXDNVD';

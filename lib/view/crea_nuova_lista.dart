@@ -598,9 +598,9 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.calendar_today, color: kPrimary),
+              leading: const Icon(Icons.subscriptions, color: kPrimary),
               title: const Text(
-                'Abbonamento',
+                'Abbonamento & Scanner',
                 style: TextStyle(color: kBluScuro),
               ),
               onTap: () {

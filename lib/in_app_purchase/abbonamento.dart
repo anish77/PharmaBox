@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/features/subscribtions/offerings_cubit.dart';
 import 'package:pharma_box/features/subscribtions/offerings_state.dart';
 import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
@@ -7,7 +8,9 @@ import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class Abbonamento extends StatelessWidget {
-  const Abbonamento({super.key});
+  const Abbonamento({super.key, this.withScaffold = false});
+
+  final bool withScaffold;
 
   Future<void> _handlePurchase(BuildContext context, Package package) async {
     final offeringsCubit = context.read<OfferingsCubit>();
@@ -28,9 +31,8 @@ class Abbonamento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OfferingsCubit, OfferingsState>(
+    final content = BlocBuilder<OfferingsCubit, OfferingsState>(
       builder: (context, state) {
-        debugPrint('🔥 OfferingsCubit state: $state');
         if (state is OfferingsLoading || state is OfferingsInitial) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -54,23 +56,21 @@ class Abbonamento extends StatelessWidget {
           }
 
           return ListView.builder(
-            shrinkWrap: true, // ⬅️ IMPORTANTE
-            physics: const NeverScrollableScrollPhysics(), // ⬅️
+            shrinkWrap: true,
+            physics:
+                withScaffold
+                    ? const AlwaysScrollableScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
             itemCount: packages.length,
             itemBuilder: (context, i) {
               final package = packages[i];
+
               return Card(
-                color: Colors.transparent,
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent, // Material 3
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // 🔹 TITOLO
                       Text(
                         package.storeProduct.title,
                         style: const TextStyle(
@@ -78,16 +78,11 @@ class Abbonamento extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(height: 8),
-
-                      // 🔹 SOTTOTITOLO / PREZZO
-                      Text(
-                        package.storeProduct.priceString,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      // 🔹 BOTTONE SOTTO
-                      Align(
+                      Text(package.storeProduct.priceString),
+                      const SizedBox(height: 12),
+                      /*
+                          Align(
                         alignment: Alignment.center,
                         child: ElevatedButton.icon(
                           icon: const Icon(
@@ -116,6 +111,33 @@ class Abbonamento extends StatelessWidget {
                           ),
                         ),
                       ),
+                       */
+                      ElevatedButton.icon(
+                        icon: const Icon(
+                          Icons.star,
+                          color: Colors.yellow,
+                          size: 18,
+                        ),
+                        onPressed: () => _handlePurchase(context, package),
+                        label: const Text(
+                          'Attiva',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade600,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -126,6 +148,29 @@ class Abbonamento extends StatelessWidget {
 
         return const SizedBox.shrink();
       },
+    );
+
+    // 🔥 QUI LA DIFFERENZA
+    if (!withScaffold) {
+      return content;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        scrolledUnderElevation: 0,
+        title: Text(
+          "Abbonamento Premium",
+          style: TextStyle(
+            color: kBluScuro,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: kBluScuro),
+        centerTitle: false,
+        titleSpacing: 0,
+      ),
+      body: Padding(padding: const EdgeInsets.all(16), child: content),
     );
   }
 }

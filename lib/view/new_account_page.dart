@@ -39,15 +39,16 @@ class _NewAccountPageState extends State<NewAccountPage> {
       final codiceInvito =
           uid.substring(10, 16).toUpperCase(); // dalla posizione 11 fino a 16
       final firestore = FirebaseFirestore.instance;
-      
+
       await firestore.collection('users').doc(uid).set({
         'firstName': _enteredFirstName,
         'lastName': _enteredLastName,
         'email': _enteredEmail,
         'phoneNumber': _enteredPhoneNumber,
         'uid': uid,
-        'liste': [], 
+        'liste': [],
         'codiceInvito': codiceInvito,
+        'isPro': false,
         'subscription': [],
       });
 
