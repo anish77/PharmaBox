@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/in_app_purchase/abbonamento.dart';
+import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/annullare_abbonamento.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -108,21 +109,8 @@ class StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
                           subtitle:
                               'Per utilizzare PharmaBox è necessario uno scanner compatibile',
                           iconColor: kPrimary,
-                          onTap: () async {
-                            final url = Uri.parse(kAmazonScanner);
-
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(
-                                url,
-                                mode: LaunchMode.externalApplication,
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Impossibile aprire il link'),
-                                ),
-                              );
-                            }
+                          onTap: () {
+                            OpenEmail().openWebsite(kAmazonScanner);
                           },
                         ),
 
