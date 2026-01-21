@@ -633,14 +633,6 @@ extension on _SelectedListPageState {
       // Se più risultati, per ora aggiunge il primo
       final prodotto = results.first;
       _aggiungi(prodotto, clearSearchState: false);
-
-      /*
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Aggiunto: ${prodotto.nome.isNotEmpty ? prodotto.nome : prodotto.minsan}')),
-        );
-      }
-      */
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

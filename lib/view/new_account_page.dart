@@ -99,147 +99,141 @@ class _NewAccountPageState extends State<NewAccountPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        backgroundColor: kBackGround,
-        elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
+        iconTheme: const IconThemeData(color: kBluScuro),
+        centerTitle: false,
+        titleSpacing: 0,
       ),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => FocusScope.of(context).unfocus(),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Form(
-              key: _form,
-              child: Stack(
-                children: [
-                  SingleChildScrollView(
-                    padding: EdgeInsets.only(bottom: 160 + bottomInset),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 24),
-                        Align(
-                          child: Column(
-                            children: [
-                              Image.asset(kLogo, height: 70, width: 70),
-                              const SizedBox(height: 8),
-                              const Text(
-                                kAppName,
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: kPrimary,
-                                ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Form(
+            key: _form,
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 40),
+                            Align(
+                              child: Column(
+                                children: [
+                                  Image.asset(kLogo, height: 70, width: 70),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    kAppName,
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: kPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
+                            const SizedBox(height: 32),
+
+                            CustomTextFormField(
+                              label: 'Nome',
+                              labelStyle: const TextStyle(color: kBluScuro),
+                              validator:
+                                  (v) =>
+                                      v == null || v.isEmpty
+                                          ? kNomeError
+                                          : null,
+                              onSaved: (v) => _enteredFirstName = v!,
+                            ),
+                            const SizedBox(height: 16),
+
+                            CustomTextFormField(
+                              label: 'Cognome',
+                              labelStyle: const TextStyle(color: kBluScuro),
+                              validator:
+                                  (v) =>
+                                      v == null || v.isEmpty
+                                          ? kCognomeError
+                                          : null,
+                              onSaved: (v) => _enteredLastName = v!,
+                            ),
+                            const SizedBox(height: 16),
+
+                            CustomTextFormField(
+                              label: 'Email',
+                              labelStyle: const TextStyle(color: kBluScuro),
+                              keyboardType: TextInputType.emailAddress,
+                              validator:
+                                  (v) =>
+                                      v != null && !isEmailCorrect(v)
+                                          ? kEmailError
+                                          : null,
+                              onSaved: (v) => _enteredEmail = v!,
+                            ),
+                            const SizedBox(height: 16),
+
+                            CustomTextFormField(
+                              label: 'Cellulare',
+                              labelStyle: const TextStyle(color: kBluScuro),
+                              keyboardType: TextInputType.phone,
+                              validator:
+                                  (v) =>
+                                      v != null && !isCellCorrect(v)
+                                          ? kCellError
+                                          : null,
+                              onSaved: (v) => _enteredPhoneNumber = v!,
+                            ),
+                            const SizedBox(height: 16),
+
+                            CustomTextFormField(
+                              label: 'Password',
+                              labelStyle: const TextStyle(color: kBluScuro),
+                              obscureText: true,
+                              enableVisibilityToggle: true,
+                              validator:
+                                  (v) =>
+                                      v != null && !isPasswordSecure(v)
+                                          ? kPasswordError
+                                          : null,
+                              onSaved: (v) => _enteredPassword = v!,
+                            ),
+
+                            const SizedBox(height: 120), // spazio per bottone
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    SafeArea(
+                      top: false,
+                      left: false,
+                      right: false,
+                      bottom: true,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: CustomButton(
+                            title: "Crea Account",
+                            titleColor: Colors.white,
+                            backgroundColor: kPrimary,
+                            onPressed: () {
+                              FocusScope.of(context).unfocus();
+                              if (!_form.currentState!.validate()) return;
+                              _form.currentState!.save();
+                              _submitLogin();
+                            },
                           ),
                         ),
-                        const SizedBox(height: 32),
-                        CustomTextFormField(
-                          label: 'Nome',
-                          labelStyle: const TextStyle(color: kBluScuro),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return kNomeError;
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            _enteredFirstName = value!;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextFormField(
-                          label: 'Cognome',
-                          labelStyle: const TextStyle(color: kBluScuro),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return kCognomeError;
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            _enteredLastName = value!;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextFormField(
-                          label: 'Email',
-                          labelStyle: const TextStyle(color: kBluScuro),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value != null &&
-                                isEmailCorrect(value) == false) {
-                              return kEmailError;
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            _enteredEmail = value!;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextFormField(
-                          label: 'Cellulare',
-                          labelStyle: const TextStyle(color: kBluScuro),
-                          keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value != null &&
-                                isCellCorrect(value) == false) {
-                              return kCellError;
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            _enteredPhoneNumber = value!;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextFormField(
-                          label: 'Password',
-                          labelStyle: const TextStyle(color: kBluScuro),
-                          obscureText: true,
-                          enableVisibilityToggle: true,
-                          validator: (value) {
-                            if (value != null &&
-                                isPasswordSecure(value) == false) {
-                              return kPasswordError;
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            _enteredPassword = value!;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                      ),
                     ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 45,
-                    child: CustomButton(
-                      title: "Crea Account",
-                      titleColor: Colors.white,
-                      backgroundColor: kPrimary,
-                      onPressed: () {
-                        final isValid = _form.currentState!.validate();
-                        if (!isValid) {
-                          return;
-                        }
-                        _form.currentState!.save();
-                        _submitLogin();
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

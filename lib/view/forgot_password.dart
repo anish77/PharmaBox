@@ -97,13 +97,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          backgroundColor: kBackGround,
-          elevation: 0,
           scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: kPrimary),
-            onPressed: () => Navigator.pop(context),
-          ),
+          iconTheme: const IconThemeData(color: kBluScuro),
+          centerTitle: false,
+          titleSpacing: 0,
         ),
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -161,15 +158,22 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 45,
-                ), //45  EdgeInsets.fromLTRB(16, 40, 16, 0)
-                child: CustomButton(
-                  title: "Invia",
-                  titleColor: Colors.white,
-                  backgroundColor: kPrimary,
-                  onPressed: _resetPassword,
+              SafeArea(
+                top: false,
+                left: false,
+                right: false,
+                bottom: true,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      title: "Invia",
+                      titleColor: Colors.white,
+                      backgroundColor: kPrimary,
+                      onPressed: _resetPassword,
+                    ),
+                  ),
                 ),
               ),
             ],

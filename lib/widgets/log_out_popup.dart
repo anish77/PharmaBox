@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/view/login_page.dart';
 
 class LogoutPopup {
   var logger = Logger(printer: PrettyPrinter());
@@ -29,13 +30,14 @@ class LogoutPopup {
                       await FirebaseAuth.instance.signOut();
                       // ignore: use_build_context_synchronously
                       Navigator.of(context).pop(); // chiude il dialog
+                      // ignore: use_build_context_synchronously
                       Navigator.of(
-                        // ignore: use_build_context_synchronously
                         context,
                         rootNavigator: true,
-                      ).pop(); // chiude il drawer se è aperto
-                      // ignore: use_build_context_synchronously
-                      Navigator.pop(context);
+                      ).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                        (route) => false,
+                      );
                       logger.d('Log out: SUCCESS');
                     } catch (error) {
                       logger.e(error);

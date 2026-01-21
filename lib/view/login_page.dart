@@ -22,16 +22,18 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  var logger = Logger(printer: PrettyPrinter());
-
-  var _enteredEmail = '';
-  var _enteredPassword = '';
-  bool _isLoading = false;
-  bool _rememberCredentials = false;
+  final logger = Logger(printer: PrettyPrinter());
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+  var _enteredEmail = '';
+  var _enteredPassword = '';
+  bool _rememberCredentials = false;
+  bool _isLoading = false;
+
+  static const double _bottomSpacing = 45;
 
   @override
   void initState() {
@@ -51,76 +53,71 @@ class _LoginPageState extends State<LoginPage> {
       final savedEmail = await _secureStorage.read(key: 'login_email');
       final savedPassword = await _secureStorage.read(key: 'login_password');
       if (!mounted) return;
+
       _emailController.text = savedEmail ?? '';
       _passwordController.text = savedPassword ?? '';
+
       setState(() {
         _enteredEmail = savedEmail ?? '';
         _enteredPassword = savedPassword ?? '';
         _rememberCredentials =
-            (savedEmail != null && savedEmail.isNotEmpty) &&
-            (savedPassword != null && savedPassword.isNotEmpty);
+            (savedEmail?.isNotEmpty ?? false) &&
+            (savedPassword?.isNotEmpty ?? false);
       });
-    } catch (error, stackTrace) {
-      logger.e(
-        'Errore nel caricare credenziali salvate: $error',
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      logger.e('Errore caricamento credenziali $e');
     }
   }
 
-  void _submitLogin() async {
-    final email = _enteredEmail.trim();
-    final password = _enteredPassword.trim();
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _submitLogin() async {
+    FocusScope.of(context).unfocus();
+
+    setState(() => _isLoading = true);
 
     try {
-      final userCredentials = await _firebase.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+      final credentials = await _firebase.signInWithEmailAndPassword(
+        email: _enteredEmail.trim(),
+        password: _enteredPassword.trim(),
       );
 
-      logger.i('Login successful: ${userCredentials.user?.email}');
+      logger.i('Login OK: ${credentials.user?.email}');
+
       if (_rememberCredentials) {
-        await _secureStorage.write(key: 'login_email', value: email);
-        await _secureStorage.write(key: 'login_password', value: password);
+        await _secureStorage.write(
+          key: 'login_email',
+          value: _enteredEmail.trim(),
+        );
+        await _secureStorage.write(
+          key: 'login_password',
+          value: _enteredPassword.trim(),
+        );
       } else {
         await _secureStorage.delete(key: 'login_email');
         await _secureStorage.delete(key: 'login_password');
       }
-      if (!mounted) return;
-      final SubscriptionCubit subscribtionCubit =
-          context.read<SubscriptionCubit>();
-      subscribtionCubit.checkProStatus();
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (ctx) => const CreaNuovaLista()),
-      );
-    } on FirebaseAuthException catch (error) {
-      String message = 'Errore di autenticazione';
-      if (error.code == 'wrong-password') {
-        message = 'Password errata';
-      } else if (error.code == 'user-not-found') {
-        message = 'Utente non trovato';
-      } else if (error.code == 'invalid-email') {
-        message = 'Email non valida';
-      }
 
-      ScaffoldMessenger.of(context).clearSnackBars();
+      if (!mounted) return;
+
+      context.read<SubscriptionCubit>().checkProStatus();
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const CreaNuovaLista()),
+      );
+    } on FirebaseAuthException catch (e) {
+      String message = 'Errore di autenticazione';
+      if (e.code == 'wrong-password') message = 'Password errata';
+      if (e.code == 'user-not-found') message = 'Utente non trovato';
+      if (e.code == 'invalid-email') message = 'Email non valida';
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
 
-      logger.e('Login failed: ${error.message}');
-      logger.i(error.code);
+      logger.e('Login error $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -133,123 +130,113 @@ class _LoginPageState extends State<LoginPage> {
         body: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        child: Form(
-                          key: _formKey,
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight:
+                              MediaQuery.of(context).size.height -
+                              45 - // spazio bottone
+                              kToolbarHeight,
+                        ),
+                        child: IntrinsicHeight(
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Logo + Brand
-                              Column(
-                                children: [
-                                  Image.asset(kLogo, height: 70, width: 70),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    kAppName,
-                                    style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: kPrimary,
+                              Form(
+                                key: _formKey,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset(kLogo, height: 70, width: 70),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      kAppName,
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: kPrimary,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 40),
+                                    const SizedBox(height: 40),
 
-                              // Email field
-                              CustomTextFormField(
-                                label: 'Email',
-                                keyboardType: TextInputType.emailAddress,
-                                controller: _emailController,
-                                validator: (value) {
-                                  if (value == null ||
-                                      value.trim().isEmpty ||
-                                      !value.contains('@')) {
-                                    return kEmailError;
-                                  }
-                                  return null;
-                                },
-                                onSaved: (value) {
-                                  _enteredEmail = value ?? '';
-                                },
-                                onChanged: (value) {
-                                  _enteredEmail = value;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              // Password field
-                              CustomTextFormField(
-                                label: 'Password',
-                                obscureText: true,
-                                enableVisibilityToggle: true,
-                                controller: _passwordController,
-                                validator: (value) {
-                                  if (value == null ||
-                                      value.trim().length < 6) {
-                                    return kPasswordError;
-                                  }
-                                  return null;
-                                },
-                                onSaved: (value) {
-                                  _enteredPassword = value ?? '';
-                                },
-                                onChanged: (value) {
-                                  _enteredPassword = value;
-                                },
-                              ),
-                              CheckboxListTile(
-                                contentPadding: EdgeInsets.zero,
-                                value: _rememberCredentials,
-                                activeColor: kPrimary,
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                title: const Text('Ricorda credenziali'),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _rememberCredentials = value ?? false;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              // Login Button
-                              CustomButton(
-                                title: "Accedi",
-                                titleColor: Colors.white,
-                                backgroundColor: kPrimary,
-                                onPressed: () {
-                                  final isValid =
-                                      _formKey.currentState!.validate();
-                                  if (!isValid) return;
-                                  _formKey.currentState!.save();
-                                  _enteredEmail = _emailController.text;
-                                  _enteredPassword = _passwordController.text;
-                                  _submitLogin();
-                                },
-                              ),
-                              // const SizedBox(height: 6),
-
-                              // Forgot password
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ForgotPassword(),
+                                    CustomTextFormField(
+                                      label: 'Email',
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      validator:
+                                          (v) =>
+                                              (v == null || !v.contains('@'))
+                                                  ? kEmailError
+                                                  : null,
+                                      onChanged: (v) => _enteredEmail = v,
                                     ),
-                                  );
-                                },
-                                child: const Text(
-                                  'Password dimenticata?',
-                                  style: TextStyle(
-                                    color: kPrimary,
-                                    fontSize: 18,
-                                  ),
+                                    const SizedBox(height: 16),
+                                    CustomTextFormField(
+                                      label: 'Password',
+                                      controller: _passwordController,
+                                      obscureText: true,
+                                      enableVisibilityToggle: true,
+                                      validator:
+                                          (v) =>
+                                              (v == null || v.length < 6)
+                                                  ? kPasswordError
+                                                  : null,
+                                      onChanged: (v) => _enteredPassword = v,
+                                    ),
+
+                                    CheckboxListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      value: _rememberCredentials,
+                                      activeColor: kPrimary,
+                                      controlAffinity:
+                                          ListTileControlAffinity.leading,
+                                      title: const Text('Ricorda credenziali'),
+                                      onChanged:
+                                          (v) => setState(
+                                            () =>
+                                                _rememberCredentials =
+                                                    v ?? false,
+                                          ),
+                                    ),
+
+                                    const SizedBox(height: 24),
+                                    CustomButton(
+                                      title: "Accedi",
+                                      titleColor: Colors.white,
+                                      backgroundColor: kPrimary,
+                                      onPressed: () {
+                                        if (!_formKey.currentState!
+                                            .validate()) {
+                                          return;
+                                        }
+                                        _submitLogin();
+                                      },
+                                    ),
+
+                                    TextButton(
+                                      onPressed: () {
+                                        FocusScope.of(context).unfocus();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (_) => const ForgotPassword(),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Password dimenticata?',
+                                        style: TextStyle(
+                                          color: kPrimary,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -258,35 +245,41 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  // Bottone crea account
-                  Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).padding.bottom + 16,
-                    ),
-                    child: CustomButton(
-                      title: 'Crea nuovo account',
-                      titleColor: kPrimary,
-                      backgroundColor: kSecondary,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (ctx) => const NewAccountPage(),
-                          ),
-                        );
-                      },
+                  SafeArea(
+                    top: false,
+                    left: false,
+                    right: false,
+                    bottom: true,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: CustomButton(
+                          title: 'Crea nuovo account',
+                          titleColor: kPrimary,
+                          backgroundColor: kSecondary,
+                          onPressed: () {
+                            FocusScope.of(context).unfocus(); // chiude tastiera
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NewAccountPage(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Loader full screen fuori SafeArea così copre tutto
             if (_isLoading)
-              Positioned.fill(
-                child: Container(
+              const Positioned.fill(
+                child: ColoredBox(
                   color: Colors.black54,
-                  child: const Center(
+                  child: Center(
                     child: CircularProgressIndicator(color: kPrimary),
                   ),
                 ),
