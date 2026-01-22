@@ -26,7 +26,6 @@ class _NewAccountPageState extends State<NewAccountPage> {
   var _enteredPassword = '';
   var _enteredFirstName = '';
   var _enteredLastName = '';
-  var _enteredPhoneNumber = '';
 
   void _submitLogin() async {
     try {
@@ -44,7 +43,6 @@ class _NewAccountPageState extends State<NewAccountPage> {
         'firstName': _enteredFirstName,
         'lastName': _enteredLastName,
         'email': _enteredEmail,
-        'phoneNumber': _enteredPhoneNumber,
         'uid': uid,
         'liste': [],
         'codiceInvito': codiceInvito,
@@ -54,7 +52,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
 
       logger.i('Account created: $userCredential');
       logger.i(
-        'info: ${userCredential.user!.uid}, $_enteredEmail, $_enteredFirstName, $_enteredLastName, $_enteredPhoneNumber',
+        'info: ${userCredential.user!.uid}, $_enteredEmail, $_enteredFirstName, $_enteredLastName',
       );
 
       // Vai a ListsPage
@@ -82,10 +80,6 @@ class _NewAccountPageState extends State<NewAccountPage> {
 
   bool isPasswordSecure(String password) {
     return kRegexPassword.hasMatch(password);
-  }
-
-  bool isCellCorrect(String cellulare) {
-    return kRegexCell.hasMatch(cellulare);
   }
 
   bool isEmailCorrect(String email) {
@@ -175,20 +169,6 @@ class _NewAccountPageState extends State<NewAccountPage> {
                               onSaved: (v) => _enteredEmail = v!,
                             ),
                             const SizedBox(height: 16),
-
-                            CustomTextFormField(
-                              label: 'Cellulare',
-                              labelStyle: const TextStyle(color: kBluScuro),
-                              keyboardType: TextInputType.phone,
-                              validator:
-                                  (v) =>
-                                      v != null && !isCellCorrect(v)
-                                          ? kCellError
-                                          : null,
-                              onSaved: (v) => _enteredPhoneNumber = v!,
-                            ),
-                            const SizedBox(height: 16),
-
                             CustomTextFormField(
                               label: 'Password',
                               labelStyle: const TextStyle(color: kBluScuro),
