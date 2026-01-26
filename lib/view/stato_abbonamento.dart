@@ -5,7 +5,6 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/in_app_purchase/abbonamento.dart';
 import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/annullare_abbonamento.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
   // 🔹 Costruttore visivo delle sezioni

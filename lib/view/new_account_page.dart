@@ -88,8 +88,6 @@ class _NewAccountPageState extends State<NewAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(

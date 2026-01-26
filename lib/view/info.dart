@@ -3,14 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/view/login_page.dart';
-import 'package:pharma_box/view/stato_abbonamento.dart';
 
 class InfoPage extends StatelessWidget {
   const InfoPage({super.key});
-
-  String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
-  }
 
   // 🔹 Reimpostazione password
   Future<void> _handlePasswordReset(BuildContext context) async {

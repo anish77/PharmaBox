@@ -1,7 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-const kAbbonamento = 250.00;
-const kstoreKeySubscription = 'prova_abbonamento';
 const kFarmadatiUsername = 'BDF203348XC';
 const kFarmadatiPassword = 'epxD67iZR';
 const kWebsiteURL = 'https://www.doublecore.it';
@@ -49,14 +47,10 @@ const kAccessoMembri = 'Richiesta accesso membri';
 const kDiventareMembro = 'Ciao, vorrei diventare membro di PharmaBox.';
 const kRichiestaAssistenza = 'Richiesta assistenza PharmaBox';
 const kSupporto = 'Ciao, avrei bisogno di supporto con la mia esperienza.';
-const kAbbonamentoOmaggio =
-    'Congratulazioni! \nHai ricevuto un abbonamento in omaggio.';
-const kNessunInvito = 'Non hai ancora invitato nessuno';
-const kInvitaAltriAmici =
-    'Invita altri amici per ridurre ancora il costo dell’abbonamento!';
 const kRegCompletata = 'Registrazione completata ✅';
-const kInviti = 'I miei inviti';
 const kAttivaAbbonamento = 'Attiva abbonamento';
+const kAbbonamentoPremium = 'Con l’abbonamento Premium puoi:';
+const kAbbonamentoPremiumDescrizione = '• Collegare uno scanner barcode esterno compatibile\n• Effettuare l’inventario della farmacia tramite scansione rapida\n• Ridurre il tempo di inventario rispetto all’inserimento manuale';
 
 // Password sicura
 // Requisiti:

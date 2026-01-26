@@ -72,46 +72,15 @@ class Abbonamento extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        package.storeProduct.title,
+                        kAbbonamentoPremium,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(package.storeProduct.priceString),
+                      Text(kAbbonamentoPremiumDescrizione),
                       const SizedBox(height: 12),
-                      /*
-                          Align(
-                        alignment: Alignment.center,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(
-                            Icons.star,
-                            color: Colors.yellow,
-                            size: 18,
-                          ),
-                          onPressed: () => _handlePurchase(context, package),
-                          label: const Text(
-                            'Attiva',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade600,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                          ),
-                        ),
-                      ),
-                       */
                       ElevatedButton.icon(
                         icon: const Icon(
                           Icons.star,
@@ -119,9 +88,9 @@ class Abbonamento extends StatelessWidget {
                           size: 18,
                         ),
                         onPressed: () => _handlePurchase(context, package),
-                        label: const Text(
-                          'Attiva',
-                          style: TextStyle(
+                        label: Text(
+                          '${package.storeProduct.priceString} / anno',
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),

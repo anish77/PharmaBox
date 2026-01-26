@@ -33,8 +33,6 @@ class _LoginPageState extends State<LoginPage> {
   bool _rememberCredentials = false;
   bool _isLoading = false;
 
-  static const double _bottomSpacing = 45;
-
   @override
   void initState() {
     super.initState();
