@@ -19,6 +19,7 @@ import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:pharma_box/widgets/carrello.dart';
+import 'package:pharma_box/widgets/scanner_not_connected_card.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import '../include/general_functions.dart';
 
@@ -212,104 +213,82 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     if (productToSearch.trim().isEmpty &&
         !_isFidelityLoading &&
         !_isAccountActive) {
-      return Column(
+      return _buildSubscriptionUpsell();
+    }
+
+    if (productToSearch.trim().isEmpty) {
+      return _buildBluetoothStatus(bleScanning, isBleConnected);
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildBluetoothStatus(bool bleScanning, bool isBleConnected) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Center(
-            child: Image.asset(
-              kNoScanCode, // assicurati che il path sia corretto nel pubspec.yaml
-              width: 240,
-              fit: BoxFit.contain,
-            ),
-          ),
-
-          Text(
-            'Attiva il tuo abbonamento per utilizzare lo scanner Bluetooth.',
-            style: TextStyle(
-              color: kBluScuro,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 8),
-          const Abbonamento(),
+          _buildBluetoothImage(bleScanning, isBleConnected),
+          const SizedBox(height: 12),
+          if (!isBleConnected && !bleScanning) const ScannerNotConnectedCard(),
         ],
-      );
-      // 🔹 Mostra immagine scanCode finché non rilevi la connessione BLE
-    } else if (productToSearch.trim().isEmpty) {
-      final bool bluetoothActive = isBleConnected;
-      final String statusText;
-      if (bluetoothActive) {
-        statusText =
-            'Scanner Bluetooth connesso.\nTocca l\'icona per disconnetterlo.';
-      } else if (bleScanning) {
-        statusText =
-            'Ricerca Bluetooth in corso...\nInterrompi la scansione toccando l\'icona.';
-      } else {
-        statusText =
-            'Scanner Bluetooth non connesso.\nClicca sull\'icona per avviare la connessione.';
-      }
+      ),
+    );
+  }
 
-      return Padding(
-        padding: const EdgeInsets.only(top: 40),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () async {
-                  if (!_isAccountActive) {
-                    if (!context.mounted) {
-                      logger.i(
-                        'Context non montato, impossibile mostrare SnackBar',
-                      );
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Account non attivo')),
-                    );
-                  } else {
-                    if (bleScanning) {
-                      FlutterBluePlus.stopScan();
-                      ref.read(bleScanningProvider.notifier).state = false;
-                      ref.read(bleStatusProvider.notifier).state =
-                          'Scansione interrotta';
-                      logger.i('Stopped BLE scan from image tap');
-                    } else if (bluetoothActive) {
-                      logger.i('Disconnecting BLE from image tap');
-                      await bleDisconnect(ref);
-                    } else {
-                      logger.i('Starting BLE scan from image tap');
-                      bleStartScanAndListen(ref);
-                    }
-                  }
-                },
-                child: Image.asset(
-                  kBluetoothImage,
-                  width: 200,
-                  fit: BoxFit.contain,
-                  color: bluetoothActive ? null : kPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                statusText,
-                style: const TextStyle(
-                  color: kBluScuro,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+  Widget _buildBluetoothImage(bool bleScanning, bool isBleConnected) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () async {
+        if (!_isAccountActive) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Account non attivo')));
+          return;
+        }
+
+        if (bleScanning) {
+          FlutterBluePlus.stopScan();
+          ref.read(bleScanningProvider.notifier).state = false;
+        } else if (isBleConnected) {
+          await bleDisconnect(ref);
+        } else {
+          bleStartScanAndListen(ref);
+        }
+      },
+      child: Image.asset(
+        kBluetoothImage,
+        width: 150,
+        fit: BoxFit.contain,
+        color: isBleConnected ? null : kPrimary,
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionUpsell() {
+    return Column(
+      children: [
+        Center(
+          child: Image.asset(
+            kNoScanCode, // immagine scanner
+            width: 240,
+            fit: BoxFit.contain,
           ),
         ),
-      );
-    } else {
-      // 🔹 Caso predefinito: restituisci qualcosa anche se non entra nell'if
-      return const SizedBox.shrink(); // widget vuoto (non occupa spazio)
-    }
+        const SizedBox(height: 16),
+        Text(
+          'Attiva il tuo abbonamento per utilizzare lo scanner Bluetooth.',
+          style: TextStyle(
+            color: kBluScuro,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        const Abbonamento(),
+      ],
+    );
   }
 
   Widget opzioni(String title, List<String> kFiltro) {
@@ -407,10 +386,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
     return BlocListener<SubscriptionCubit, SubscribtionState>(
       listener: (context, state) {
-        if (state is SubscribtionLoaded && state.isPro) {
-          // 🔥 l’utente è diventato Pro → ricarica stato da Firebase
-          _loadFidelityStatus();
-        }
+        // 🔥 Ricarica lo stato da Firestore quando il SubscriptionCubit cambia
+        _loadFidelityStatus();
       },
       child: Stack(
         children: [

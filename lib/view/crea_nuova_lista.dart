@@ -10,6 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/info.dart';
+import 'package:pharma_box/view/restore_page.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/view/stato_abbonamento.dart';
 import 'package:pharma_box/view/termeni_eula.dart';
@@ -609,6 +610,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                     builder: (_) => const StatoAbbonamentoPage(),
                   ),
                 );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.restore, color: kPrimary),
+              title: const Text(
+                'Ripristina',
+                style: TextStyle(color: kBluScuro),
+              ),
+              onTap: () {
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const RestorePage()));
               },
             ),
             ListTile(

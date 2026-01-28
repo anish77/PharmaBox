@@ -57,4 +57,17 @@ class RevenuecatService {
     final info = await Purchases.getCustomerInfo();
     return info;
   }
+
+  /// 🔹 Restore purchases for the current user
+  static Future<CustomerInfo?> restorePurchases() async {
+    try {
+      final customerInfo = await Purchases.restorePurchases();
+      logger.i('✅ Acquisti ripristinati con successo');
+      return customerInfo;
+    } on PlatformException catch (e) {
+      final code = PurchasesErrorHelper.getErrorCode(e);
+      logger.e('❌ Errore durante il ripristino: ${e.message} (Code: $code)');
+      rethrow;
+    }
+  }
 }
