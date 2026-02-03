@@ -5,7 +5,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 class RevenuecatService {
   /// 🔹 Configure RevenueCat
   static Future<void> configurRevenuecat(String apiKey) async {
-    try {
+    try { 
       await Purchases.configure(PurchasesConfiguration(apiKey));
       logger.i('✅ RevenueCat configurato con successo');
     } catch (e) {

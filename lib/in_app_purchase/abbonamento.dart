@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/features/subscribtions/offerings_cubit.dart';
 import 'package:pharma_box/features/subscribtions/offerings_state.dart';
-import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
-import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class Abbonamento extends StatelessWidget {
@@ -14,15 +12,8 @@ class Abbonamento extends StatelessWidget {
 
   Future<void> _handlePurchase(BuildContext context, Package package) async {
     final offeringsCubit = context.read<OfferingsCubit>();
-    final subscriptionCubit = context.read<SubscriptionCubit>();
 
     offeringsCubit.purchasePackage(package, () async {
-      subscriptionCubit.checkProStatus();
-
-      await subscriptionCubit.stream.firstWhere(
-        (state) => state is SubscribtionLoaded && state.isPro,
-      );
-
       if (context.mounted) {
         Navigator.pop(context);
       }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
@@ -29,8 +30,10 @@ Future<void> main() async {
   ]);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Inizializza RevenueCat (sostituisci la stringa con la tua API key)
-  await RevenuecatService.configurRevenuecat(kApiKeyApple);
+  // Inizializza RevenueCat con la chiave API appropriata per la piattaforma
+  await RevenuecatService.configurRevenuecat(
+    Platform.isAndroid ? kApiKeyGoogle : kApiKeyApple,
+  );
 
   runApp(const ProviderScope(child: MyApp()));
 }

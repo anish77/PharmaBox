@@ -8,26 +8,36 @@ import 'package:pharma_box/include/general_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class SubscriptionCubit extends Cubit<SubscribtionState> {
-  SubscriptionCubit() : super(SubscribtionInitial());
+  SubscriptionCubit() : super(SubscribtionInitial()) {
+    Purchases.addCustomerInfoUpdateListener((customerInfo) {
+      checkProStatus();
+    });
+  }
 
   /// 🔹 Chiamare dopo login, app start, acquisto, restore
   Future<void> checkProStatus() async {
-    logger.i('🔥 checkProStatus CALLED');
+    try {
+      logger.i('🔥 checkProStatus CALLED');
 
-    final info = await Purchases.getCustomerInfo();
-    logger.i('🔥 CustomerInfo received');
+      final info = await Purchases.getCustomerInfo();
+      logger.i('🔥 CustomerInfo received');
 
-    await syncSubscriptionWithFirebase(info);
+      await syncSubscriptionWithFirebase(info);
 
-    final isPro = info.entitlements.active['Premium']?.isActive ?? false;
+      final isPro = info.entitlements.active.isEmpty == true ? false : true;
 
-    logger.i('🔥 isPro = $isPro');
-    final e = info.entitlements.all['Premium'];
-    logger.i('isActive: ${e?.isActive}');
-    logger.i('willRenew: ${e?.willRenew}');
-    logger.i('expirationDate: ${e?.expirationDate}');
+      logger.i('🔥 isPro = $isPro');
+      final e = info.entitlements.all['Premium'];
+      logger.i('isActive: ${e?.isActive}');
+      logger.i("lattesExpirationDate: ${info.latestExpirationDate}");
+      logger.i('willRenew: ${e?.willRenew}');
+      logger.i('expirationDate: ${e?.expirationDate}');
 
-    emit(SubscribtionLoaded(isPro));
+      emit(SubscribtionLoaded(isPro));
+    } catch (e) {
+      logger.e('Errore in checkProStatus: $e');
+      emit(SubscribtionLoaded(false)); // Assume not pro on error
+    }
   }
 
   /// 🔹 Sincronizza lo stato dell'abbonamento con Firestore

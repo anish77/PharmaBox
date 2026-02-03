@@ -61,38 +61,17 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     super.initState();
     // Associa il carrello alla lista corrente (in base al titolo della pagina)
     Carrello.instance.usaLista(widget.titolo);
-    _loadFidelityStatus();
+    _loadSubscriptionStatus();
   }
 
-  Future<void> _loadFidelityStatus() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+  Future<void> _loadSubscriptionStatus() async {
+    setState(() {
+      _isFidelityLoading = true;
+    });
+    await context.read<SubscriptionCubit>().checkProStatus();
+    if (mounted) {
       setState(() {
         _isFidelityLoading = false;
-        _isAccountActive = false;
-      });
-      return;
-    }
-
-    try {
-      final snapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-      final data = snapshot.data();
-      final isActive = (data?['isPro'] ?? false) as bool;
-      if (!mounted) return;
-      setState(() {
-        _isFidelityLoading = false;
-        _isAccountActive = isActive;
-      });
-    } catch (e, stack) {
-      logger.e('Errore nel recuperare stato fidelity: $e', stackTrace: stack);
-      if (!mounted) return;
-      setState(() {
-        _isFidelityLoading = false;
-        _isAccountActive = false;
       });
     }
   }
@@ -210,6 +189,16 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   }
 
   Widget _checkStatus(bool bleScanning, bool isBleConnected) {
+    // Durante il caricamento iniziale, mostra un loading invece di assumere pro
+    if (_isFidelityLoading && productToSearch.trim().isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     if (productToSearch.trim().isEmpty &&
         !_isFidelityLoading &&
         !_isAccountActive) {
@@ -386,8 +375,12 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
     return BlocListener<SubscriptionCubit, SubscribtionState>(
       listener: (context, state) {
-        // 🔥 Ricarica lo stato da Firestore quando il SubscriptionCubit cambia
-        _loadFidelityStatus();
+        if (state is SubscribtionLoaded) {
+          setState(() {
+            _isAccountActive = state.isPro;
+            _isFidelityLoading = false;
+          });
+        }
       },
       child: Stack(
         children: [

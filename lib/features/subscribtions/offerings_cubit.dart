@@ -66,15 +66,9 @@ class OfferingsCubit extends Cubit<OfferingsState> {
     try {
       final customerInfo = await RevenuecatService.purchasePackage(package);
 
+      // Controlla se l'acquisto è andato a buon fine
       if (customerInfo == null) {
-        emit(OfferingsLoaded(_packages));
-        return;
-      }
-
-      final entitlement = customerInfo.entitlements.active['Premium'];
-
-      if (entitlement == null || !entitlement.isActive) {
-        emit(OfferingsLoaded(_packages));
+        emit(PurchaseError('Acquisto non riuscito'));
         return;
       }
 
