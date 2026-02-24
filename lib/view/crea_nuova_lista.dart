@@ -950,6 +950,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                               }
                                             },
                                             child: ListTile(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
                                               contentPadding:
                                                   const EdgeInsets.symmetric(
                                                     horizontal: 1,
