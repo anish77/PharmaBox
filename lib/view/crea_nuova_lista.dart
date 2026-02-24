@@ -546,7 +546,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 (context) => IconButton(
                   icon: Padding(
                     padding: const EdgeInsets.only(right: 16),
-                    child: Icon(Icons.menu, color: kPrimary),
+                    child: Icon(Icons.menu, color: kPrimary, size: 27),
                   ),
                   onPressed: () => Scaffold.of(context).openEndDrawer(),
                 ),
@@ -668,16 +668,22 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               const SizedBox(height: 10),
               Container(
                 width: double.infinity,
-                color: kSecondary,
                 padding: const EdgeInsets.symmetric(
                   vertical: 12,
                   horizontal: 8,
                 ),
+                decoration: BoxDecoration(
+                  color: kSecondary,
+                  borderRadius: BorderRadius.circular(
+                    12,
+                  ), // cambia il valore a piacere
+                ),
+
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Liste',
+                      'Crea una lista',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -951,6 +957,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                               leading: Checkbox(
                                                 value: isChecked,
                                                 activeColor: kPrimary,
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                visualDensity:
+                                                    VisualDensity.compact,
                                                 onChanged: (value) {
                                                   if (value == null) return;
                                                   setState(() {
