@@ -10,7 +10,7 @@ class Termenieula extends StatelessWidget {
     return TextSpan(
       text: "$text\n",
       style: const TextStyle(
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: FontWeight.w600, // semibold
         height: 1.6,
         color: Colors.black,
@@ -22,7 +22,7 @@ class Termenieula extends StatelessWidget {
     return TextSpan(
       text: "$text\n\n",
       style: const TextStyle(
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: FontWeight.w400,
         height: 1.6,
         color: Colors.black,
@@ -33,7 +33,11 @@ class Termenieula extends StatelessWidget {
   TextSpan _link(String text, String url) {
     return TextSpan(
       text: text,
-      style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.blue),
+      style: const TextStyle(
+        fontSize: 14,
+        height: 1.6,
+        color: Color.fromARGB(255, 2, 85, 228),
+      ),
       recognizer:
           TapGestureRecognizer()
             ..onTap = () {
@@ -52,7 +56,7 @@ class Termenieula extends StatelessWidget {
           style: TextStyle(
             color: kBluScuro,
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 16,
           ),
         ),
         iconTheme: const IconThemeData(color: kBluScuro),
@@ -103,7 +107,7 @@ class Termenieula extends StatelessWidget {
                       "si applicano i Termini di Licenza Standard Apple (EULA), "
                       "disponibili al seguente link:\n",
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     height: 1.6,
                     color: Colors.black,
                   ),

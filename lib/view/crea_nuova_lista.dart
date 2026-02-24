@@ -10,6 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/info.dart';
+import 'package:pharma_box/view/privacy_policy.dart';
 import 'package:pharma_box/view/restore_page.dart';
 import 'package:pharma_box/view/selected_list_page.dart';
 import 'package:pharma_box/view/stato_abbonamento.dart';
@@ -19,7 +20,6 @@ import 'package:pharma_box/widgets/crea_lista_popup.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
 import 'package:pharma_box/widgets/log_out_popup.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class CreaNuovaLista extends StatefulWidget {
   const CreaNuovaLista({super.key});
@@ -427,18 +427,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     );
   }
 
-  // 🔹 Apri Privacy Policy
-  Future<void> _openPrivacyPolicy(BuildContext context) async {
-    try {
-      await launchUrl(Uri.parse(kPrivacyPolicyUrl));
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossibile aprire la Privacy Policy.')),
-      );
-    }
-  }
-
   Future<void> _exportListeAsCsv(List<_ListExportData> liste) async {
     final buffer = StringBuffer()..writeln('Lista;Nome prodotto;Minsan;Pezzi');
 
@@ -630,7 +618,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 'Privacy Policy',
                 style: TextStyle(color: kBluScuro),
               ),
-              onTap: () => _openPrivacyPolicy(context),
+              onTap:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PrivacyPolicy()),
+                  ),
             ),
             ListTile(
               leading: const Icon(Icons.info_outline, color: kPrimary),
