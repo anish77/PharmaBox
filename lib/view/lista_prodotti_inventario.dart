@@ -37,6 +37,48 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
               final sorted = List<Prodotto>.from(prodotti)..sort(
                 (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
               );
+              if (sorted.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: const BoxDecoration(
+                            color: kSecondary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.shopping_basket_outlined,
+                            size: 48,
+                            color: kPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'La lista è vuota',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: kBluScuro,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Scansiona un prodotto o cercalo per aggiungerlo '
+                          'alla lista.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: kBluScuro, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
               final bottomInset = MediaQuery.of(context).padding.bottom;
               return ListView.builder(
                 padding: EdgeInsets.only(bottom: bottomInset + 45),
