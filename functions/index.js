@@ -1,74 +1,5 @@
 import fetch from "node-fetch";
 import * as functions from "firebase-functions";
-import Stripe from "stripe";
-
-// === STRIPE ===
-import * as functions from "firebase-functions";
-import Stripe from "stripe";
-
-export const createStripePaymentIntent = functions
-    .runWith({
-        secrets: ["STRIPE_SECRET_KEY_TEST", "STRIPE_SECRET_KEY"],
-    })
-    .https.onRequest(async (req, res) => {
-        try {
-            const { amount, currency, mode = "test" } = req.body;
-
-            if (!amount || !currency) {
-                return res
-                    .status(400)
-                    .json({ success: false, message: "Dati mancanti: amount o currency" });
-            }
-
-            // ✅ Usa la chiave corretta in base all’ambiente
-            const secretKey =
-                mode === "live"
-                    ? process.env.STRIPE_SECRET_KEY
-                    : process.env.STRIPE_SECRET_KEY_TEST;
-
-            if (!secretKey) {
-                return res.status(500).json({
-                    success: false,
-                    message: `Chiave Stripe non trovata per ambiente ${mode}`,
-                });
-            }
-
-            const stripe = new Stripe(secretKey, {
-                apiVersion: "2025-01-27.acacia", // o l'ultima disponibile
-            });
-
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount: Math.round(parseFloat(amount)),
-                currency,
-                automatic_payment_methods: { enabled: true },
-            });
-
-            functions.logger.info("✅ PaymentIntent creato", {
-                id: paymentIntent.id,
-                clientSecret: paymentIntent.client_secret,
-                amount,
-                mode,
-            });
-
-            // 🔹 Risposta completa per il client
-            return res.status(200).json({
-                success: true,
-                paymentIntentId: paymentIntent.id,
-                clientSecret: paymentIntent.client_secret,
-                mode,
-            });
-        } catch (error) {
-            functions.logger.error("❌ Errore creazione PaymentIntent", error);
-            return res.status(500).json({
-                success: false,
-                message: error.message || "Errore Stripe",
-            });
-        }
-    });
-
-logger.i("🔧 Stripe.publishableKey: ${Stripe.publishableKey}");
-logger.i("🆔 PaymentIntent ID: ${paymentIntent['id']}");
-logger.i("🧩 Client Secret: ${paymentIntent['client_secret']}");
 
 // === PAYPAL ===
 const PAYPAL_API_BASE = "https://api-m.paypal.com"; // Usa .paypal.com per produzione
@@ -149,18 +80,18 @@ export const capturePaypalOrder = functions
 
 // === TEST SECRETS ===
 export const testRunWith = functions
-    .runWith({ secrets: ["PAYPAL_CLIENT_ID", "STRIPE_SECRET_KEY"] })
+    .runWith({ secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_SECRET_KEY"] })
     .https.onRequest((req, res) => {
         const paypalOk = !!process.env.PAYPAL_CLIENT_ID;
-        const stripeOk = !!process.env.STRIPE_SECRET_KEY;
+        const paypalSecretOk = !!process.env.PAYPAL_SECRET_KEY;
 
-        if (paypalOk && stripeOk) {
+        if (paypalOk && paypalSecretOk) {
             res.status(200).send("✅ Secrets caricati correttamente");
         } else {
             res
                 .status(500)
                 .send(
-                    `❌ Mancano segreti: ${!paypalOk ? "PAYPAL" : ""} ${!stripeOk ? "STRIPE" : ""
+                    `❌ Mancano segreti: ${!paypalOk || !paypalSecretOk ? "PAYPAL" : ""
                     }`
                 );
         }

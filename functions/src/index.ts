@@ -5,25 +5,11 @@ import {
     defineString,
 } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
-import Stripe from "stripe";
 
 /* ------------------------------------------------------------------ */
 /*  Shared configuration                                               */
 /* ------------------------------------------------------------------ */
 const defaultRegion = "europe-west1";
-
-/* ------------------------------------------------------------------ */
-/*  Stripe configuration                                               */
-/* ------------------------------------------------------------------ */
-const stripeSecretKeyLive = defineSecret("STRIPE_SECRET_KEY");
-const stripeSecretKeyTest = defineSecret("STRIPE_SECRET_KEY_TEST");
-const stripePublishableKeyLive = defineString("STRIPE_PUBLISHABLE_KEY", {
-    default: "",
-});
-const stripePublishableKeyTest = defineString("STRIPE_PUBLISHABLE_KEY_TEST", {
-    default: "",
-});
-
 
 /* ------------------------------------------------------------------ */
 /*  PayPal configuration                                               */
@@ -47,8 +33,6 @@ const paypalCancelRedirect = defineString("PAYPAL_CANCEL_REDIRECT", {
 /* ------------------------------------------------------------------ */
 /*  Utility helpers                                                    */
 /* ------------------------------------------------------------------ */
-type StripeMode = "live" | "test";
-
 const withCors = (res: Response) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set(
@@ -68,18 +52,6 @@ const parseBody = <T>(req: Request): T => {
         }
     }
     return (req.body ?? {}) as T;
-};
-
-const toMinorUnits = (value: unknown) => {
-    const numeric = Number.parseFloat(`${value ?? ""}`);
-    if (!Number.isFinite(numeric) || numeric <= 0) return null;
-    return Math.round(numeric * 100);
-};
-
-const normalizeAmount = (value: unknown) => {
-    const parsed = Number.parseInt(`${value ?? ""}`, 10);
-    if (!Number.isFinite(parsed) || parsed <= 0) return null;
-    return parsed;
 };
 
 const baseUrlFor = (mode: string) =>
@@ -197,258 +169,6 @@ const captureOrder = async (baseUrl: string, orderId: string, accessToken: strin
     const body = await response.json().catch(() => ({}));
     return { ok: response.ok, body };
 };
-
-const getStripeMode = (raw: unknown): StripeMode => {
-    const value = (raw ?? "live").toString().toLowerCase();
-    logger.log(`getStripeMode: ${value}`);
-    return value === "test" ? "test" : "live";
-};
-
-const getStripeSecret = (mode: StripeMode) => {
-    const secret =
-        mode === "test" ? stripeSecretKeyTest.value() : stripeSecretKeyLive.value();
-    if (!secret) {
-        throw new Error(`STRIPE_SECRET_KEY_${mode.toUpperCase()}_MISSING`);
-    }
-    return secret;
-};
-
-const getStripeClient = (mode: StripeMode) => {
-    const apiKey = getStripeSecret(mode);
-    return new Stripe(apiKey);
-};
-
-/* ------------------------------------------------------------------ */
-/*  Stripe Functions                                                   */
-/* ------------------------------------------------------------------ */
-export const createStripePaymentIntent = onRequest(
-    {
-        region: defaultRegion,
-        secrets: [stripeSecretKeyLive, stripeSecretKeyTest],
-    },
-    async (req, res) => {
-        withCors(res);
-
-        if (req.method === "OPTIONS") {
-            res.status(204).send("");
-            return;
-        }
-        if (req.method !== "POST") {
-            res.status(405).json({ error: "method-not-allowed" });
-            return;
-        }
-
-        const body = parseBody<{
-            amount?: number | string;
-            currency?: string;
-            description?: string;
-            mode?: string;
-        }>(req);
-
-        const amount = normalizeAmount(body.amount);
-        if (!amount) {
-            res.status(400).json({ error: "invalid-amount" });
-            return;
-        }
-
-        const mode = getStripeMode(body.mode);
-
-        try {
-            const stripe = getStripeClient(mode);
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount,
-                currency: (body.currency ?? "eur").toString().toLowerCase(),
-                description: body.description,
-                automatic_payment_methods: { enabled: true },
-            });
-
-            res.status(200).json({
-                id: paymentIntent.id,
-                client_secret: paymentIntent.client_secret,
-                status: paymentIntent.status,
-                amount: paymentIntent.amount,
-                currency: paymentIntent.currency,
-                mode,
-            });
-        } catch (error) {
-            logger.error("createStripePaymentIntent error", error);
-            res.status(500).json({ error: "stripe-intent-failed" });
-        }
-    },
-);
-
-export const createCardPayment = onRequest(
-    {
-        region: defaultRegion,
-        secrets: [stripeSecretKeyLive, stripeSecretKeyTest],
-    },
-    async (req, res) => {
-        withCors(res);
-
-        if (req.method === "OPTIONS") {
-            res.status(204).send("");
-            return;
-        }
-        if (req.method !== "POST") {
-            res.status(405).json({ error: "method-not-allowed" });
-            return;
-        }
-
-        const body = parseBody<{
-            amount?: number | string;
-            currency?: string;
-            card?: { number?: string; expiration?: string; cvv?: string };
-            mode?: string;
-        }>(req);
-
-        const minorUnits = toMinorUnits(body.amount);
-        if (!minorUnits) {
-            res.status(400).json({ error: "invalid-amount" });
-            return;
-        }
-
-        const card = body.card;
-        if (!card?.number || !card.expiration || !card.cvv) {
-            res.status(400).json({ error: "missing-card-data" });
-            return;
-        }
-
-        const [expMonthRaw, expYearRaw] = card.expiration.split("/");
-        const expMonth = Number.parseInt(expMonthRaw ?? "", 10);
-        const expYear = Number.parseInt(
-            expYearRaw?.length === 2 ? `20${expYearRaw}` : expYearRaw ?? "",
-            10,
-        );
-        if (!Number.isFinite(expMonth) || !Number.isFinite(expYear)) {
-            res.status(400).json({ error: "invalid-expiration-date" });
-            return;
-        }
-
-        const mode = getStripeMode(body.mode);
-
-        try {
-            const stripe = getStripeClient(mode);
-
-            const paymentMethod = await stripe.paymentMethods.create({
-                type: "card",
-                card: {
-                    number: card.number,
-                    exp_month: expMonth,
-                    exp_year: expYear,
-                    cvc: card.cvv,
-                },
-            });
-
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount: minorUnits,
-                currency: (body.currency ?? "eur").toString().toLowerCase(),
-                payment_method: paymentMethod.id,
-                confirm: true,
-                payment_method_types: ["card"],
-            });
-
-            res.status(200).json({
-                success: true,
-                paymentId: paymentIntent.id,
-                status: paymentIntent.status,
-                mode,
-            });
-        } catch (error) {
-            logger.error("createCardPayment error", error);
-            res
-                .status(500)
-                .json({ success: false, message: "stripe-card-payment-failed" });
-        }
-    },
-);
-
-export const verifyStripePaymentIntent = onRequest(
-    {
-        region: defaultRegion,
-        secrets: [stripeSecretKeyLive, stripeSecretKeyTest],
-    },
-    async (req, res) => {
-        withCors(res);
-        if (req.method === "OPTIONS") {
-            res.status(204).send("");
-            return;
-        }
-        if (req.method !== "POST") {
-            res.status(405).json({ error: "method-not-allowed" });
-            return;
-        }
-
-        const { paymentIntentId, mode: rawMode } = parseBody<{
-            paymentIntentId?: string;
-            mode?: string;
-        }>(req);
-
-        const trimmedId = paymentIntentId?.trim();
-        if (!trimmedId) {
-            res.status(400).json({ error: "missing-payment-intent-id" });
-            return;
-        }
-
-        const mode = getStripeMode(rawMode);
-
-        try {
-            const stripe = getStripeClient(mode);
-            logger.log(`🔎 verifyStripePaymentIntent: mode=${mode}, id=${trimmedId}`);
-            const intent = await stripe.paymentIntents.retrieve(trimmedId);
-            res.status(200).json({
-                status: intent.status,
-                paymentIntentId: intent.id,
-                amount: intent.amount,
-                currency: intent.currency,
-                mode,
-            });
-        } catch (error) {
-            logger.error("verifyStripePaymentIntent error", error);
-            res.status(500).json({ error: "stripe-verify-failed" });
-        }
-    },
-);
-
-export const getStripePublishableKey = onRequest(
-    {
-        region: defaultRegion,
-        secrets: [
-        ],
-    },
-    (req, res) => {
-        withCors(res);
-
-        if (req.method === "OPTIONS") {
-            res.status(204).send("");
-            return;
-        }
-
-        if (req.method !== "GET" && req.method !== "POST") {
-            res.status(405).json({ error: "method-not-allowed" });
-            return;
-        }
-
-        const body =
-            req.method === "POST"
-                ? parseBody<{ mode?: string }>(req)
-                : ({} as { mode?: string });
-        const modeParam = typeof req.query.mode === "string" ? req.query.mode : undefined;
-        const mode = getStripeMode(modeParam ?? body.mode);
-
-        logger.log(`----- Requested Stripe publishable key for mode: ${mode}`);
-        const key =
-            mode === "live"
-                ? stripePublishableKeyLive.value()
-                : stripePublishableKeyTest.value();
-        logger.log(`getStripePublishableKey for mode: ${mode}`);
-        if (!key) {
-            res.status(500).json({ error: `Chiave non trovata per ${mode}` });
-            return;
-        }
-
-        res.status(200).json({ key, mode });
-    },
-);
 
 /* ------------------------------------------------------------------ */
 /*  PayPal Functions                                                  */
@@ -751,18 +471,13 @@ export const checkSecrets = onRequest(
         secrets: [
             paypalClientId,
             paypalSecret,
-            stripeSecretKeyLive,
-            stripeSecretKeyTest,
         ],
     },
     (_req, res) => {
         withCors(res);
         const okPaypalId = !!process.env.PAYPAL_CLIENT_ID;
         const okPaypalSecret = !!process.env.PAYPAL_SECRET_KEY;
-        const okStripeLive = !!process.env.STRIPE_SECRET_KEY;
-        const okStripeTest = !!process.env.STRIPE_SECRET_KEY_TEST;
-
-        if (okPaypalId && okPaypalSecret && okStripeLive && okStripeTest) {
+        if (okPaypalId && okPaypalSecret) {
             res.status(200).send("✅ Secrets OK");
             return;
         }
