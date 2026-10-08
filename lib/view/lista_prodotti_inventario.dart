@@ -110,7 +110,43 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                   onPressed:
                       sorted.isEmpty
                           ? null
-                          : () => Carrello.instance.svuotaLista(),
+                          : () async {
+                            final confirmed =
+                                await showDialog<bool>(
+                                  context: context,
+                                  builder:
+                                      (dialogContext) => AlertDialog(
+                                        title: const Text(
+                                          'Conferma svuotamento',
+                                        ),
+                                        content: Text(
+                                          'Vuoi davvero svuotare la lista '
+                                          '"${widget.titolo}"?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.of(
+                                                  dialogContext,
+                                                ).pop(false),
+                                            child: const Text('Annulla'),
+                                          ),
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.of(
+                                                  dialogContext,
+                                                ).pop(true),
+                                            child: const Text('Svuota'),
+                                          ),
+                                        ],
+                                      ),
+                                ) ??
+                                false;
+
+                            if (confirmed && context.mounted) {
+                              Carrello.instance.svuotaLista();
+                            }
+                          },
                 );
               },
             ),
