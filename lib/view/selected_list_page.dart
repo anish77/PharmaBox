@@ -5,9 +5,10 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/web.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/features/subscribtions/offerings_cubit.dart';
+import 'package:pharma_box/features/subscribtions/offerings_state.dart';
 import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
 import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
-import 'package:pharma_box/in_app_purchase/abbonamento.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/prodotto.dart';
@@ -18,7 +19,9 @@ import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/scanner_not_connected_card.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:toggle_switch/toggle_switch.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../include/general_functions.dart';
 
 class SelectedListPage extends ConsumerStatefulWidget {
@@ -29,7 +32,6 @@ class SelectedListPage extends ConsumerStatefulWidget {
   });
   final String titolo;
   final int nrListe;
-
   @override
   ConsumerState<SelectedListPage> createState() => _SelectedListPageState();
 }
@@ -50,16 +52,20 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   bool _isSearching = false;
   bool _isFidelityLoading = true;
   bool _isAccountActive = false;
-
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
-
   @override
   void initState() {
     super.initState();
     // Associa il carrello alla lista corrente (in base al titolo della pagina)
     Carrello.instance.usaLista(widget.titolo);
     _loadSubscriptionStatus();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSubscriptionStatus() async {
@@ -95,7 +101,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     // Aggiungi/aggiorna nel carrello (fonte verità usata dalla tab Lista)
     if (p.pezzi.value <= 0) p.pezzi.value = 1;
     Carrello.instance.aggiungiProdotto(p);
-
     // Mantieni anche lo stato locale per eventuali usi interni
     setState(() {
       if (_codiciSelezionati.contains(p.codice)) {
@@ -121,12 +126,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       );
       return;
     }
-
     final sameAsLastQuery =
         _lastSearchedQuery != null &&
         _lastSearchedQuery!.toLowerCase() == query.toLowerCase();
     final hasCachedResults = sameAsLastQuery && _risultati.isNotEmpty;
-
     if (hasCachedResults) {
       setState(() {
         _hideUnselectedFilters = true;
@@ -135,15 +138,12 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       });
       return;
     }
-
     setState(() {
       _isSearching = true;
     });
-
     try {
       final prelim = await doSearch(query);
       if (!mounted) return;
-
       if (prelim.isEmpty) {
         setState(() {
           _risultati = [];
@@ -156,7 +156,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         ).showSnackBar(const SnackBar(content: Text('Nessun risultato')));
         return;
       }
-
       if (prelim.length == 1 && autoAddIfSingle) {
         _aggiungi(prelim.first);
         _searchCtrl.clear();
@@ -168,7 +167,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         });
         return;
       }
-
       setState(() {
         _risultati = prelim;
         _hideUnselectedFilters = true;
@@ -196,17 +194,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         ),
       );
     }
-
     if (productToSearch.trim().isEmpty &&
         !_isFidelityLoading &&
         !_isAccountActive) {
       return _buildSubscriptionUpsell();
     }
-
     if (productToSearch.trim().isEmpty) {
       return _buildBluetoothStatus(bleScanning, isBleConnected);
     }
-
     return const SizedBox.shrink();
   }
 
@@ -233,7 +228,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
           ).showSnackBar(const SnackBar(content: Text('Account non attivo')));
           return;
         }
-
         if (bleScanning) {
           FlutterBluePlus.stopScan();
           ref.read(bleScanningProvider.notifier).state = false;
@@ -252,30 +246,282 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     );
   }
 
+  // Schermata compatta: i due requisiti sono immediatamente visibili.
   Widget _buildSubscriptionUpsell() {
-    return Column(
-      children: [
-        Center(
-          child: Image.asset(
-            kNoScanCode, // immagine scanner
-            width: 240,
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: 8),
+      child: Column(
+        children: [
+          Image.asset(
+            kScanCode2,
+            height: 112,
+            width: double.infinity,
             fit: BoxFit.contain,
+            errorBuilder:
+                (_, __, ___) => const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: kPrimary,
+                  size: 72,
+                ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Attiva il tuo abbonamento per utilizzare lo scanner Bluetooth.',
-          style: TextStyle(
-            color: kBluScuro,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+          const SizedBox(height: 5),
+          const Text(
+            'Attiva lo scanner Bluetooth',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: kBluScuro,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        const Abbonamento(),
-      ],
+          const SizedBox(height: 4),
+          const Text(
+            'Per scansionare i prodotti servono due cose:',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: kBluScuro, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          _buildRequirementCard(
+            number: '1',
+
+            title: 'Attiva PharmaBox Premium',
+            description: 'Sblocca la scansione Bluetooth nell’app.',
+            child: BlocConsumer<OfferingsCubit, OfferingsState>(
+              listener: (context, state) {
+                if (state is PurchaseError) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(state.message)));
+                }
+              },
+              builder: (context, state) {
+                Package? annualPackage;
+                String? annualPrice;
+                final isPurchasing = state is PurchaseLoading;
+                if (state is OfferingsLoaded) {
+                  for (final package in state.packages) {
+                    if (package.packageType == PackageType.annual) {
+                      annualPackage = package;
+                      annualPrice = package.storeProduct.priceString;
+                      break;
+                    }
+                  }
+                } else if (state is PurchaseLoading || state is PurchaseError) {
+                  final packages =
+                      state is PurchaseLoading
+                          ? state.packages
+                          : (state as PurchaseError).packages;
+                  for (final package in packages) {
+                    if (package.packageType == PackageType.annual) {
+                      annualPackage = package;
+                      annualPrice = package.storeProduct.priceString;
+                      break;
+                    }
+                  }
+                }
+                final packageToPurchase = annualPackage;
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed:
+                        packageToPurchase == null || isPurchasing
+                            ? null
+                            : () => context
+                                .read<OfferingsCubit>()
+                                .purchasePackage(packageToPurchase, () {}),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kPrimary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      shape: const StadiumBorder(),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child:
+                          isPurchasing
+                              ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    color: Colors.amber,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 7),
+                                  Text(
+                                    annualPrice == null
+                                        ? 'Attiva Premium'
+                                        : 'Attiva Premium · $annualPrice / anno',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 7),
+          _buildRequirementCard(
+            number: '2',
+            imagePath: kScaner,
+            title: 'Acquista un lettore barcode',
+            description:
+                'Serve un lettore Bluetooth compatibile, '
+                'da acquistare separatamente.',
+            inlineChild: true,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _openBarcodeReader,
+                style: TextButton.styleFrom(
+                  foregroundColor: kPrimary,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Vedi lettore barcode ↗',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: kBluScuro),
+              SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Il lettore non è incluso nell’abbonamento.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: kBluScuro, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildRequirementCard({
+    required String number,
+    IconData? icon,
+    String? imagePath,
+    required String title,
+    required String description,
+    required Widget child,
+    bool inlineChild = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: kWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kSecondary),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 58,
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: kSecondary,
+                      child: Text(
+                        number,
+                        style: const TextStyle(
+                          color: kBluScuro,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    if (imagePath != null)
+                      Image.asset(
+                        imagePath,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.contain,
+                      )
+                    else if (icon != null)
+                      Icon(icon, color: kPrimary, size: 35),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: kBluScuro,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: const TextStyle(color: kBluScuro, fontSize: 12),
+                    ),
+                    if (inlineChild) ...[const SizedBox(height: 3), child],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!inlineChild) ...[const SizedBox(height: 7), child],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openBarcodeReader() async {
+    final launched = await launchUrl(
+      Uri.parse(kAmazonScanner),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossibile aprire la pagina del lettore barcode.'),
+        ),
+      );
+    }
   }
 
   Widget opzioni(String title, List<String> kFiltro) {
@@ -285,12 +531,10 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                 ? kFiltro.where((f) => !_selectedFilters.contains(f))
                 : kFiltro)
             .toList();
-
     // Se il gruppo non ha più item da mostrare, nascondi l'intero blocco (titolo compreso)
     if (itemsToShow.isEmpty) {
       return const SizedBox.shrink();
     }
-
     return Column(
       children: [
         if (!_hideUnselectedFilters)
@@ -366,11 +610,9 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         ref.read(scannedBarcodeProvider.notifier).state = null;
       });
     });
-
     final bleScanning = ref.watch(bleScanningProvider);
     //final bleStatus = ref.watch(bleStatusProvider);
     final isBleConnected = ref.watch(bleConnected);
-
     return BlocListener<SubscriptionCubit, SubscribtionState>(
       listener: (context, state) {
         if (state is SubscribtionLoaded) {
@@ -488,7 +730,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
                                                 bleScanning,
                                                 isBleConnected,
                                               ),
-
                                               //button per attivare l'abbonamento
                                               if (_selectedFilters.isNotEmpty)
                                                 Align(
@@ -597,7 +838,6 @@ extension on _SelectedListPageState {
         }
         return;
       }
-
       // Se più risultati, per ora aggiunge il primo
       final prodotto = results.first;
       _aggiungi(prodotto, clearSearchState: false);
