@@ -8,8 +8,10 @@ Bluetooth, si organizzano in liste e si esportano in PDF o CSV.
 - **Account** con Firebase Authentication: registrazione, login, recupero password.
 - **Liste di inventario** salvate su Cloud Firestore, sincronizzate in tempo reale
   tra più telefoni collegati allo stesso account.
-- **Scanner Bluetooth** (`BarCode Scanner BLE`): ogni lettura aggiunge un pezzo
-  alla lista aperta. In alternativa, ricerca manuale e contatore.
+- **Scanner Bluetooth**: lo scanner si sceglie da una schermata che elenca i
+  dispositivi BLE vicini (`BarCode Scanner BLE` in evidenza). Sono supportati gli
+  scanner che espongono il servizio GATT `FEEA` o `FFF0`; ogni lettura aggiunge
+  un pezzo alla lista aperta. In alternativa, ricerca manuale e contatore.
 - **Ricerca prodotti** per nome, EAN o MINSAN tramite servizio SOAP, con scheda
   prodotto e bugiardino.
 - **Export** delle liste selezionate in PDF o CSV, con nome file, nome farmacia

@@ -108,6 +108,9 @@ Future<String?> readSerialNumber(BluetoothDevice dev) async {
 BluetoothDevice? _bleDevice;
 final List<StreamSubscription> _bleSubs = [];
 final Guid _feea = Guid('0000FEEA-0000-1000-8000-00805F9B34FB');
+// Servizio "seriale" usato da altri modelli di scanner BLE
+final Guid _fff0 = Guid('0000FFF0-0000-1000-8000-00805F9B34FB');
+final List<Guid> _scannerServices = [_feea, _fff0];
 
 Future<void> _bleEnsurePerms() async {
   await [
@@ -172,7 +175,7 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
         logger.i(r.device);
 
         //if (r.device.remoteId.str != '54DCB6B0-828C-D8CF-57BB-3D4D7E54EC3B')
-        if (r.device.platformName != 'BarCode Scanner BLE') continue;
+        if (r.device.platformName != kNomeScannerBle) continue;
 
         // preso il primo device; ferma scan e connetti
         await FlutterBluePlus.stopScan();
@@ -200,6 +203,39 @@ Future<void> bleStartScanAndListen(WidgetRef ref) async {
       ref.read(bleStatusProvider.notifier).state = "Nessun dispositivo trovato";
     }
   });
+}
+
+/// Nome pubblicizzato dallo scanner compatibile
+const kNomeScannerBle = 'BarCode Scanner BLE';
+
+Future<void> bleRequestPermissions() => _bleEnsurePerms();
+
+/// Connette il dispositivo scelto dall'utente e si mette in ascolto dei
+/// barcode. Restituisce null se lo scanner è pronto, altrimenti il motivo
+/// dell'errore da mostrare all'utente.
+Future<String?> bleConnectToDevice(BluetoothDevice dev, WidgetRef ref) async {
+  await _bleDispose();
+  ref.read(bleStatusProvider.notifier).state =
+      'Connessione a ${dev.remoteId.str}…';
+  try {
+    // connect() può fallire senza eccezione e lasciare l'attesa appesa
+    await _bleConnectAndSubscribe(
+      dev,
+      ref,
+    ).timeout(const Duration(seconds: 15));
+  } on TimeoutException {
+    logger.e('Connessione BLE: timeout');
+    ref.read(bleStatusProvider.notifier).state =
+        'Lo scanner non risponde: verifica che sia acceso e non collegato '
+        'ad altri dispositivi';
+  } catch (e) {
+    logger.e('Connessione BLE fallita: $e');
+    ref.read(bleStatusProvider.notifier).state = 'Connessione non riuscita: $e';
+  }
+  if (ref.read(bleConnected)) return null;
+  // Connesso ma inutilizzabile come scanner: meglio liberarlo
+  await _bleDispose();
+  return ref.read(bleStatusProvider);
 }
 
 Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
@@ -240,32 +276,44 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
 
   final services = await dev.discoverServices();
 
-  // 🔎 trova il service FEEA senza istanziare nulla
+  // 🔎 trova il primo service scanner supportato (FEEA o FFF0)
   BluetoothService? feeaSvc;
   for (final s in services) {
-    if (s.uuid == _feea) {
+    if (_scannerServices.contains(s.uuid)) {
       feeaSvc = s;
       break;
     }
   }
 
   if (feeaSvc == null) {
+    logger.w(
+      'Service scanner non trovato. Servizi del dispositivo: '
+      '${services.map((s) => s.uuid.str).join(', ')}',
+    );
     //setState(() => _bleStatus = 'Service FEEA non trovato');
-    ref.read(bleStatusProvider.notifier).state = 'Service FEEA non trovato';
+    ref.read(bleStatusProvider.notifier).state =
+        'Dispositivo non compatibile: servizio scanner non trovato';
 
     // opzionale: in alternativa sottoscrivi QUALSIASI characteristic con notify:
     // await _subscribeAllNotify(services);
     return;
   }
 
-  // Sottoscrizione alle characteristic notify del service FEEA
+  logger.i(
+    'Service scanner ${feeaSvc.uuid.str}, characteristic: '
+    '${feeaSvc.characteristics.map((c) => '${c.uuid.str}${c.properties.notify ? ' [notify]' : ''}${c.properties.indicate ? ' [indicate]' : ''}').join(', ')}',
+  );
+
+  // Sottoscrizione alle characteristic notify del service scanner
   int subscribed = 0;
   for (final c in feeaSvc.characteristics) {
     if (c.properties.notify || c.properties.indicate) {
       await c.setNotifyValue(true);
       subscribed++;
       final s = c.onValueReceived.listen((data) async {
+        logger.i('BLE ricevuto (${data.length} byte): $data');
         final barcode = _bleDecode(data);
+        logger.i('BLE decodificato: "$barcode"');
         if (barcode.isEmpty) return;
         //if (!mounted) return;
         //setState(() => _bleStatus = 'Letto: $barcode');
@@ -284,7 +332,7 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
   ref.read(bleStatusProvider.notifier).state =
       subscribed > 0
           ? 'In ascolto… scansiona un barcode'
-          : 'Nessuna characteristic notify nel service FEEA';
+          : 'Nessuna characteristic notify nel service scanner';
 }
 
 Future<void> _bleDispose() async {

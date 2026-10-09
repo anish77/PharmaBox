@@ -13,6 +13,7 @@ import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/view/ble_device_picker_page.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
 import 'package:pharma_box/widgets/ble_simulator.dart';
@@ -56,6 +57,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   bool _isSearching = false;
   bool _isFidelityLoading = true;
   bool _isAccountActive = false;
+  bool _isBleConnecting = false;
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
   @override
@@ -76,9 +78,13 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     setState(() {
       _isFidelityLoading = true;
     });
-    await context.read<SubscriptionCubit>().checkProStatus();
+    final cubit = context.read<SubscriptionCubit>();
+    await cubit.checkProStatus();
     if (mounted) {
+      // Lo stato può essere emesso prima che il BlocListener sia attivo
+      final state = cubit.state;
       setState(() {
+        if (state is SubscribtionLoaded) _isAccountActive = state.isPro;
         _isFidelityLoading = false;
       });
     }
@@ -216,7 +222,16 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         children: [
           _buildBluetoothImage(bleScanning, isBleConnected),
           const SizedBox(height: 12),
-          if (!isBleConnected && !bleScanning) const ScannerNotConnectedCard(),
+          if (_isBleConnecting)
+            const Column(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 8),
+                Text('Connessione allo scanner…'),
+              ],
+            )
+          else if (!isBleConnected && !bleScanning)
+            const ScannerNotConnectedCard(),
         ],
       ),
     );
@@ -232,13 +247,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
           ).showSnackBar(const SnackBar(content: Text('Account non attivo')));
           return;
         }
+        if (_isBleConnecting) return;
         if (bleScanning) {
           FlutterBluePlus.stopScan();
           ref.read(bleScanningProvider.notifier).state = false;
         } else if (isBleConnected) {
           await bleDisconnect(ref);
         } else {
-          bleStartScanAndListen(ref);
+          await _scegliEConnettiScanner();
         }
       },
       child: Image.asset(
@@ -248,6 +264,27 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         color: isBleConnected ? null : kPrimary,
       ),
     );
+  }
+
+  Future<void> _scegliEConnettiScanner() async {
+    final device = await Navigator.push<BluetoothDevice>(
+      context,
+      MaterialPageRoute(builder: (_) => const BleDevicePickerPage()),
+    );
+    if (device == null || !mounted) return;
+
+    setState(() => _isBleConnecting = true);
+    final errore = await bleConnectToDevice(device, ref);
+    if (!mounted) return;
+    setState(() => _isBleConnecting = false);
+    if (errore != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errore),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
   }
 
   // Schermata compatta: i due requisiti sono immediatamente visibili.
