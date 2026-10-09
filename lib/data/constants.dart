@@ -11,6 +11,7 @@ const kAppName = 'PharmaBox';
 const kLogo = 'assets/Logo.png';
 const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
+const kScanCode2 = 'assets/scan_code2.png';
 const kNoScanCode = 'assets/noScanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
 const kAddListImage = 'assets/add-list.png';
@@ -52,7 +53,8 @@ const kSupporto = 'Ciao, avrei bisogno di supporto con la mia esperienza.';
 const kRegCompletata = 'Registrazione completata ✅';
 const kAttivaAbbonamento = 'Attiva abbonamento';
 const kAbbonamentoPremium = 'Con l’abbonamento Premium puoi:';
-const kAbbonamentoPremiumDescrizione = '• Collegare uno scanner barcode esterno compatibile\n• Effettuare l’inventario della farmacia tramite scansione rapida\n• Ridurre il tempo di inventario rispetto all’inserimento manuale';
+const kAbbonamentoPremiumDescrizione =
+    '• Collegare uno scanner barcode esterno compatibile\n• Effettuare l’inventario della farmacia tramite scansione rapida\n• Ridurre il tempo di inventario rispetto all’inserimento manuale';
 
 // Password sicura
 // Requisiti:
