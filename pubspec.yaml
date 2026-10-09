@@ -43,6 +43,7 @@ dependencies:
   in_app_purchase_storekit: ^0.4.7
   in_app_purchase_platform_interface: ^1.4.0
   purchases_flutter: ^9.10.1
+  font_awesome_flutter: ^11.0.0
 
 
 dev_dependencies:
@@ -80,6 +81,9 @@ flutter:
     - assets/congratulazioni.png
     - assets/noScanCode.png
     - assets/add-list.png
+    - assets/apple.png
+    - assets/facebook.png
+    - assets/google.png
     - assets/fonts/Roboto-Regular.ttf
     - assets/fonts/Roboto-Bold.ttf
  
