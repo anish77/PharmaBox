@@ -315,7 +315,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   Future<void> _showExportSheet(List<_ListExportData> liste) async {
     if (!mounted) return;
 
-    await showModalBottomSheet<void>(
+    final format = await showModalBottomSheet<String>(
       context: context,
       builder: (sheetContext) {
         return SafeArea(
@@ -325,29 +325,121 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ListTile(
                 leading: const Icon(Icons.picture_as_pdf),
                 title: const Text('Scarica PDF'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _handleExport(() => _exportListeAsPdf(liste));
-                },
+                onTap: () => Navigator.of(sheetContext).pop('pdf'),
               ),
               ListTile(
                 leading: const Icon(Icons.table_chart_outlined),
                 title: const Text('Scarica CSV'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _handleExport(() => _exportListeAsCsv(liste));
-                },
+                onTap: () => Navigator.of(sheetContext).pop('csv'),
               ),
             ],
           ),
         );
       },
     );
+
+    if (!mounted || format == null) return;
+    if (format == 'pdf') {
+      await _handleExport(
+        'pdf',
+        (filename) => _exportListeAsPdf(liste, filename),
+      );
+    } else if (format == 'csv') {
+      await _handleExport(
+        'csv',
+        (filename) => _exportListeAsCsv(liste, filename),
+      );
+    }
   }
 
-  Future<void> _handleExport(Future<void> Function() exporter) async {
+  Future<String?> _askExportFilename(String extension) async {
+    final today = DateTime.now();
+    final dateName =
+        '${today.day.toString().padLeft(2, '0')}-'
+        '${today.month.toString().padLeft(2, '0')}-${today.year}';
+    final formKey = GlobalKey<FormState>();
+    final nameFieldKey = GlobalKey<FormFieldState<String>>();
+
+    final filename = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Nome del file'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              key: nameFieldKey,
+              initialValue: dateName,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Nome',
+                suffixText: '.$extension',
+              ),
+              validator: (value) {
+                final name = value?.trim() ?? '';
+                final extensionSuffix = '.$extension';
+                final baseName =
+                    name.toLowerCase().endsWith(extensionSuffix)
+                        ? name.substring(
+                          0,
+                          name.length - extensionSuffix.length,
+                        )
+                        : name;
+                if (baseName.trim().isEmpty) {
+                  return 'Inserisci un nome per il file';
+                }
+                if (RegExp(r'[<>:"/\\|?*\x00-\x1F]').hasMatch(name)) {
+                  return 'Il nome contiene caratteri non validi';
+                }
+                return null;
+              },
+              onFieldSubmitted: (_) {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(
+                    dialogContext,
+                  ).pop(nameFieldKey.currentState?.value?.trim());
+                }
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Annulla'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(
+                    dialogContext,
+                  ).pop(nameFieldKey.currentState?.value?.trim());
+                }
+              },
+              child: const Text('Continua'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (filename == null) return null;
+    final extensionSuffix = '.$extension';
+    final baseName =
+        filename.toLowerCase().endsWith(extensionSuffix)
+            ? filename.substring(0, filename.length - extensionSuffix.length)
+            : filename;
+    return '$baseName$extensionSuffix';
+  }
+
+  Future<void> _handleExport(
+    String extension,
+    Future<void> Function(String filename) exporter,
+  ) async {
+    final filename = await _askExportFilename(extension);
+    if (filename == null) return;
+
     try {
-      await exporter();
+      await exporter(filename);
     } catch (error, stackTrace) {
       _logger.e(
         'Errore durante l\'esportazione delle liste selezionate: $error',
@@ -362,8 +454,15 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     }
   }
 
-  Future<void> _exportListeAsPdf(List<_ListExportData> liste) async {
+  Future<void> _exportListeAsPdf(
+    List<_ListExportData> liste,
+    String filename,
+  ) async {
     final document = pw.Document();
+    final today = DateTime.now();
+    final exportDate =
+        '${today.day.toString().padLeft(2, '0')}/'
+        '${today.month.toString().padLeft(2, '0')}/${today.year}';
     final fontRegular = pw.Font.ttf(
       await rootBundle.load('assets/fonts/Roboto-Regular.ttf'),
     );
@@ -377,7 +476,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         build: (context) {
           final widgets = <pw.Widget>[
             pw.Text(
-              'Liste selezionate',
+              exportDate,
               style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 16),
@@ -429,14 +528,13 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     );
 
     final bytes = await document.save();
-    await _saveAndShare(
-      bytes,
-      'liste_selezionate.pdf',
-      mimeType: 'application/pdf',
-    );
+    await _saveAndShare(bytes, filename, mimeType: 'application/pdf');
   }
 
-  Future<void> _exportListeAsCsv(List<_ListExportData> liste) async {
+  Future<void> _exportListeAsCsv(
+    List<_ListExportData> liste,
+    String filename,
+  ) async {
     final buffer = StringBuffer()..writeln('Lista;Nome prodotto;Minsan;Pezzi');
 
     for (final lista in liste) {
@@ -452,7 +550,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     }
 
     final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
-    await _saveAndShare(bytes, 'liste_selezionate.csv', mimeType: 'text/csv');
+    await _saveAndShare(bytes, filename, mimeType: 'text/csv');
   }
 
   Future<void> _saveAndShare(
@@ -903,8 +1001,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                           nuovoNome
                                                               .trim()
                                                               .toLowerCase();
-                                                      final nameAlreadyUsed =
-                                                          liste.asMap().entries.any(
+                                                      final nameAlreadyUsed = liste
+                                                          .asMap()
+                                                          .entries
+                                                          .any(
                                                             (entry) =>
                                                                 entry.key !=
                                                                     indexLista &&
