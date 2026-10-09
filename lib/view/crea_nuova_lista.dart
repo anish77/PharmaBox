@@ -505,6 +505,48 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     return needsQuotes ? '"$escaped"' : value;
   }
 
+  // Empty state: visible whenever Firestore returns no lists.
+  Widget _buildEmptyListsGuide() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              kAddListImage,
+              width: double.infinity,
+              height: 230,
+              fit: BoxFit.contain,
+              errorBuilder:
+                  (context, error, stackTrace) => const Icon(
+                    Icons.playlist_add_rounded,
+                    size: 100,
+                    color: kPrimary,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Crea la tua prima lista',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: kBluScuro,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Tocca il pulsante + in alto, inserisci un nome e conferma.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, height: 1.45, color: kBluScuro),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -707,11 +749,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                             Expanded(
                               child:
                                   liste.isEmpty
-                                      ? const Center(
-                                        child: Text(
-                                          'Nessuna lista disponibile',
-                                        ),
-                                      )
+                                      ? _buildEmptyListsGuide()
                                       : ListView.builder(
                                         itemCount: liste.length,
                                         itemBuilder: (context, index) {

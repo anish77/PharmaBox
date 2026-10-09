@@ -13,6 +13,7 @@ const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
 const kNoScanCode = 'assets/noScanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
+const kAddListImage = 'assets/add-list.png';
 const kCongratulazioni = 'assets/congratulazioni.png';
 
 //colors
