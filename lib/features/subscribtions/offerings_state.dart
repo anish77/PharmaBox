@@ -24,5 +24,7 @@ class PurchaseLoading extends OfferingsState {
 
 class PurchaseError extends OfferingsState {
   final String message;
-  PurchaseError(this.message);
+  final List<Package> packages;
+
+  PurchaseError(this.message, this.packages);
 }

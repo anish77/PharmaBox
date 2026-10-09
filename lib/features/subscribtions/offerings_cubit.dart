@@ -68,7 +68,7 @@ class OfferingsCubit extends Cubit<OfferingsState> {
 
       // Controlla se l'acquisto è andato a buon fine
       if (customerInfo == null) {
-        emit(PurchaseError('Acquisto non riuscito'));
+        emit(PurchaseError('Acquisto annullato o non completato', _packages));
         return;
       }
 
@@ -78,7 +78,7 @@ class OfferingsCubit extends Cubit<OfferingsState> {
       emit(OfferingsLoaded(_packages));
       onSuccess();
     } catch (e) {
-      emit(PurchaseError('Errore durante l\'acquisto: $e'));
+      emit(PurchaseError('Errore durante l\'acquisto: $e', _packages));
     }
   }
 }
