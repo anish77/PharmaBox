@@ -12,6 +12,7 @@ const kLogo = 'assets/Logo.png';
 const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
 const kScanCode2 = 'assets/scan_code2.png';
+const kScaner = 'assets/scaner.png';
 const kNoScanCode = 'assets/noScanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
 const kAddListImage = 'assets/add-list.png';

@@ -74,6 +74,7 @@ flutter:
     - assets/noImage.png
     - assets/scanCode.png
     - assets/scan_code2.png
+    - assets/scaner.png
     - assets/bluetooth.png
     - assets/app_icon_512x512.png
     - assets/congratulazioni.png
