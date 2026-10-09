@@ -78,7 +78,35 @@ class _LoginPageState extends State<LoginPage> {
         password: _enteredPassword.trim(),
       );
 
-      logger.i('Login OK: ${credentials.user?.email}');
+      final user = credentials.user;
+      if (user != null) {
+        await user.reload();
+        if (!user.emailVerified) {
+          var message =
+              'Email non verificata. Controlla la posta in arrivo e lo spam.';
+          try {
+            await user.sendEmailVerification();
+            message = 'Ti abbiamo inviato un nuovo link di verifica.';
+          } on FirebaseAuthException catch (error) {
+            logger.e('Invio link verifica fallito: ${error.code}');
+            if (error.code == 'too-many-requests') {
+              message = 'Troppe richieste. Attendi qualche minuto e riprova.';
+            } else {
+              message =
+                  'Email non verificata e invio del link non riuscito. '
+                  'Riprova più tardi.';
+            }
+          }
+          await _firebase.signOut();
+          if (!mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+          return;
+        }
+      }
+
+      logger.i('Login OK: ${user?.email}');
 
       if (_rememberCredentials) {
         await _secureStorage.write(

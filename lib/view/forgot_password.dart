@@ -7,37 +7,33 @@ import 'package:pharma_box/widgets/custom_text_form_field.dart';
 final _firebase = FirebaseAuth.instance;
 
 class ForgotPassword extends StatefulWidget {
-  const ForgotPassword({super.key});
+  const ForgotPassword({super.key, this.initialEmail = ''});
+
+  final String initialEmail;
 
   @override
   State<ForgotPassword> createState() => _ForgotPasswordState();
 }
 
 class _ForgotPasswordState extends State<ForgotPassword> {
-  var _enteredEmail = '';
+  late final TextEditingController _emailController;
+  late String _enteredEmail;
 
-  Future<bool> checkIfEmailExists(String email) async {
-    try {
-      // provo a creare un utente "finto"
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: email,
-            password: "passwordFinta123!",
-          );
+  @override
+  void initState() {
+    super.initState();
+    _enteredEmail = widget.initialEmail;
+    _emailController = TextEditingController(text: widget.initialEmail);
+  }
 
-      // se non lancia errore → l'email era libera, quindi elimino subito l'utente
-      await credential.user?.delete();
-      return false; // NON esisteva prima
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        return true; // esiste già
-      }
-      rethrow; // altri errori (tipo email non valida, ecc.)
-    }
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
   }
 
   void _resetPassword() async {
-    if (_enteredEmail.trim().isEmpty || !_enteredEmail.contains('@')) {
+    if (!kRegexEmail.hasMatch(_enteredEmail.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -50,40 +46,30 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     }
 
     try {
-      if (await checkIfEmailExists(_enteredEmail)) {
-        await _firebase.sendPasswordResetEmail(email: _enteredEmail.trim());
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Email di reset inviata! Controlla la tua casella di posta.",
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+      await _firebase.sendPasswordResetEmail(email: _enteredEmail.trim());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Se l’indirizzo è associato a un account, riceverai un’email '
+            'con le istruzioni per reimpostare la password.',
           ),
-        );
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
 
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            Navigator.pop(context);
-          }
-        });
-      } else {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Questa email non esiste"),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) Navigator.pop(context);
+      });
     } on FirebaseAuthException catch (error) {
       String message = "Errore durante il reset";
-      if (error.code == 'user-not-found') {
-        message = "Nessun utente trovato con questa email";
+      if (error.code == 'too-many-requests') {
+        message = 'Troppe richieste. Attendi qualche minuto e riprova.';
+      } else if (error.code == 'invalid-email') {
+        message = 'Indirizzo email non valido.';
       }
-      // ignore: use_build_context_synchronously
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
@@ -142,6 +128,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       const SizedBox(height: 20),
                       CustomTextFormField(
                         label: "Email",
+                        controller: _emailController,
                         onChanged: (value) {
                           setState(() {
                             _enteredEmail = value;
