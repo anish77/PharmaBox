@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -14,6 +15,7 @@ import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
+import 'package:pharma_box/widgets/ble_simulator.dart';
 import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
@@ -27,9 +29,11 @@ import '../include/general_functions.dart';
 class SelectedListPage extends ConsumerStatefulWidget {
   const SelectedListPage({
     super.key,
+    required this.idLista,
     required this.titolo,
     required this.nrListe,
   });
+  final String idLista;
   final String titolo;
   final int nrListe;
   @override
@@ -57,8 +61,8 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   @override
   void initState() {
     super.initState();
-    // Associa il carrello alla lista corrente (in base al titolo della pagina)
-    Carrello.instance.usaLista(widget.titolo);
+    // Associa il carrello alla lista corrente e ne ascolta i prodotti
+    Carrello.instance.usaLista(widget.idLista);
     _loadSubscriptionStatus();
   }
 
@@ -638,6 +642,36 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
               iconTheme: const IconThemeData(color: kBluScuro),
               centerTitle: false,
               titleSpacing: 0,
+              actions: [
+                // Solo debug: simula letture dello scanner Bluetooth
+                if (!kReleaseMode)
+                  ValueListenableBuilder(
+                    valueListenable: BleSimulator.raffica,
+                    builder: (context, raffica, _) {
+                      if (raffica == null) {
+                        return IconButton(
+                          icon: const Icon(
+                            Icons.qr_code_scanner,
+                            color: kWarning,
+                          ),
+                          tooltip: 'Simula lettura Bluetooth (debug)',
+                          onPressed: () => BleSimulator.mostra(context, ref),
+                        );
+                      }
+                      return TextButton.icon(
+                        onPressed: BleSimulator.ferma,
+                        icon: const Icon(Icons.stop_circle, color: kRed),
+                        label: Text(
+                          '${raffica.fatte}/${raffica.totale}',
+                          style: const TextStyle(
+                            color: kRed,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
             body: GestureDetector(
               behavior: HitTestBehavior.translucent,

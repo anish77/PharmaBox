@@ -1,146 +1,175 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:logger/web.dart';
 import '../models/prodotto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:pharma_box/firebase/firebase_logic.dart';
+import 'package:pharma_box/firebase/liste_repository.dart';
 import 'package:pharma_box/data/constants.dart';
 
+/// Specchio locale della lista aperta, sincronizzato in tempo reale con
+/// Firestore: le letture fatte da altri telefoni sullo stesso account
+/// compaiono qui automaticamente.
 class Carrello {
   Carrello._privateConstructor();
   static final Carrello instance = Carrello._privateConstructor();
 
-  final Map<String, ValueNotifier<List<Prodotto>>> _liste = {};
-  String _listaCorrente = '_default';
+  final Logger _logger = Logger(printer: PrettyPrinter());
 
-  /// Imposta la lista corrente (crea se non esiste)
-  void usaLista(String nomeLista) {
-    _listaCorrente = nomeLista;
-    _liste.putIfAbsent(nomeLista, () => ValueNotifier<List<Prodotto>>([]));
-  }
+  /// Prodotti della lista corrente
+  final ValueNotifier<List<Prodotto>> prodotti = ValueNotifier([]);
 
-  /// Restituisce il ValueNotifier della lista corrente
-  ValueNotifier<List<Prodotto>> get prodotti {
-    _liste.putIfAbsent(_listaCorrente, () => ValueNotifier<List<Prodotto>>([]));
-    return _liste[_listaCorrente]!;
-  }
+  final Map<String, Prodotto> _perMinsan = {};
+  String? _uid;
+  String? _idLista;
+  StreamSubscription<List<ItemLista>>? _sub;
 
-  void aggiungiProdotto(Prodotto prodotto) {
-    final notifier = prodotti;
-    final list = List<Prodotto>.from(notifier.value);
-    final index = list.indexWhere((p) => p.minsan == prodotto.minsan);
-
-    if (index >= 0) {
-      list[index].pezzi.value += prodotto.pezzi.value;
-    } else {
-      list.add(prodotto);
-    }
-    notifier.value = list; // 🔄 notifica cambiamento
-
-    // Persisti su Firestore
+  /// Imposta la lista corrente e ne ascolta i prodotti su Firestore
+  void usaLista(String idLista) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      final qty =
-          list.firstWhere((p) => p.minsan == prodotto.minsan).pezzi.value;
-      FirebaseLogic.instance.upsertItemLista(
-        uid: uid,
-        nomeLista: _listaCorrente,
-        item: {
-          'minsan': prodotto.minsan,
-          'titolo': prodotto.nome,
-          'quantity': qty,
-          // opzionale: altri campi utili
-        },
-      );
+    if (uid == _uid && idLista == _idLista && _sub != null) return;
+
+    _sub?.cancel();
+    _sub = null;
+    _uid = uid;
+    _idLista = idLista;
+    _perMinsan.clear();
+    prodotti.value = [];
+    if (uid == null) return;
+
+    _sub = ListeRepository.instance
+        .streamItems(uid, idLista)
+        .listen(
+          _applicaSnapshot,
+          onError: (e) => _logger.e('Errore sincronizzazione lista: $e'),
+        );
+  }
+
+  void _applicaSnapshot(List<ItemLista> items) {
+    final aggiornati = <String, Prodotto>{};
+    for (final item in items) {
+      // Riusa l'oggetto esistente: mantiene i dati della ricerca e lo stato
+      // delle celle che lo osservano
+      final prodotto = _perMinsan[item.minsan] ?? _daItem(item);
+      if (prodotto.pezzi.value != item.quantity) {
+        prodotto.pezzi.value = item.quantity;
+      }
+      aggiornati[item.minsan] = prodotto;
     }
+    _perMinsan
+      ..clear()
+      ..addAll(aggiornati);
+    prodotti.value = _perMinsan.values.toList();
+  }
+
+  /// Aggiunge [quantita] pezzi (default 1) con un incremento atomico
+  void aggiungiProdotto(Prodotto prodotto, {int quantita = 1}) {
+    final uid = _uid;
+    final idLista = _idLista;
+    if (uid == null || idLista == null || prodotto.minsan.isEmpty) return;
+
+    final esistente = _perMinsan[prodotto.minsan];
+    if (esistente != null) {
+      esistente.pezzi.value += quantita;
+    } else {
+      _perMinsan[prodotto.minsan] = _copia(prodotto, quantita);
+    }
+    prodotti.value = _perMinsan.values.toList();
+
+    ListeRepository.instance
+        .incrementa(
+          uid,
+          idLista,
+          minsan: prodotto.minsan,
+          titolo: prodotto.nome,
+          delta: quantita,
+        )
+        .catchError((e) => _logger.e('Errore salvataggio lettura: $e'));
   }
 
   void svuotaLista() {
-    final notifier = prodotti;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = _uid;
+    final idLista = _idLista;
+    _perMinsan.clear();
+    prodotti.value = [];
+    if (uid == null || idLista == null) return;
 
-    // Svuota la lista locale
-    notifier.value = [];
-
-    // Se l'utente è autenticato, elimina gli elementi da Firestore
-    if (uid != null) {
-      FirebaseLogic.instance.svuotaListaUtente(
-        uid: uid,
-        nomeLista: _listaCorrente,
-      );
-    }
+    ListeRepository.instance
+        .svuotaLista(uid, idLista)
+        .catchError((e) => _logger.e('Errore svuotamento lista: $e'));
   }
 
+  /// Imposta la quantità esatta; a 0 il prodotto resta in lista
   void aggiornaQuantita(Prodotto prodotto, int newQuantity) {
-    final notifier = prodotti;
-    final list = List<Prodotto>.from(notifier.value);
-    final index = list.indexWhere((p) => p.minsan == prodotto.minsan);
+    final uid = _uid;
+    final idLista = _idLista;
+    final esistente = _perMinsan[prodotto.minsan];
+    if (uid == null || idLista == null || esistente == null) return;
 
-    if (index >= 0) {
-      final quantity = newQuantity < 0 ? 0 : newQuantity;
-      list[index].pezzi.value = quantity;
-      notifier.value = list; // 🔄 notifica cambiamento
+    final nuova = newQuantity < 0 ? 0 : newQuantity;
+    final attuale = esistente.pezzi.value;
+    // Alcuni widget notificano la stessa modifica due volte: la seconda
+    // chiamata non deve alterare il totale della lista
+    if (nuova == attuale) return;
 
-      // Persisti su Firestore
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        // Usa upsert completo per mantenere il prodotto anche a quantità zero.
-        FirebaseLogic.instance.upsertItemLista(
-          uid: uid,
-          nomeLista: _listaCorrente,
-          item: {
-            'minsan': prodotto.minsan,
-            'titolo': prodotto.nome,
-            'quantity': quantity,
-          },
-        );
-      }
-    }
+    esistente.pezzi.value = nuova;
+    prodotti.value = _perMinsan.values.toList();
+
+    ListeRepository.instance
+        .impostaQuantita(
+          uid,
+          idLista,
+          minsan: prodotto.minsan,
+          titolo: esistente.nome,
+          quantity: nuova,
+          delta: nuova - attuale,
+        )
+        .catchError((e) => _logger.e('Errore salvataggio quantità: $e'));
   }
 
+  /// Elimina il prodotto dalla lista, qualunque sia la quantità
   void rimuoviProdotto(Prodotto prodotto) {
-    final notifier = prodotti;
-    final list = List<Prodotto>.from(notifier.value);
-    list.removeWhere((item) => item.minsan == prodotto.minsan);
-    notifier.value = list;
+    final uid = _uid;
+    final idLista = _idLista;
+    if (uid == null || idLista == null) return;
+    final esistente = _perMinsan.remove(prodotto.minsan);
+    if (esistente == null) return;
+    prodotti.value = _perMinsan.values.toList();
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      FirebaseLogic.instance.rimuoviItemLista(
-        uid: uid,
-        nomeLista: _listaCorrente,
-        minsan: prodotto.minsan,
-      );
-    }
+    ListeRepository.instance
+        .rimuoviItem(
+          uid,
+          idLista,
+          minsan: prodotto.minsan,
+          quantity: esistente.pezzi.value,
+        )
+        .catchError((e) => _logger.e('Errore rimozione prodotto: $e'));
   }
 
-  // Sostituisce completamente i prodotti della lista corrente
-  void sostituisciProdottiCorrenti(List<Prodotto> nuovi) {
-    prodotti.value = List<Prodotto>.from(nuovi);
-  }
+  Prodotto _copia(Prodotto p, int pezzi) => Prodotto(
+    nome: p.nome,
+    minsan: p.minsan,
+    tipoProdotto: p.tipoProdotto,
+    tipoProdottoDettaglio: p.tipoProdottoDettaglio,
+    immagine: p.immagine,
+    pezzi: pezzi,
+    vendibile: p.vendibile,
+    description: p.description,
+    ingredients: p.ingredients,
+    howToTake: p.howToTake,
+    codice: p.codice,
+    rendibile: p.rendibile,
+  );
 
-  // Carica da Firestore gli items della lista corrente
-  Future<void> caricaListaDaCloud(String uid) async {
-    final items = await FirebaseLogic.instance.leggiItemsLista(
-      uid: uid,
-      nomeLista: _listaCorrente,
-    );
-    final prodottiCaricati =
-        items.map((e) {
-          final qty = (e['quantity'] ?? 0) as int;
-          final titolo =
-              (e['titolo'] ?? e['title'] ?? e['name'] ?? e['nome'] ?? '')
-                  as String;
-          return Prodotto(
-            nome: titolo.isNotEmpty ? titolo : (e['minsan'] ?? '') as String,
-            minsan: (e['minsan'] ?? '') as String,
-            immagine: kNoImage,
-            pezzi: qty,
-            vendibile: 0,
-            description: '',
-            ingredients: '',
-            howToTake: '',
-            codice: '',
-          );
-        }).toList();
-    sostituisciProdottiCorrenti(prodottiCaricati);
-  }
+  Prodotto _daItem(ItemLista item) => Prodotto(
+    nome: item.titolo.isNotEmpty ? item.titolo : item.minsan,
+    minsan: item.minsan,
+    immagine: kNoImage,
+    pezzi: item.quantity,
+    vendibile: 0,
+    description: '',
+    ingredients: '',
+    howToTake: '',
+    codice: '',
+  );
 }

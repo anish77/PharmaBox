@@ -111,7 +111,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'email': _emailController.text.trim(),
         'uid': uid,
-        'liste': [],
+        'listeMigrate': true, // le liste sono in users/{uid}/liste
         'codiceInvito': codiceInvito,
         'isPro': false,
         'subscription': [],

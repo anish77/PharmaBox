@@ -8,6 +8,7 @@ import 'package:logger/web.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/firebase/liste_repository.dart';
 import 'package:pharma_box/logic/open_email.dart';
 import 'package:pharma_box/view/info.dart';
 import 'package:pharma_box/view/privacy_policy.dart';
@@ -29,8 +30,13 @@ class CreaNuovaLista extends StatefulWidget {
 }
 
 class _ListaViewData {
-  const _ListaViewData({required this.nome, required this.totalePezzi});
+  const _ListaViewData({
+    required this.id,
+    required this.nome,
+    required this.totalePezzi,
+  });
 
+  final String id;
   final String nome;
   final int totalePezzi;
 }
@@ -56,9 +62,11 @@ class _ListExportItem {
 
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
   final Logger _logger = Logger(printer: PrettyPrinter());
+  // Id delle liste spuntate per l'esportazione
   final Set<String> _checkedLists = <String>{};
   int? selectedIndex;
   String referralCode = '';
+  late final Stream<List<_ListaViewData>> _listeStream = getListeStream();
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
 
@@ -66,6 +74,20 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   void initState() {
     super.initState();
     _caricaReferralCode();
+    _migraListe();
+  }
+
+  Future<void> _migraListe() async {
+    final uid = _currentUid;
+    if (uid == null) return;
+    try {
+      await ListeRepository.instance.migraListeLegacy(uid);
+    } catch (error, stackTrace) {
+      _logger.e(
+        'Errore nella migrazione delle liste: $error',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _caricaReferralCode() async {
@@ -100,103 +122,28 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
       return Stream<List<_ListaViewData>>.value(const []);
     }
 
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots(includeMetadataChanges: true)
-        .map((doc) {
-          if (!doc.exists) {
-            return (
-              liste: const <_ListaViewData>[],
-              fromCache: doc.metadata.isFromCache,
-            );
-          }
-          final rawListe = List<Map<String, dynamic>>.from(
-            doc.data()?['liste'] ?? [],
-          );
-          final liste = rawListe
-              .map((lista) {
-                final nome = (lista['nomeLista'] ?? '').toString();
-                if (nome.isEmpty) return null;
-                final totaleItems = _sommaQuantita(lista['items']);
-                final totaleProdotti = _sommaQuantita(lista['prodotti']);
-                final totale = totaleItems > 0 ? totaleItems : totaleProdotti;
-                return _ListaViewData(nome: nome, totalePezzi: totale);
-              })
-              .whereType<_ListaViewData>()
-              .toList(growable: false);
-          return (liste: liste, fromCache: doc.metadata.isFromCache);
-        })
-        // Ignore empty cache snapshots until Firestore confirms whether lists exist.
-        .where((snapshot) => !snapshot.fromCache || snapshot.liste.isNotEmpty)
-        .map((snapshot) => snapshot.liste);
+    return ListeRepository.instance
+        .streamListe(uid)
+        .map(
+          (liste) => liste
+              .map(
+                (l) => _ListaViewData(
+                  id: l.id,
+                  nome: l.nome,
+                  totalePezzi: l.totalePezzi,
+                ),
+              )
+              .toList(growable: false),
+        );
   }
 
-  int _sommaQuantita(dynamic rawItems) {
-    if (rawItems is Iterable) {
-      var totale = 0;
-      for (final element in rawItems) {
-        if (element is Map) {
-          final map = element.map(
-            (key, value) => MapEntry(key.toString(), value),
-          );
-          final quantity =
-              map['quantity'] ??
-              map['qty'] ??
-              map['pezzi'] ??
-              map['quantita'] ??
-              map['qta'];
-          totale += _parseQuantity(quantity);
-        }
-      }
-      return totale;
-    }
-    return 0;
-  }
-
-  List<Map<String, dynamic>> _normalizeEntries(dynamic rawEntries) {
-    if (rawEntries is Iterable) {
-      return rawEntries
-          .whereType<Map>()
-          .map(
-            (element) =>
-                element.map((key, value) => MapEntry(key.toString(), value)),
-          )
-          .toList(growable: false);
-    }
-    return <Map<String, dynamic>>[];
-  }
-
-  int _parseQuantity(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
-
-  Future<void> eliminaLista(String nomeLista) async {
+  Future<void> eliminaLista(String idLista) async {
     final uid = _currentUid;
     if (uid == null) {
       _logger.w('eliminaLista invocato senza utente autenticato');
       return;
     }
-
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    if (!doc.exists) return;
-
-    final rawListe = doc.data()?['liste'] ?? [];
-    final liste = List<Map<String, dynamic>>.from(rawListe);
-    final target = liste.firstWhere(
-      (lista) => lista['nomeLista'] == nomeLista,
-      orElse: () => <String, dynamic>{},
-    );
-
-    if (target.isEmpty) return;
-
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'liste': FieldValue.arrayRemove([target]),
-    });
+    await ListeRepository.instance.eliminaLista(uid, idLista);
   }
 
   Future<void> _scaricaListeSelezionate() async {
@@ -220,57 +167,28 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     }
 
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (!snapshot.exists) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Impossibile recuperare le liste selezionate.'),
-          ),
-        );
-        return;
-      }
-
-      final rawListe = List<Map<String, dynamic>>.from(
-        snapshot.data()?['liste'] ?? [],
-      );
+      final repo = ListeRepository.instance;
+      final liste = await repo.leggiListe(uid);
       final exportListe = <_ListExportData>[];
 
-      for (final rawLista in rawListe) {
-        final nome = (rawLista['nomeLista'] ?? '').toString();
-        if (!_checkedLists.contains(nome)) continue;
+      for (final lista in liste) {
+        if (!_checkedLists.contains(lista.id)) continue;
 
-        var entries = _normalizeEntries(rawLista['items']);
-        if (entries.isEmpty) entries = _normalizeEntries(rawLista['prodotti']);
-
-        final items = entries
-            .map((entry) {
-              final rawNome =
-                  entry['titolo'] ??
-                  entry['title'] ??
-                  entry['name'] ??
-                  entry['nome'] ??
-                  entry['description'] ??
-                  '';
-              final minsan = (entry['minsan'] ?? entry['id'] ?? '').toString();
-              final quantity = _parseQuantity(
-                entry['quantity'] ??
-                    entry['qty'] ??
-                    entry['pezzi'] ??
-                    entry['quantita'] ??
-                    entry['qta'],
+        final items =
+            (await repo.leggiItems(uid, lista.id))
+                .map(
+                  (item) => _ListExportItem(
+                    nome: item.titolo,
+                    minsan: item.minsan,
+                    quantity: item.quantity,
+                  ),
+                )
+                .toList()
+              ..sort(
+                (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
               );
-              return _ListExportItem(
-                nome: rawNome.toString(),
-                minsan: minsan,
-                quantity: quantity,
-              );
-            })
-            .where((item) => item.nome.isNotEmpty || item.minsan.isNotEmpty)
-            .toList(growable: false);
 
-        exportListe.add(_ListExportData(nome: nome, items: items));
+        exportListe.add(_ListExportData(nome: lista.nome, items: items));
       }
 
       if (exportListe.isEmpty) {
@@ -908,7 +826,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 child: Builder(
                   builder: (safeContext) {
                     return StreamBuilder<List<_ListaViewData>>(
-                      stream: getListeStream(),
+                      stream: _listeStream,
                       builder: (context, snapshot) {
                         final liste = snapshot.data ?? const <_ListaViewData>[];
                         final totaleGlobal = liste.fold<int>(
@@ -938,15 +856,16 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                         itemCount: liste.length,
                                         itemBuilder: (context, index) {
                                           final entry = liste[index];
+                                          final idLista = entry.id;
                                           final nomeLista = entry.nome;
                                           final totalePezzi = entry.totalePezzi;
                                           final isSelected =
                                               selectedIndex == index;
                                           final isChecked = _checkedLists
-                                              .contains(nomeLista);
+                                              .contains(idLista);
 
                                           return Dismissible(
-                                            key: Key(nomeLista),
+                                            key: ValueKey(idLista),
                                             direction:
                                                 DismissDirection.horizontal,
                                             background: Container(
@@ -1030,91 +949,56 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                     nuovoNome.isNotEmpty) {
                                                   final currentUid =
                                                       _currentUid;
-                                                  if (currentUid == null &&
-                                                      context.mounted) {
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text(
-                                                          'Effettua il login per modificare le liste',
+                                                  if (currentUid == null) {
+                                                    if (context.mounted) {
+                                                      ScaffoldMessenger.of(
+                                                        context,
+                                                      ).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                            'Effettua il login per modificare le liste',
+                                                          ),
                                                         ),
-                                                      ),
-                                                    );
+                                                      );
+                                                    }
                                                     return false;
                                                   }
 
-                                                  final docRef =
-                                                      FirebaseFirestore.instance
-                                                          .collection('users')
-                                                          .doc(currentUid);
-                                                  final doc =
-                                                      await docRef.get();
-                                                  if (doc.exists) {
-                                                    final data = doc.data()!;
-                                                    final liste = List<
-                                                      Map<String, dynamic>
-                                                    >.from(data['liste'] ?? []);
-                                                    final indexLista = liste
-                                                        .indexWhere(
-                                                          (lista) =>
-                                                              lista['nomeLista'] ==
-                                                              nomeLista,
-                                                        );
-
-                                                    if (indexLista >= 0) {
-                                                      final normalizedName =
-                                                          nuovoNome
-                                                              .trim()
-                                                              .toLowerCase();
-                                                      final nameAlreadyUsed = liste
-                                                          .asMap()
-                                                          .entries
-                                                          .any(
-                                                            (entry) =>
-                                                                entry.key !=
-                                                                    indexLista &&
-                                                                (entry.value['nomeLista']
-                                                                            ?.toString()
-                                                                            .trim()
-                                                                            .toLowerCase() ??
-                                                                        '') ==
-                                                                    normalizedName,
-                                                          );
-                                                      if (nameAlreadyUsed) {
-                                                        if (context.mounted) {
-                                                          ScaffoldMessenger.of(
-                                                            context,
-                                                          ).showSnackBar(
-                                                            const SnackBar(
-                                                              content: Text(
-                                                                'Esiste già una lista con questo nome',
-                                                              ),
-                                                            ),
-                                                          );
-                                                        }
-                                                        return false;
-                                                      }
-
-                                                      final wasChecked =
-                                                          _checkedLists.remove(
-                                                            nomeLista,
-                                                          );
-                                                      liste[indexLista]['nomeLista'] =
-                                                          nuovoNome.trim();
-                                                      await docRef.update({
-                                                        'liste': liste,
-                                                      });
-                                                      if (wasChecked &&
-                                                          mounted) {
-                                                        setState(() {
-                                                          _checkedLists.add(
-                                                            nuovoNome.trim(),
-                                                          );
-                                                        });
-                                                      }
+                                                  final repo =
+                                                      ListeRepository.instance;
+                                                  final duplicato = await repo
+                                                      .esisteNome(
+                                                        currentUid,
+                                                        nuovoNome,
+                                                        escludiId: idLista,
+                                                      );
+                                                  if (duplicato) {
+                                                    if (context.mounted) {
+                                                      ScaffoldMessenger.of(
+                                                        context,
+                                                      ).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                            'Esiste già una lista con questo nome',
+                                                          ),
+                                                          backgroundColor:
+                                                              Colors.red,
+                                                        ),
+                                                      );
                                                     }
+                                                    return false;
                                                   }
+                                                  repo
+                                                      .rinominaLista(
+                                                        currentUid,
+                                                        idLista,
+                                                        nuovoNome,
+                                                      )
+                                                      .catchError(
+                                                        (e) => _logger.e(
+                                                          'Errore rinomina lista: $e',
+                                                        ),
+                                                      );
                                                 }
                                                 return false;
                                               }
@@ -1167,7 +1051,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                             onDismissed: (direction) async {
                                               if (direction ==
                                                   DismissDirection.endToStart) {
-                                                await eliminaLista(nomeLista);
+                                                eliminaLista(idLista).catchError(
+                                                  (e) => _logger.e(
+                                                    'Errore eliminazione lista: $e',
+                                                  ),
+                                                );
                                                 if (context.mounted) {
                                                   ScaffoldMessenger.of(
                                                     context,
@@ -1182,7 +1070,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                 if (mounted) {
                                                   setState(
                                                     () => _checkedLists.remove(
-                                                      nomeLista,
+                                                      idLista,
                                                     ),
                                                   );
                                                 }
@@ -1210,11 +1098,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                   setState(() {
                                                     if (value) {
                                                       _checkedLists.add(
-                                                        nomeLista,
+                                                        idLista,
                                                       );
                                                     } else {
                                                       _checkedLists.remove(
-                                                        nomeLista,
+                                                        idLista,
                                                       );
                                                     }
                                                   });
@@ -1249,29 +1137,15 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                         alpha: 0.3,
                                                       )
                                                       : null,
-                                              onTap: () async {
+                                              onTap: () {
                                                 setState(
                                                   () => selectedIndex = index,
                                                 );
+                                                // I prodotti arrivano in tempo
+                                                // reale: la pagina si apre subito
                                                 Carrello.instance.usaLista(
-                                                  nomeLista,
+                                                  idLista,
                                                 );
-
-                                                final uid = _currentUid;
-                                                if (uid != null) {
-                                                  await Carrello.instance
-                                                      .caricaListaDaCloud(uid);
-                                                } else {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'Effettua il login per sincronizzare la lista',
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
 
                                                 if (context.mounted) {
                                                   Navigator.push(
@@ -1281,6 +1155,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                           (
                                                             context,
                                                           ) => SelectedListPage(
+                                                            idLista: idLista,
                                                             titolo: nomeLista,
                                                             nrListe:
                                                                 liste.length,
