@@ -103,13 +103,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     return FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((doc) {
-          if (!doc.exists) return const <_ListaViewData>[];
+          if (!doc.exists) {
+            return (
+              liste: const <_ListaViewData>[],
+              fromCache: doc.metadata.isFromCache,
+            );
+          }
           final rawListe = List<Map<String, dynamic>>.from(
             doc.data()?['liste'] ?? [],
           );
-          return rawListe
+          final liste = rawListe
               .map((lista) {
                 final nome = (lista['nomeLista'] ?? '').toString();
                 if (nome.isEmpty) return null;
@@ -120,7 +125,11 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               })
               .whereType<_ListaViewData>()
               .toList(growable: false);
-        });
+          return (liste: liste, fromCache: doc.metadata.isFromCache);
+        })
+        // Ignore empty cache snapshots until Firestore confirms whether lists exist.
+        .where((snapshot) => !snapshot.fromCache || snapshot.liste.isNotEmpty)
+        .map((snapshot) => snapshot.liste);
   }
 
   int _sommaQuantita(dynamic rawItems) {
@@ -748,7 +757,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                           children: [
                             Expanded(
                               child:
-                                  liste.isEmpty
+                                  snapshot.hasError
+                                      ? const Center(
+                                        child: Text(
+                                          'Errore nel caricamento delle liste.',
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      )
+                                      : !snapshot.hasData
+                                      ? const Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                      : liste.isEmpty
                                       ? _buildEmptyListsGuide()
                                       : ListView.builder(
                                         itemCount: liste.length,
