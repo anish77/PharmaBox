@@ -7,49 +7,59 @@ import 'package:pharma_box/data/constants.dart';
 class CreaListaPopup {
   var logger = Logger(printer: PrettyPrinter());
 
-  Future<bool> listaEsiste(String nomeLista) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+  String _normalizeName(String name) => name.trim().toLowerCase();
 
-    if (doc.exists) {
-      final data = doc.data();
-      final liste = data?['liste'] ?? [];
-      for (var lista in liste) {
-        if (lista['nomeLista'].toString().toLowerCase() ==
-            nomeLista.toLowerCase()) {
-          return true; // già esistente
+  Future<bool> aggiungiLista(String nomeLista, BuildContext context) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      _mostraErrore(context, 'Effettua il login per creare una lista');
+      return false;
+    }
+
+    try {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+      final creata = await FirebaseFirestore.instance.runTransaction<bool>((
+        transaction,
+      ) async {
+        final doc = await transaction.get(userRef);
+        final liste = List<Map<String, dynamic>>.from(
+          doc.data()?['liste'] ?? [],
+        );
+
+        final nomeNormalizzato = _normalizeName(nomeLista);
+        final esiste = liste.any(
+          (lista) =>
+              _normalizeName(lista['nomeLista']?.toString() ?? '') ==
+              nomeNormalizzato,
+        );
+        if (esiste) return false;
+
+        liste.add({'nomeLista': nomeLista.trim(), 'items': []});
+        transaction.set(userRef, {'liste': liste}, SetOptions(merge: true));
+        return true;
+      });
+
+      if (!creata) {
+        if (context.mounted) {
+          _mostraErrore(context, 'Esiste già una lista con questo nome');
         }
+        return false;
       }
+      return true;
+    } catch (error, stackTrace) {
+      logger.e(
+        'Errore durante la creazione della lista: $error',
+        stackTrace: stackTrace,
+      );
+      if (context.mounted) {
+        _mostraErrore(context, 'Impossibile creare la lista. Riprova.');
+      }
+      return false;
     }
-    return false;
-  }
-
-  Future<void> aggiungiLista(String nomeLista, BuildContext context) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-
-    // controllo duplicati
-    final esiste = await listaEsiste(nomeLista);
-    if (esiste) {
-      // ignore: use_build_context_synchronously
-      _mostraErrore(context, "Esiste già una lista con questo nome");
-      return;
-    }
-
-    // aggiunta lista
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'liste': FieldValue.arrayUnion([
-        {'nomeLista': nomeLista, 'items': []},
-      ]),
-    });
   }
 
   void showPopup(BuildContext context) {
-    final now = DateTime.now();
-    final String meseAnno = "${_nomeMese(now.month)} ${now.year} - ";
-    final TextEditingController controller = TextEditingController(
-      text: meseAnno,
-    );
+    final TextEditingController controller = TextEditingController();
 
     showDialog(
       context: context,
@@ -76,6 +86,7 @@ class CreaListaPopup {
                     controller: controller,
                     decoration: const InputDecoration(
                       labelText: 'Titolo Lista',
+                      hintText: 'Inserisci il nome della lista',
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: kPrimary),
                       ),
@@ -121,10 +132,11 @@ class CreaListaPopup {
                       return;
                     }
 
-                    await aggiungiLista(nomeLista, context);
+                    final creata = await aggiungiLista(nomeLista, context);
 
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop();
+                    if (creata && context.mounted) {
+                      Navigator.of(context).pop();
+                    }
                   },
                 ),
               ],
@@ -139,23 +151,5 @@ class CreaListaPopup {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(messaggio), backgroundColor: Colors.red),
     );
-  }
-
-  String _nomeMese(int mese) {
-    const mesi = [
-      "Gennaio",
-      "Febbraio",
-      "Marzo",
-      "Aprile",
-      "Maggio",
-      "Giugno",
-      "Luglio",
-      "Agosto",
-      "Settembre",
-      "Ottobre",
-      "Novembre",
-      "Dicembre",
-    ];
-    return mesi[mese - 1];
   }
 }

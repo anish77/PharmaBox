@@ -109,7 +109,7 @@ class StatoAbbonamentoPageState extends State<StatoAbbonamentoPage> {
                               'Per utilizzare PharmaBox è necessario uno scanner compatibile',
                           iconColor: kPrimary,
                           onTap: () {
-                            OpenEmail().openWebsite(kAmazonScanner);
+                            OpenEmail().openWebsite(kLinkScanner);
                           },
                         ),
 

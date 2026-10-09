@@ -899,12 +899,43 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                         );
 
                                                     if (indexLista >= 0) {
+                                                      final normalizedName =
+                                                          nuovoNome
+                                                              .trim()
+                                                              .toLowerCase();
+                                                      final nameAlreadyUsed =
+                                                          liste.asMap().entries.any(
+                                                            (entry) =>
+                                                                entry.key !=
+                                                                    indexLista &&
+                                                                (entry.value['nomeLista']
+                                                                            ?.toString()
+                                                                            .trim()
+                                                                            .toLowerCase() ??
+                                                                        '') ==
+                                                                    normalizedName,
+                                                          );
+                                                      if (nameAlreadyUsed) {
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(
+                                                            context,
+                                                          ).showSnackBar(
+                                                            const SnackBar(
+                                                              content: Text(
+                                                                'Esiste già una lista con questo nome',
+                                                              ),
+                                                            ),
+                                                          );
+                                                        }
+                                                        return false;
+                                                      }
+
                                                       final wasChecked =
                                                           _checkedLists.remove(
                                                             nomeLista,
                                                           );
                                                       liste[indexLista]['nomeLista'] =
-                                                          nuovoNome;
+                                                          nuovoNome.trim();
                                                       await docRef.update({
                                                         'liste': liste,
                                                       });
@@ -912,7 +943,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                           mounted) {
                                                         setState(() {
                                                           _checkedLists.add(
-                                                            nuovoNome,
+                                                            nuovoNome.trim(),
                                                           );
                                                         });
                                                       }

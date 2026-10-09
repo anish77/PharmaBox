@@ -512,7 +512,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   Future<void> _openBarcodeReader() async {
     final launched = await launchUrl(
-      Uri.parse(kAmazonScanner),
+      Uri.parse(kLinkScanner),
       mode: LaunchMode.externalApplication,
     );
     if (!launched && mounted) {
