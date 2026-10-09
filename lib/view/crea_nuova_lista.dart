@@ -676,7 +676,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                     ),
                     IconButton(
                       icon: Icon(
-                        Icons.addchart_outlined,
+                        Icons.add_circle_outline,
                         color: kBluScuro,
                         size: 35,
                       ),
