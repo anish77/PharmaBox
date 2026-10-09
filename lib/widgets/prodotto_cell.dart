@@ -61,7 +61,7 @@ class _ProdottoCellState extends State<ProdottoCell> {
 
   @override
   Widget build(BuildContext context) {
-    final mostraQuantita = (widget.inListQty ?? 0) > 0;
+    final mostraQuantita = widget.inListQty != null;
     final codiceDaMostrare =
         widget.prodotto.codice.isNotEmpty
             ? widget.prodotto.codice

@@ -75,37 +75,40 @@ class Carrello {
     final index = list.indexWhere((p) => p.minsan == prodotto.minsan);
 
     if (index >= 0) {
-      if (newQuantity <= 0) {
-        list[index].pezzi.value = 0;
-        list.removeAt(index);
-      } else {
-        list[index].pezzi.value = newQuantity;
-      }
+      final quantity = newQuantity < 0 ? 0 : newQuantity;
+      list[index].pezzi.value = quantity;
       notifier.value = list; // 🔄 notifica cambiamento
 
       // Persisti su Firestore
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
-        if (newQuantity <= 0) {
-          FirebaseLogic.instance.aggiornaQuantitaItemLista(
-            uid: uid,
-            nomeLista: _listaCorrente,
-            minsan: prodotto.minsan,
-            quantity: newQuantity,
-          );
-        } else {
-          // Usa upsert completo per garantire che il titolo resti salvato
-          FirebaseLogic.instance.upsertItemLista(
-            uid: uid,
-            nomeLista: _listaCorrente,
-            item: {
-              'minsan': prodotto.minsan,
-              'titolo': prodotto.nome,
-              'quantity': newQuantity,
-            },
-          );
-        }
+        // Usa upsert completo per mantenere il prodotto anche a quantità zero.
+        FirebaseLogic.instance.upsertItemLista(
+          uid: uid,
+          nomeLista: _listaCorrente,
+          item: {
+            'minsan': prodotto.minsan,
+            'titolo': prodotto.nome,
+            'quantity': quantity,
+          },
+        );
       }
+    }
+  }
+
+  void rimuoviProdotto(Prodotto prodotto) {
+    final notifier = prodotti;
+    final list = List<Prodotto>.from(notifier.value);
+    list.removeWhere((item) => item.minsan == prodotto.minsan);
+    notifier.value = list;
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      FirebaseLogic.instance.rimuoviItemLista(
+        uid: uid,
+        nomeLista: _listaCorrente,
+        minsan: prodotto.minsan,
+      );
     }
   }
 

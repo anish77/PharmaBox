@@ -85,46 +85,89 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
                 itemCount: sorted.length,
                 itemBuilder: (context, index) {
                   final prodotto = sorted[index];
-                  // print("lista prodotti - ${prodotto.titolo}");
-                  return ValueListenableBuilder<int>(
-                    valueListenable: prodotto.pezzi,
-                    builder: (context, value, _) {
-                      return ProdottoCell(
-                        key: ValueKey(prodotto.minsan),
-                        prodotto: prodotto,
-                        inListQty: value,
-                        selected: _highlightedIndex == index,
-                        onQuantityChanged: (newValue) {
-                          Carrello.instance.aggiornaQuantita(
-                            prodotto,
-                            newValue,
-                          );
-                        },
-                        onInfoTap: () async {
-                          setState(() => _highlightedIndex = index);
-                          await Future.delayed(
-                            const Duration(milliseconds: 120),
-                          );
-                          if (context.mounted) {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (_) => ProductDetails(
-                                      title: prodotto.nome,
-                                      nrListe: widget.nrListe,
-                                      prodotto: prodotto,
-                                      popOnAdd: false,
+                  return Dismissible(
+                    key: ValueKey('product-${prodotto.minsan}'),
+                    direction: DismissDirection.endToStart,
+                    background: const SizedBox.expand(),
+                    secondaryBackground: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      color: kRed,
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    confirmDismiss:
+                        (_) async =>
+                            await showDialog<bool>(
+                              context: context,
+                              builder:
+                                  (dialogContext) => AlertDialog(
+                                    title: const Text('Conferma eliminazione'),
+                                    content: Text(
+                                      'Vuoi davvero eliminare "${prodotto.nome}" '
+                                      'dalla lista?',
                                     ),
-                              ),
-                            );
-                          }
-                          if (mounted) {
-                            setState(() => _highlightedIndex = null);
-                          }
-                        },
-                      );
+                                    actions: [
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.of(
+                                              dialogContext,
+                                            ).pop(false),
+                                        child: const Text('Annulla'),
+                                      ),
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.of(
+                                              dialogContext,
+                                            ).pop(true),
+                                        child: const Text('Elimina'),
+                                      ),
+                                    ],
+                                  ),
+                            ) ??
+                            false,
+                    onDismissed: (_) {
+                      Carrello.instance.rimuoviProdotto(prodotto);
                     },
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: prodotto.pezzi,
+                      builder: (context, value, _) {
+                        return ProdottoCell(
+                          key: ValueKey(prodotto.minsan),
+                          prodotto: prodotto,
+                          inListQty: value,
+                          selected: _highlightedIndex == index,
+                          onQuantityChanged: (newValue) {
+                            Carrello.instance.aggiornaQuantita(
+                              prodotto,
+                              newValue,
+                            );
+                          },
+                          onInfoTap: () async {
+                            setState(() => _highlightedIndex = index);
+                            await Future.delayed(
+                              const Duration(milliseconds: 120),
+                            );
+                            if (context.mounted) {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => ProductDetails(
+                                        title: prodotto.nome,
+                                        nrListe: widget.nrListe,
+                                        prodotto: prodotto,
+                                        popOnAdd: false,
+                                      ),
+                                ),
+                              );
+                            }
+                            if (mounted) {
+                              setState(() => _highlightedIndex = null);
+                            }
+                          },
+                        );
+                      },
+                    ),
                   );
                 },
               );

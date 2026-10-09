@@ -57,7 +57,7 @@ class _RisultatiRicercaState extends State<RisultatiRicerca> {
                 final idx = lista.indexWhere(
                   (p) => p.minsan == prodotto.minsan,
                 );
-                final inListQty = idx >= 0 ? lista[idx].pezzi.value : 0;
+                final inListQty = idx >= 0 ? lista[idx].pezzi.value : null;
                 return ValueListenableBuilder<int>(
                   valueListenable: prodotto.pezzi,
                   builder: (context, value, _) {
