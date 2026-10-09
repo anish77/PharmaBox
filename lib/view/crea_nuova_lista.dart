@@ -342,64 +342,80 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     if (format == 'pdf') {
       await _handleExport(
         'pdf',
-        (filename) => _exportListeAsPdf(liste, filename),
+        (filename, pharmacyName) =>
+            _exportListeAsPdf(liste, filename, pharmacyName),
       );
     } else if (format == 'csv') {
       await _handleExport(
         'csv',
-        (filename) => _exportListeAsCsv(liste, filename),
+        (filename, pharmacyName) =>
+            _exportListeAsCsv(liste, filename, pharmacyName),
       );
     }
   }
 
-  Future<String?> _askExportFilename(String extension) async {
+  Future<({String filename, String? pharmacyName})?> _askExportDetails(
+    String extension,
+  ) async {
     final today = DateTime.now();
     final dateName =
         '${today.day.toString().padLeft(2, '0')}-'
         '${today.month.toString().padLeft(2, '0')}-${today.year}';
     final formKey = GlobalKey<FormState>();
     final nameFieldKey = GlobalKey<FormFieldState<String>>();
+    final pharmacyFieldKey = GlobalKey<FormFieldState<String>>();
 
-    final filename = await showDialog<String>(
+    final details = await showDialog<({String filename, String? pharmacyName})>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Nome del file'),
           content: Form(
             key: formKey,
-            child: TextFormField(
-              key: nameFieldKey,
-              initialValue: dateName,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: 'Nome',
-                suffixText: '.$extension',
-              ),
-              validator: (value) {
-                final name = value?.trim() ?? '';
-                final extensionSuffix = '.$extension';
-                final baseName =
-                    name.toLowerCase().endsWith(extensionSuffix)
-                        ? name.substring(
-                          0,
-                          name.length - extensionSuffix.length,
-                        )
-                        : name;
-                if (baseName.trim().isEmpty) {
-                  return 'Inserisci un nome per il file';
-                }
-                if (RegExp(r'[<>:"/\\|?*\x00-\x1F]').hasMatch(name)) {
-                  return 'Il nome contiene caratteri non validi';
-                }
-                return null;
-              },
-              onFieldSubmitted: (_) {
-                if (formKey.currentState!.validate()) {
-                  Navigator.of(
-                    dialogContext,
-                  ).pop(nameFieldKey.currentState?.value?.trim());
-                }
-              },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  key: nameFieldKey,
+                  initialValue: dateName,
+                  autofocus: true,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: 'Nome del file',
+                    suffixText: '.$extension',
+                  ),
+                  validator: (value) {
+                    final name = value?.trim() ?? '';
+                    final extensionSuffix = '.$extension';
+                    final baseName =
+                        name.toLowerCase().endsWith(extensionSuffix)
+                            ? name.substring(
+                              0,
+                              name.length - extensionSuffix.length,
+                            )
+                            : name;
+                    if (baseName.trim().isEmpty) {
+                      return 'Inserisci un nome per il file';
+                    }
+                    if (RegExp(r'[<>:"/\\|?*\x00-\x1F]').hasMatch(name)) {
+                      return 'Il nome contiene caratteri non validi';
+                    }
+                    return null;
+                  },
+                  onFieldSubmitted:
+                      (_) => FocusScope.of(dialogContext).nextFocus(),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: pharmacyFieldKey,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome farmacia (facoltativo)',
+                  ),
+                  onFieldSubmitted:
+                      (_) => FocusScope.of(dialogContext).unfocus(),
+                ),
+              ],
             ),
           ),
           actions: [
@@ -410,9 +426,12 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             FilledButton(
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  Navigator.of(
-                    dialogContext,
-                  ).pop(nameFieldKey.currentState?.value?.trim());
+                  final enteredFilename =
+                      nameFieldKey.currentState?.value?.trim() ?? '';
+                  Navigator.of(dialogContext).pop((
+                    filename: enteredFilename,
+                    pharmacyName: pharmacyFieldKey.currentState?.value?.trim(),
+                  ));
                 }
               },
               child: const Text('Continua'),
@@ -422,24 +441,30 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
       },
     );
 
-    if (filename == null) return null;
+    if (details == null) return null;
     final extensionSuffix = '.$extension';
+    final filename = details.filename;
     final baseName =
         filename.toLowerCase().endsWith(extensionSuffix)
             ? filename.substring(0, filename.length - extensionSuffix.length)
             : filename;
-    return '$baseName$extensionSuffix';
+    final pharmacyName = details.pharmacyName;
+    return (
+      filename: '$baseName$extensionSuffix',
+      pharmacyName:
+          pharmacyName == null || pharmacyName.isEmpty ? null : pharmacyName,
+    );
   }
 
   Future<void> _handleExport(
     String extension,
-    Future<void> Function(String filename) exporter,
+    Future<void> Function(String filename, String? pharmacyName) exporter,
   ) async {
-    final filename = await _askExportFilename(extension);
-    if (filename == null) return;
+    final details = await _askExportDetails(extension);
+    if (details == null) return;
 
     try {
-      await exporter(filename);
+      await exporter(details.filename, details.pharmacyName);
     } catch (error, stackTrace) {
       _logger.e(
         'Errore durante l\'esportazione delle liste selezionate: $error',
@@ -457,6 +482,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   Future<void> _exportListeAsPdf(
     List<_ListExportData> liste,
     String filename,
+    String? pharmacyName,
   ) async {
     final document = pw.Document();
     final today = DateTime.now();
@@ -474,15 +500,30 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
       pw.MultiPage(
         theme: pw.ThemeData.withFont(base: fontRegular, bold: fontBold),
         build: (context) {
-          final widgets = <pw.Widget>[
+          final widgets = <pw.Widget>[];
+          widgets.add(
             pw.Text(
-              exportDate,
-              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+              'Nome Farmacia: ${pharmacyName ?? ''}',
+              style: pw.TextStyle(fontSize: 14),
             ),
-            pw.SizedBox(height: 16),
-          ];
+          );
+          widgets
+            ..add(
+              pw.Text(
+                exportDate,
+                style: pw.TextStyle(
+                  fontSize: 20,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            )
+            ..add(pw.SizedBox(height: 16));
 
           for (final lista in liste) {
+            final totalePezzi = lista.items.fold<int>(
+              0,
+              (total, item) => total + item.quantity,
+            );
             widgets.add(
               pw.Text(
                 lista.nome,
@@ -518,6 +559,18 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                 ),
               );
             }
+            widgets.add(
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(top: 6),
+                child: pw.Align(
+                  alignment: pw.Alignment.centerRight,
+                  child: pw.Text(
+                    'Totale pezzi: $totalePezzi',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ),
+              ),
+            );
 
             widgets.add(pw.SizedBox(height: 16));
           }
@@ -534,19 +587,29 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   Future<void> _exportListeAsCsv(
     List<_ListExportData> liste,
     String filename,
+    String? pharmacyName,
   ) async {
-    final buffer = StringBuffer()..writeln('Lista;Nome prodotto;Minsan;Pezzi');
+    final buffer = StringBuffer();
+    if (pharmacyName != null) {
+      buffer.writeln(_escapeCsv('Nome Farmacia: "$pharmacyName"'));
+    }
+    buffer.writeln('Lista;Nome prodotto;Minsan;Pezzi');
 
     for (final lista in liste) {
+      final totalePezzi = lista.items.fold<int>(
+        0,
+        (total, item) => total + item.quantity,
+      );
       if (lista.items.isEmpty) {
         buffer.writeln('${_escapeCsv(lista.nome)};Nessun prodotto;;');
-        continue;
+      } else {
+        for (final item in lista.items) {
+          buffer.writeln(
+            '${_escapeCsv(lista.nome)};${_escapeCsv(item.nome)};${_escapeCsv(item.minsan)};${item.quantity}',
+          );
+        }
       }
-      for (final item in lista.items) {
-        buffer.writeln(
-          '${_escapeCsv(lista.nome)};${_escapeCsv(item.nome)};${_escapeCsv(item.minsan)};${item.quantity}',
-        );
-      }
+      buffer.writeln('${_escapeCsv(lista.nome)};Totale pezzi;;$totalePezzi');
     }
 
     final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
@@ -575,6 +638,9 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 
       // Scrivi il file
       await file.writeAsBytes(bytes, flush: true);
+      if (mounted) {
+        setState(_checkedLists.clear);
+      }
       await Future.delayed(const Duration(milliseconds: 300)); // per sicurezza
 
       final xFile = XFile(file.path, mimeType: mimeType, name: filename);
