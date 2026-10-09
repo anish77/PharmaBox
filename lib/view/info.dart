@@ -308,7 +308,7 @@ class InfoPage extends StatelessWidget {
                     _buildSection(
                       icon: Icons.mail_outline,
                       title: 'Contattaci',
-                      subtitle: 'Scrivici a support@pharmabox.it',
+                      subtitle: 'Scrivici a infopharmabox@doublecore.it',
                     ),
                     _buildSection(
                       icon: Icons.lock_reset,
