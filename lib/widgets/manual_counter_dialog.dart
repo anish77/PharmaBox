@@ -16,7 +16,7 @@ class ManualCounterDialogState extends State<ManualCounterDialog> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _controller = TextEditingController(text: '${widget.initialValue}');
   }
 
   @override
