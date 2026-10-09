@@ -557,7 +557,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.info, color: kPrimary),
               title: const Text('Info', style: TextStyle(color: kBluScuro)),
               onTap: () {
                 Navigator.push(
@@ -567,12 +566,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.web_asset, color: kPrimary),
               title: const Text('Website', style: TextStyle(color: kBluScuro)),
               onTap: () => {OpenEmail().openWebsite(kWebsiteURL)},
             ),
             ListTile(
-              leading: const Icon(Icons.mail_outline, color: kPrimary),
               title: const Text(
                 'Contattaci',
                 style: TextStyle(color: kBluScuro),
@@ -587,7 +584,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.subscriptions, color: kPrimary),
               title: const Text(
                 'Abbonamento & Scanner',
                 style: TextStyle(color: kBluScuro),
@@ -601,7 +597,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.restore, color: kPrimary),
               title: const Text(
                 'Ripristina',
                 style: TextStyle(color: kBluScuro),
@@ -613,7 +608,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.privacy_tip, color: kPrimary),
               title: const Text(
                 'Privacy Policy',
                 style: TextStyle(color: kBluScuro),
@@ -624,7 +618,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   ),
             ),
             ListTile(
-              leading: const Icon(Icons.info_outline, color: kPrimary),
               title: const Text(
                 'Termini di Utilizzo',
                 style: TextStyle(color: kBluScuro),
