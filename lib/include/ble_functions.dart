@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/web.dart';
@@ -120,7 +121,8 @@ Future<void> _bleEnsurePerms() async {
   ].request();
 }
 
-String _bleDecode(List<int> bytes) {
+@visibleForTesting
+String bleDecode(List<int> bytes) {
   if (bytes.length == 17) {
     String barcode = String.fromCharCodes(bytes).trim().substring(10, 16);
     log(barcode);
@@ -312,7 +314,7 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
       subscribed++;
       final s = c.onValueReceived.listen((data) async {
         logger.i('BLE ricevuto (${data.length} byte): $data');
-        final barcode = _bleDecode(data);
+        final barcode = bleDecode(data);
         logger.i('BLE decodificato: "$barcode"');
         if (barcode.isEmpty) return;
         //if (!mounted) return;

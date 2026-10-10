@@ -16,6 +16,14 @@ class SubscriptionCubit extends Cubit<SubscribtionState> {
 
   /// 🔹 Chiamare dopo login, app start, acquisto, restore
   Future<void> checkProStatus() async {
+    // TODO: TEMPORANEO - Pro forzato per a@a2.it, rimuovere prima del rilascio
+    if (FirebaseAuth.instance.currentUser?.uid ==
+        'nYas3ZC5YgZVzwYR0Rqe0fmqJSW2') {
+      logger.w('Pro forzato (hardcoded) per a@a2.it');
+      emit(SubscribtionLoaded(true));
+      return;
+    }
+
     try {
       logger.i('🔥 checkProStatus CALLED');
 

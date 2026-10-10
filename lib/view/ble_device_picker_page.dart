@@ -7,6 +7,12 @@ import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/logic/open_email.dart';
 
+/// Servizi degli scanner supportati, se presenti nell'advertising
+final _serviziScanner = [Guid('FEEA'), Guid('FFF0')];
+
+/// Parole che compaiono nel nome degli scanner (confronto minuscolo)
+const _nomiScanner = ['scanner', 'barcode', 'scan'];
+
 /// Cerca i dispositivi Bluetooth vicini e restituisce con Navigator.pop
 /// il [BluetoothDevice] scelto. La connessione la fa chi ha aperto la pagina.
 class BleDevicePickerPage extends StatefulWidget {
@@ -20,6 +26,8 @@ class _BleDevicePickerPageState extends State<BleDevicePickerPage> {
   final List<StreamSubscription> _subs = [];
   List<ScanResult> _risultati = [];
   bool _scanning = false;
+  bool _mostraTutti = false;
+  final Set<String> _loggati = {};
   BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
 
   @override
@@ -33,6 +41,7 @@ class _BleDevicePickerPageState extends State<BleDevicePickerPage> {
     if (!mounted) return;
     _subs.add(
       FlutterBluePlus.scanResults.listen((r) {
+        r.forEach(_logAdvertising);
         if (mounted) setState(() => _risultati = r);
       }),
     );
@@ -83,14 +92,36 @@ class _BleDevicePickerPageState extends State<BleDevicePickerPage> {
           ? r.device.platformName
           : r.advertisementData.advName;
 
-  bool _isScanner(ScanResult r) => _nome(r) == kNomeScannerBle;
+  /// Diagnostica: cosa trasmette ogni dispositivo prima della connessione
+  void _logAdvertising(ScanResult r) {
+    if (!_loggati.add(r.device.remoteId.str)) return;
+    final adv = r.advertisementData;
+    logger.i(
+      'BLE adv "${_nome(r)}" ${r.device.remoteId.str} '
+      'servizi: ${adv.serviceUuids.map((g) => g.str).join(', ')} '
+      'produttore: ${adv.manufacturerData.keys.map((k) => '0x${k.toRadixString(16)}').join(', ')}',
+    );
+  }
 
-  /// Solo dispositivi con un nome; lo scanner compatibile in cima, poi i più vicini
+  bool _isScanner(ScanResult r) {
+    final nome = _nome(r).toLowerCase();
+    return nome == kNomeScannerBle.toLowerCase() ||
+        _nomiScanner.any(nome.contains) ||
+        r.advertisementData.serviceUuids.any(_serviziScanner.contains);
+  }
+
+  /// Gli scanner in cima, poi i più vicini; senza "mostra tutti" solo scanner
   List<ScanResult> get _dispositivi =>
-      _risultati.where((r) => _nome(r).isNotEmpty).toList()..sort((a, b) {
-        if (_isScanner(a) != _isScanner(b)) return _isScanner(a) ? -1 : 1;
-        return b.rssi.compareTo(a.rssi);
-      });
+      _risultati
+          .where((r) => _mostraTutti ? _nome(r).isNotEmpty : _isScanner(r))
+          .toList()
+        ..sort((a, b) {
+          if (_isScanner(a) != _isScanner(b)) return _isScanner(a) ? -1 : 1;
+          return b.rssi.compareTo(a.rssi);
+        });
+
+  int get _altriDispositivi =>
+      _risultati.where((r) => _nome(r).isNotEmpty && !_isScanner(r)).length;
 
   IconData _iconaSegnale(int rssi) {
     if (rssi >= -60) return Icons.signal_cellular_alt;
@@ -247,7 +278,10 @@ class _BleDevicePickerPageState extends State<BleDevicePickerPage> {
                       ),
                       const SizedBox(height: 8),
                       for (final result in dispositivi) _deviceTile(result),
-                    ],
+                      if (_altriDispositivi > 0 || _mostraTutti)
+                        Center(child: _toggleMostraTutti()),
+                    ] else if (bluetoothOn && !_scanning)
+                      _nessunoScanner(),
                     const SizedBox(height: 14),
                     TextButton.icon(
                       onPressed: () => OpenEmail().openWebsite(kLinkScanner),
@@ -283,6 +317,17 @@ class _BleDevicePickerPageState extends State<BleDevicePickerPage> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _toggleMostraTutti() {
+    return TextButton(
+      onPressed: () => setState(() => _mostraTutti = !_mostraTutti),
+      child: Text(
+        _mostraTutti
+            ? 'Mostra solo gli scanner'
+            : 'Mostra tutti i dispositivi ($_altriDispositivi)',
       ),
     );
   }
@@ -365,33 +410,66 @@ class _BleDevicePickerPageState extends State<BleDevicePickerPage> {
   Widget _deviceTile(ScanResult result) {
     final scanner = _isScanner(result);
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: kPrimary.withValues(alpha: 0.2)),
-      ),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
-        leading: Icon(
-          scanner ? Icons.qr_code_scanner : Icons.bluetooth,
-          color: scanner ? kGreen : kPrimary,
+        leading: CircleAvatar(
+          backgroundColor: (scanner ? kGreen : kPrimary).withValues(
+            alpha: 0.12,
+          ),
+          child: Icon(
+            scanner ? Icons.qr_code_scanner : Icons.bluetooth,
+            color: scanner ? kGreen : kPrimary,
+          ),
         ),
         title: Text(
           _nome(result),
-          style: const TextStyle(color: kBluScuro, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          scanner ? 'Scanner compatibile' : result.device.remoteId.str,
+          scanner ? 'Scanner barcode' : result.device.remoteId.str,
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(_iconaSegnale(result.rssi), size: 18, color: Colors.black45),
-            const Icon(Icons.chevron_right, color: kPrimary),
+            const Icon(Icons.chevron_right),
           ],
         ),
         onTap: () => _seleziona(result.device),
+      ),
+    );
+  }
+
+  /// Ricerca finita senza scanner: si può riprovare o vedere gli altri dispositivi
+  Widget _nessunoScanner() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: Column(
+        children: [
+          const Icon(Icons.search_off, size: 56, color: kPrimary),
+          const SizedBox(height: 12),
+          const Text(
+            'Nessuno scanner trovato',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: kBluScuro,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Accendi lo scanner e riprova.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.black54),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: _avviaScansione,
+            child: const Text('Cerca di nuovo'),
+          ),
+          if (_altriDispositivi > 0) _toggleMostraTutti(),
+        ],
       ),
     );
   }
