@@ -13,6 +13,7 @@ import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/prodotto.dart';
+import 'package:pharma_box/view/ble_device_picker_page.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
 import 'package:pharma_box/widgets/ble_simulator.dart';
@@ -56,9 +57,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   bool _isFidelityLoading = true;
   bool _isAccountActive = false;
   bool _isBleConnecting = false;
-  bool _showInlineDevices = false;
-  StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
-  final Map<String, ScanResult> _discoveredDevices = {};
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
   @override
@@ -71,7 +69,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   @override
   void dispose() {
-    _scanResultsSubscription?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -325,10 +322,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
               ),
             ),
           ),
-          if (_showInlineDevices && !isBleConnected) ...[
-            SizedBox(height: compact ? 10 : 16),
-            _buildInlineScannerDevices(bleScanning),
-          ],
           if (!isBleConnected) ...[
             SizedBox(height: compact ? 14 : 24),
             Container(
@@ -412,143 +405,23 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     );
   }
 
-  Widget _buildInlineScannerDevices(bool bleScanning) {
-    final devices =
-        _discoveredDevices.values.toList()
-          ..sort((a, b) => b.rssi.compareTo(a.rssi));
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kSecondary,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.bluetooth_searching, color: kPrimary),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Dispositivi disponibili',
-                  style: TextStyle(
-                    color: kBluScuro,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              if (bleScanning)
-                const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (devices.isEmpty)
-            Text(
-              bleScanning
-                  ? 'Sto cercando dispositivi nelle vicinanze…'
-                  : 'Nessuno scanner trovato. Premi “Cerca di nuovo”.',
-              style: const TextStyle(color: kBluScuro, fontSize: 13),
-            )
-          else
-            ...devices.map((result) {
-              final device = result.device;
-              final advertisedName = result.advertisementData.advName.trim();
-              final platformName = device.platformName.trim();
-              final name =
-                  advertisedName.isNotEmpty
-                      ? advertisedName
-                      : platformName.isNotEmpty
-                      ? platformName
-                      : 'Dispositivo Bluetooth';
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.bluetooth, color: kPrimary),
-                title: Text(name, style: const TextStyle(color: kBluScuro)),
-                subtitle: Text(device.remoteId.str),
-                trailing: const Icon(Icons.chevron_right, color: kPrimary),
-                enabled: !_isBleConnecting,
-                onTap: () => _connettiScannerInline(device),
-              );
-            }),
-          if (!bleScanning && !_isBleConnecting) ...[
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: _avviaRicercaScannerInline,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Cerca di nuovo'),
-            ),
-          ],
-        ],
-      ),
+  /// Apre il selettore (solo scanner, con "Mostra tutti") e si collega
+  /// al dispositivo scelto.
+  Future<void> _scegliEConnettiScanner() async {
+    final device = await Navigator.push<BluetoothDevice>(
+      context,
+      MaterialPageRoute(builder: (_) => const BleDevicePickerPage()),
     );
-  }
+    if (device == null || !mounted) return;
 
-  Future<void> _avviaRicercaScannerInline() async {
-    if (!mounted || _isBleConnecting) return;
-    await _scanResultsSubscription?.cancel();
-    _scanResultsSubscription = null;
-    setState(() {
-      _showInlineDevices = true;
-      _discoveredDevices.clear();
-    });
-    _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
-      if (!mounted || !_showInlineDevices) return;
-      setState(() {
-        for (final result in results) {
-          _discoveredDevices[result.device.remoteId.str] = result;
-        }
-      });
-    });
-    try {
-      ref.read(bleScanningProvider.notifier).state = true;
-      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 12));
-      // startScan può terminare al timeout: aggiorna anche lo stato dell'app.
-      await FlutterBluePlus.isScanning.where((scanning) => !scanning).first;
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ricerca Bluetooth non riuscita: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        ref.read(bleScanningProvider.notifier).state = false;
-      }
-    }
-  }
-
-  Future<void> _connettiScannerInline(BluetoothDevice device) async {
-    if (_isBleConnecting) return;
     setState(() => _isBleConnecting = true);
-    try {
-      await FlutterBluePlus.stopScan();
-      ref.read(bleScanningProvider.notifier).state = false;
-      final errore = await bleConnectToDevice(device, ref);
-      if (!mounted) return;
-      if (errore != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errore), duration: const Duration(seconds: 6)),
-        );
-      } else {
-        setState(() => _showInlineDevices = false);
-        await _scanResultsSubscription?.cancel();
-        _scanResultsSubscription = null;
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Connessione non riuscita: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isBleConnecting = false);
+    final errore = await bleConnectToDevice(device, ref);
+    if (!mounted) return;
+    setState(() => _isBleConnecting = false);
+    if (errore != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errore), duration: const Duration(seconds: 6)),
+      );
     }
   }
 
@@ -572,7 +445,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
       if (mounted) ref.read(bleScanningProvider.notifier).state = false;
       return;
     }
-    await _avviaRicercaScannerInline();
+    await _scegliEConnettiScanner();
   }
 
   // Schermata compatta: i due requisiti sono immediatamente visibili.
