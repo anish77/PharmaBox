@@ -79,8 +79,6 @@ flutter:
     - assets/bluetooth.png
     - assets/bluetooth_2.png
     - assets/app_icon_512x512.png
-    - assets/congratulazioni.png
-    - assets/noScanCode.png
     - assets/add-list.png
     - assets/scaner_ble.png
     - assets/fonts/Roboto-Regular.ttf

@@ -13,12 +13,10 @@ const kNoImage = 'assets/noImage.png';
 const kScanCode = 'assets/scanCode.png';
 const kScanCode2 = 'assets/scan_code2.png';
 const kScaner = 'assets/scaner.png';
-const kNoScanCode = 'assets/noScanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
 const kBluetoothIcon_2 = 'assets/bluetooth_2.png';
 const kAddListImage = 'assets/add-list.png';
 const kScannerBle = 'assets/scaner_ble.png';
-const kCongratulazioni = 'assets/congratulazioni.png';
 
 //colors
 const kPrimary = Color(0xFF5D5FEF);
