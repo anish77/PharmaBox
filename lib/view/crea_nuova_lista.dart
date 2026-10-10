@@ -64,6 +64,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   final Logger _logger = Logger(printer: PrettyPrinter());
   // Id delle liste spuntate per l'esportazione
   final Set<String> _checkedLists = <String>{};
+  final Set<String> _dismissedListIds = <String>{};
   int? selectedIndex;
   String referralCode = '';
   late final Stream<List<_ListaViewData>> _listeStream = getListeStream();
@@ -828,7 +829,12 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                     return StreamBuilder<List<_ListaViewData>>(
                       stream: _listeStream,
                       builder: (context, snapshot) {
-                        final liste = snapshot.data ?? const <_ListaViewData>[];
+                        final liste = (snapshot.data ??
+                                const <_ListaViewData>[])
+                            .where(
+                              (entry) => !_dismissedListIds.contains(entry.id),
+                            )
+                            .toList(growable: false);
                         final totaleGlobal = liste.fold<int>(
                           0,
                           (soma, entry) => soma + entry.totalePezzi,
@@ -1051,11 +1057,38 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                             onDismissed: (direction) async {
                                               if (direction ==
                                                   DismissDirection.endToStart) {
-                                                eliminaLista(idLista).catchError(
-                                                  (e) => _logger.e(
-                                                    'Errore eliminazione lista: $e',
-                                                  ),
-                                                );
+                                                setState(() {
+                                                  _dismissedListIds.add(
+                                                    idLista,
+                                                  );
+                                                  _checkedLists.remove(idLista);
+                                                });
+                                                try {
+                                                  await eliminaLista(idLista);
+                                                } catch (error, stackTrace) {
+                                                  _logger.e(
+                                                    'Errore eliminazione lista: $error',
+                                                    stackTrace: stackTrace,
+                                                  );
+                                                  if (context.mounted) {
+                                                    setState(
+                                                      () => _dismissedListIds
+                                                          .remove(idLista),
+                                                    );
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'Impossibile eliminare la lista. Riprova.',
+                                                        ),
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                  return;
+                                                }
                                                 if (context.mounted) {
                                                   ScaffoldMessenger.of(
                                                     context,
@@ -1064,13 +1097,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                                                       content: Text(
                                                         'Lista "$nomeLista" eliminata',
                                                       ),
-                                                    ),
-                                                  );
-                                                }
-                                                if (mounted) {
-                                                  setState(
-                                                    () => _checkedLists.remove(
-                                                      idLista,
                                                     ),
                                                   );
                                                 }
