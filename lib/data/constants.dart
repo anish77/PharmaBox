@@ -16,6 +16,7 @@ const kScaner = 'assets/scaner.png';
 const kNoScanCode = 'assets/noScanCode.png';
 const kBluetoothImage = 'assets/bluetooth.png';
 const kAddListImage = 'assets/add-list.png';
+const kScanerBle = 'assets/scaner_ble.png';
 const kCongratulazioni = 'assets/congratulazioni.png';
 
 //colors
