@@ -13,7 +13,6 @@ import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/prodotto.dart';
-import 'package:pharma_box/view/ble_device_picker_page.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
 import 'package:pharma_box/view/lista_prodotti_inventario.dart';
 import 'package:pharma_box/widgets/ble_simulator.dart';
@@ -21,7 +20,6 @@ import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:pharma_box/widgets/carrello.dart';
-import 'package:pharma_box/widgets/scanner_not_connected_card.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -58,6 +56,9 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   bool _isFidelityLoading = true;
   bool _isAccountActive = false;
   bool _isBleConnecting = false;
+  bool _showInlineDevices = false;
+  StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
+  final Map<String, ScanResult> _discoveredDevices = {};
   // quantità per codice prodotto
   final Map<String, int> _qta = {};
   @override
@@ -70,6 +71,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
   @override
   void dispose() {
+    _scanResultsSubscription?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -215,76 +217,362 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     return const SizedBox.shrink();
   }
 
+  // Stato Bluetooth: illustrazione + azione esplicita.
   Widget _buildBluetoothStatus(bool bleScanning, bool isBleConnected) {
-    return Center(
+    final compact = MediaQuery.sizeOf(context).height < 900;
+    final isBusy = _isBleConnecting;
+    final title =
+        isBleConnected
+            ? 'Scanner collegato!'
+            : bleScanning
+            ? 'Ricerca scanner in corso'
+            : 'Collega il tuo scanner Bluetooth';
+    final subtitle =
+        isBleConnected
+            ? 'Il lettore è pronto per scansionare i prodotti.'
+            : bleScanning
+            ? 'Attendi oppure interrompi la ricerca.'
+            : 'Accendi il lettore Bluetooth e premi il pulsante qui sotto per collegarlo.';
+    return Padding(
+      padding: EdgeInsets.fromLTRB(4, compact ? 12 : 18, 4, compact ? 14 : 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildBluetoothImage(bleScanning, isBleConnected),
-          const SizedBox(height: 12),
-          if (_isBleConnecting)
-            const Column(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 8),
-                Text('Connessione allo scanner…'),
-              ],
-            )
-          else if (!isBleConnected && !bleScanning)
-            const ScannerNotConnectedCard(),
+          Image.asset(
+            kScannerBle,
+            width: double.infinity,
+            height: compact ? 150 : 190,
+            fit: BoxFit.contain,
+            semanticLabel: 'Lettore barcode e connessione Bluetooth',
+            errorBuilder:
+                (_, __, ___) => const Icon(
+                  Icons.bluetooth_searching_rounded,
+                  color: kPrimary,
+                  size: 90,
+                ),
+          ),
+          SizedBox(height: compact ? 9 : 14),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: kBluScuro,
+              fontSize: 21,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: compact ? 6 : 8),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: kBluScuro,
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
+          SizedBox(height: compact ? 12 : 20),
+          SizedBox(
+            width: double.infinity,
+            height: compact ? 52 : 54,
+            child: ElevatedButton.icon(
+              onPressed:
+                  isBusy
+                      ? null
+                      : () => _onBluetoothPressed(bleScanning, isBleConnected),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: kSecondary,
+                disabledForegroundColor: kBluScuro,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                ),
+              ),
+              icon:
+                  isBusy
+                      ? const SizedBox(
+                        width: 19,
+                        height: 19,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: kBluScuro,
+                        ),
+                      )
+                      : isBleConnected
+                      ? const Icon(Icons.bluetooth_disabled_rounded)
+                      : bleScanning
+                      ? const Icon(Icons.stop_circle_outlined)
+                      : Image.asset(
+                        kBluetoothIcon_2,
+                        width: 24,
+                        height: 24,
+                        color: Colors.white,
+                      ),
+              label: Text(
+                isBusy
+                    ? 'Connessione in corso…'
+                    : isBleConnected
+                    ? 'Disconnetti scanner'
+                    : bleScanning
+                    ? 'Interrompi ricerca'
+                    : 'Connetti scanner',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          if (_showInlineDevices && !isBleConnected) ...[
+            SizedBox(height: compact ? 10 : 16),
+            _buildInlineScannerDevices(bleScanning),
+          ],
+          if (!isBleConnected) ...[
+            SizedBox(height: compact ? 14 : 24),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 14 : 16,
+                vertical: compact ? 12 : 18,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF7FC),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFECE7F2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.07),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: Color(0xFFFFA000),
+                    size: 32,
+                  ),
+                  SizedBox(width: compact ? 10 : 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Scanner non connesso',
+                          style: TextStyle(
+                            color: kBluScuro,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Accendi lo scanner Bluetooth e assicurati che sia già associato al dispositivo.',
+                          style: TextStyle(
+                            color: Color(0xFF86899D),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: compact ? 6 : 12),
+            TextButton.icon(
+              onPressed: _openBarcodeReader,
+              iconAlignment: IconAlignment.end,
+              icon: const Icon(Icons.chevron_right_rounded, size: 22),
+              label: const Text(
+                'Non hai uno scanner? Scopri quelli compatibili',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  fontSize: 13,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: kPrimary,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 2,
+                  vertical: compact ? 4 : 8,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildBluetoothImage(bool bleScanning, bool isBleConnected) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () async {
-        if (!_isAccountActive) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Account non attivo')));
-          return;
-        }
-        if (_isBleConnecting) return;
-        if (bleScanning) {
-          FlutterBluePlus.stopScan();
-          ref.read(bleScanningProvider.notifier).state = false;
-        } else if (isBleConnected) {
-          await bleDisconnect(ref);
-        } else {
-          await _scegliEConnettiScanner();
-        }
-      },
-      child: Image.asset(
-        kBluetoothImage,
-        width: 150,
-        fit: BoxFit.contain,
-        color: isBleConnected ? null : kPrimary,
+  Widget _buildInlineScannerDevices(bool bleScanning) {
+    final devices =
+        _discoveredDevices.values.toList()
+          ..sort((a, b) => b.rssi.compareTo(a.rssi));
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kSecondary,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bluetooth_searching, color: kPrimary),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Dispositivi disponibili',
+                  style: TextStyle(
+                    color: kBluScuro,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              if (bleScanning)
+                const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (devices.isEmpty)
+            Text(
+              bleScanning
+                  ? 'Sto cercando dispositivi nelle vicinanze…'
+                  : 'Nessuno scanner trovato. Premi “Cerca di nuovo”.',
+              style: const TextStyle(color: kBluScuro, fontSize: 13),
+            )
+          else
+            ...devices.map((result) {
+              final device = result.device;
+              final advertisedName = result.advertisementData.advName.trim();
+              final platformName = device.platformName.trim();
+              final name =
+                  advertisedName.isNotEmpty
+                      ? advertisedName
+                      : platformName.isNotEmpty
+                      ? platformName
+                      : 'Dispositivo Bluetooth';
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.bluetooth, color: kPrimary),
+                title: Text(name, style: const TextStyle(color: kBluScuro)),
+                subtitle: Text(device.remoteId.str),
+                trailing: const Icon(Icons.chevron_right, color: kPrimary),
+                enabled: !_isBleConnecting,
+                onTap: () => _connettiScannerInline(device),
+              );
+            }),
+          if (!bleScanning && !_isBleConnecting) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _avviaRicercaScannerInline,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Cerca di nuovo'),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Future<void> _scegliEConnettiScanner() async {
-    final device = await Navigator.push<BluetoothDevice>(
-      context,
-      MaterialPageRoute(builder: (_) => const BleDevicePickerPage()),
-    );
-    if (device == null || !mounted) return;
-
-    setState(() => _isBleConnecting = true);
-    final errore = await bleConnectToDevice(device, ref);
-    if (!mounted) return;
-    setState(() => _isBleConnecting = false);
-    if (errore != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errore),
-          duration: const Duration(seconds: 6),
-        ),
-      );
+  Future<void> _avviaRicercaScannerInline() async {
+    if (!mounted || _isBleConnecting) return;
+    await _scanResultsSubscription?.cancel();
+    _scanResultsSubscription = null;
+    setState(() {
+      _showInlineDevices = true;
+      _discoveredDevices.clear();
+    });
+    _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
+      if (!mounted || !_showInlineDevices) return;
+      setState(() {
+        for (final result in results) {
+          _discoveredDevices[result.device.remoteId.str] = result;
+        }
+      });
+    });
+    try {
+      ref.read(bleScanningProvider.notifier).state = true;
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 12));
+      // startScan può terminare al timeout: aggiorna anche lo stato dell'app.
+      await FlutterBluePlus.isScanning.where((scanning) => !scanning).first;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ricerca Bluetooth non riuscita: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        ref.read(bleScanningProvider.notifier).state = false;
+      }
     }
+  }
+
+  Future<void> _connettiScannerInline(BluetoothDevice device) async {
+    if (_isBleConnecting) return;
+    setState(() => _isBleConnecting = true);
+    try {
+      await FlutterBluePlus.stopScan();
+      ref.read(bleScanningProvider.notifier).state = false;
+      final errore = await bleConnectToDevice(device, ref);
+      if (!mounted) return;
+      if (errore != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errore), duration: const Duration(seconds: 6)),
+        );
+      } else {
+        setState(() => _showInlineDevices = false);
+        await _scanResultsSubscription?.cancel();
+        _scanResultsSubscription = null;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Connessione non riuscita: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isBleConnecting = false);
+    }
+  }
+
+  Future<void> _onBluetoothPressed(
+    bool bleScanning,
+    bool isBleConnected,
+  ) async {
+    if (!_isAccountActive) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Account non attivo')));
+      return;
+    }
+    if (_isBleConnecting) return;
+    if (isBleConnected) {
+      await bleDisconnect(ref);
+      return;
+    }
+    if (bleScanning) {
+      await FlutterBluePlus.stopScan();
+      if (mounted) ref.read(bleScanningProvider.notifier).state = false;
+      return;
+    }
+    await _avviaRicercaScannerInline();
   }
 
   // Schermata compatta: i due requisiti sono immediatamente visibili.
@@ -324,7 +612,6 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
           const SizedBox(height: 4),
           _buildRequirementCard(
             number: '1',
-
             title: 'Attiva PharmaBox Premium',
             description: 'Sblocca la scansione Bluetooth nell’app.',
             child: BlocConsumer<OfferingsCubit, OfferingsState>(

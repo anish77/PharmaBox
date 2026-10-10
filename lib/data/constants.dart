@@ -137,4 +137,4 @@ const kBugiardinoUploadEndpoint = 'http://api.doublecore.it/uploader.php';
 enum DatasetKind { tr001, tdz, tdf, td1 }
 
 // Amazon Scanner
-const kLinkScanner = 'https://www.doublecore.it';
+const kLinkScanner = 'https://www.doublecore.it/prodotti/scanner.html';
