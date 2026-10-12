@@ -10,6 +10,42 @@ typedef _Richiesta = ({List<String> codici, int ripetizioni, int ritardoMs});
 /// Solo debug: simula letture dello scanner Bluetooth pubblicando i codici su
 /// [scannedBarcodeProvider], come fa ble_functions.dart.
 class BleSimulator {
+  /// 30 MINSAN reali, tutti trovati dalla ricerca Farmadati (descrizione
+  /// come restituita dal servizio). I primi 20 sono quelli di
+  /// test/lettura_minsan_test.dart.
+  static const Map<String, String> minsanEsempio = {
+    '012745182': 'TACHIPIRINA*16CPR DIV 1000MG',
+    '012745170': 'TACHIPIRINA*8CPR DIV 1000MG',
+    '012745220': 'TACHIPIRINA*GRAT 16BUST 1000MG',
+    '012745028': 'TACHIPIRINA*10CPR DIV 500MG',
+    '022593204': 'BRUFEN*30CPR RIV 400MG',
+    '052892015': 'BRUFEN ANALGESICO*12CPR 400MG',
+    '041962034': 'ASPIRINA DOLORE INF*20CPR500MG',
+    '004763330': 'ASPIRINA C*20CPR EFF 400+240MG',
+    '004763544': 'ASPIRINA*OS GRAT 20BUST 500MG',
+    '025669019': 'MOMENT*12CPR RIV 200MG',
+    '025669072': 'MOMENT*24CPR RIV 200MG',
+    '025669185': 'MOMENT*36CPR RIV 200MG',
+    '026089019': 'AUGMENTIN*12CPR RIV875MG+125MG',
+    '013046038': 'ENTEROGERMINA*OS 10FL 2MLD/5ML',
+    '013046040': 'ENTEROGERMINA*OS 20FL 2MLD/5ML',
+    '034548065': 'VOLTAREN EMULGEL*GEL 60G 2%',
+    '048414104': 'OKI DOLORE E FEBBRE*12CPR EFF',
+    '020582209': 'FLUIMUCIL*30CPR EFF 600MG',
+    '034936171': 'FLUIMUCIL MUCOL*10CPR EFF600MG',
+    '034248068': 'GAVISCON ADVANCE*OS SOSP 500ML',
+    '019655012': 'BENTELAN*10CPR EFF 0,5MG',
+    '006979013': 'BUSCOPAN*20CPR RIV 10MG',
+    '024840074': 'CARDIOASPIRIN*30CPR GAST 100MG',
+    '023356025': 'DAFLON*30CPR RIV 500MG',
+    '024402024': 'EUTIROX*FL 50CPR 100MCG',
+    '025634015': 'NUROFEN*12CPR RIV 200MG',
+    '020702054': 'MAALOX*40CPR MAST 400MG+400MG',
+    '000590012': 'RINAZINA*AD GTT 10ML 10MG 0,1%',
+    '026894016': 'ZIRTEC*20CPR RIV 10MG',
+    '028978017': 'BACTROBAN*UNG 15G 20MG/G',
+  };
+
   static final List<String> _recenti = [];
   static int _ultimeRipetizioni = 1;
   static int _ultimoRitardoMs = 500;
@@ -102,7 +138,7 @@ class BleSimulator {
                     autofocus: true,
                     autocorrect: false,
                     minLines: 1,
-                    maxLines: 3,
+                    maxLines: 5,
                     textCapitalization: TextCapitalization.characters,
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(
@@ -115,7 +151,19 @@ class BleSimulator {
                     onSubmitted:
                         (_) => Navigator.of(dialogContext).pop(leggiCampi()),
                   ),
-                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed:
+                          () =>
+                              codiciCtrl.text = minsanEsempio.keys.join(' '),
+                      icon: const Icon(Icons.playlist_add),
+                      label: Text(
+                        'Inserisci ${minsanEsempio.length} MINSAN di esempio',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Expanded(

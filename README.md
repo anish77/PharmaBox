@@ -40,6 +40,10 @@ La configurazione Firebase è già nel repository
 
 Su iOS, dopo aver cambiato dipendenze: `cd ios && pod install`.
 
+In `android/gradle.properties` sono presenti i flag aggiunti dal migratore
+Flutter `android.builtInKotlin=false` e `android.newDsl=false`: disabilitano
+Kotlin integrato e la nuova DSL Android per mantenere la configurazione attuale.
+
 ## Struttura del codice
 
 ```
@@ -92,14 +96,44 @@ letture dello scanner (`lib/widgets/ble_simulator.dart`): si inseriscono uno o
 più codici, il numero di ripetizioni e il ritardo. Serve a provare liste e
 sincronizzazione senza lo scanner fisico. Nelle build di release non compare.
 
+Per provare una sequenza pronta:
+
+1. Aprire una lista e il dialogo **Simula lettura Bluetooth**.
+2. Premere **Inserisci 30 MINSAN di esempio**: sostituisce il contenuto del
+   campo Codici con i 30 codici definiti in `BleSimulator.minsanEsempio`.
+   Il campo mostra fino a cinque righe; i codici restano modificabili.
+3. Impostare **Ripetizioni** e **Ritardo (ms)**, poi premere **Simula**.
+   Ogni ripetizione invia l'intera sequenza, quindi 2 ripetizioni producono
+   60 letture. Il ritardo iniziale è 500 ms.
+
+Si possono anche inserire codici scanner di 6 caratteri o MINSAN di 9 cifre,
+separati da spazi, virgole, punti e virgola o a capo. I codici scanner vengono
+convertiti in MINSAN con `tradCode`; i MINSAN sono inviati direttamente al
+provider delle letture. Durante la sequenza, il pulsante di arresto permette
+di interromperla. Gli ultimi otto codici sono disponibili per letture singole.
+
+Il simulatore usa il normale flusso della lista: le letture possono aggiornare
+i dati dell'account collegato. Per le prove usare una lista dedicata.
+
 ## Test
 
 ```bash
 flutter test test/liste_repository_test.dart
+flutter test test/ble_simulator_test.dart
+flutter test test/lettura_minsan_test.dart
 ```
 
 I test di `ListeRepository` usano `fake_cloud_firestore` e non toccano i dati
 reali. Coprono liste, prodotti, incrementi concorrenti e migrazione.
+I test del simulatore controllano i 30 codici di esempio, il formato a 9 cifre
+e la conversione reversibile MINSAN/Code 32. I test di lettura verificano anche
+la decodifica dei pacchetti BLE; le ricerche sul servizio Farmadati reale sono
+disattivate per impostazione predefinita. Per abilitarle:
+
+```bash
+flutter test --dart-define=ONLINE=true test/lettura_minsan_test.dart
+```
+
 `test/widget_test.dart` è ancora il test d'esempio generato da Flutter e
 fallisce.
 
