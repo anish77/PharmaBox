@@ -16,7 +16,6 @@ BUGIARDINO_UPLOAD = "http://api.doublecore.it/uploader.php"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "farmadati-cache"
-# sostituire con l'id stampato da: wrangler d1 create farmadati-cache
-database_id = "00000000-0000-0000-0000-000000000000"
+database_name = "farmadati-cach"
+database_id = "1c4d8bab-3458-444e-86fd-f934598835ba"
 migrations_dir = "migrations"
