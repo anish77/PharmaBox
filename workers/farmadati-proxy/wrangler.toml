@@ -1,0 +1,22 @@
+name = "farmadati-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "pharmabox-1c149"
+# Farmadati non risponde in HTTPS sull'endpoint SOAP
+FARMADATI_ENDPOINT = "http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc"
+FARMADATI_DOC_ENDPOINT = "https://ws.farmadati.it/WS_DOC/GetDoc.aspx"
+R2_INGEST_ENDPOINT = "https://pharmabox-r2-ingest.gianluca-carta.workers.dev/ingest"
+BUGIARDINO_BASE = "http://api.doublecore.it/pdf_html"
+BUGIARDINO_UPLOAD = "http://api.doublecore.it/uploader.php"
+
+# Secret (wrangler secret put <NOME>; in locale: file .dev.vars):
+#   FARMADATI_USERNAME, FARMADATI_PASSWORD, R2_API_KEY, DOC_SIGNING_KEY
+
+[[d1_databases]]
+binding = "DB"
+database_name = "farmadati-cache"
+# sostituire con l'id stampato da: wrangler d1 create farmadati-cache
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

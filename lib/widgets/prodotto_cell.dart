@@ -36,12 +36,52 @@ class ProdottoCell extends StatefulWidget {
 }
 
 class _ProdottoCellState extends State<ProdottoCell> {
-  late final Future<bool?> _vendibilitaFuture;
+  /// Parte solo quando la cella è sullo schermo: le liste di risultati
+  /// costruiscono tutte le celle subito e una ricerca da 100 risultati
+  /// farebbe 100 richieste contemporanee a Farmadati.
+  Future<bool?>? _vendibilitaFuture;
+  final List<ScrollPosition> _scrollPositions = [];
 
   @override
-  void initState() {
-    super.initState();
-    _vendibilitaFuture = _loadVendibilita();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_vendibilitaFuture != null) return;
+    _smettiDiOsservare();
+    // tutti gli scroll antenati: la lista interna dei risultati non scorre,
+    // a scorrere è la pagina che la contiene
+    var scrollable = Scrollable.maybeOf(context);
+    while (scrollable != null) {
+      scrollable.position.addListener(_controllaVisibilita);
+      _scrollPositions.add(scrollable.position);
+      scrollable = Scrollable.maybeOf(scrollable.context);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _controllaVisibilita());
+  }
+
+  @override
+  void dispose() {
+    _smettiDiOsservare();
+    super.dispose();
+  }
+
+  void _smettiDiOsservare() {
+    for (final position in _scrollPositions) {
+      position.removeListener(_controllaVisibilita);
+    }
+    _scrollPositions.clear();
+  }
+
+  void _controllaVisibilita() {
+    if (!mounted || _vendibilitaFuture != null) return;
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return;
+
+    final top = box.localToGlobal(Offset.zero).dy;
+    final altezzaSchermo = MediaQuery.sizeOf(context).height;
+    if (top + box.size.height >= 0 && top <= altezzaSchermo) {
+      _smettiDiOsservare();
+      setState(() => _vendibilitaFuture = _loadVendibilita());
+    }
   }
 
   Future<bool?> _loadVendibilita() async {

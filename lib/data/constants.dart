@@ -109,6 +109,10 @@ const kGuadagna = 'Per ogni amico invitata ottieni 1 mese gratuito';
 // API endpoints
 const kFarmadatiEndpoint =
     'http://webservices.farmadati.it/WS2/FarmadatiItaliaWebServicesM1.svc';
+// Worker Cloudflare con la cache condivisa (workers/farmadati-proxy).
+// Vuoto = l'app interroga Farmadati direttamente via SOAP.
+// Dopo il deploy: impostare il defaultValue all'URL del Worker.
+const kFarmadatiProxyEndpoint = String.fromEnvironment('FARMADATI_PROXY');
 
 // Cloudflare R2 integration (configura questi valori nel tuo ambiente)
 // Dominio pubblico (CDN) collegato al bucket R2 "prod-images"

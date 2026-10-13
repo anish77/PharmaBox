@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/include/general_functions.dart';
@@ -32,7 +34,6 @@ class _ProductDetailsState extends State<ProductDetails> {
   late final Future<bool?> _vendibilitaFuture;
   WebViewController? _bugiardinoController;
   String? _bugiardinoUrl;
-  double _bugiardinoHeight = 400;
 
   @override
   void initState() {
@@ -379,11 +380,21 @@ class _ProductDetailsState extends State<ProductDetails> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Altezza fissa e scroll interno: una WebView alta quanto
+              // l'intero bugiardino supera i limiti della GPU e fa crashare l'app
               SizedBox(
-                height: _bugiardinoHeight,
+                height: MediaQuery.of(context).size.height * 0.6,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: WebViewWidget(controller: _bugiardinoController!),
+                  child: WebViewWidget(
+                    controller: _bugiardinoController!,
+                    // il trascinamento verticale scorre il bugiardino, non la pagina
+                    gestureRecognizers: {
+                      Factory<VerticalDragGestureRecognizer>(
+                        () => VerticalDragGestureRecognizer(),
+                      ),
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -466,7 +477,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                   "html,body{background:transparent !important;color:#111;min-height:100vh;"
                   // Tutto allineato a sinistra
                   +
-                  "text-align:left;margin:0;padding:0;overflow:hidden;}"
+                  "text-align:left;margin:0;padding:0;overflow-x:hidden;}"
                   // Corpo con padding per staccare dal bordo sinistro
                   +
                   "body{padding:1px;font-size:16px;line-height:1.5;" +
@@ -516,26 +527,8 @@ class _ProductDetailsState extends State<ProductDetails> {
   })();
   """);
 
-            // Calcola l'altezza del contenuto della pagina
-            final result = await controller.runJavaScriptReturningResult(
-              'Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)',
-            );
-            double? newHeight;
-            if (result is num) {
-              newHeight = result.toDouble();
-            } else if (result is String) {
-              final sanitized = result.replaceAll('"', '');
-              newHeight = double.tryParse(sanitized);
-            }
-            if (newHeight != null && mounted) {
-              final h = newHeight;
-              setState(() {
-                // Imposta altezza minima 400, senza limite superiore per mostrare tutto
-                _bugiardinoHeight = h < 400.0 ? 400.0 : h;
-              });
-            }
           } catch (_) {
-            // Se fallisce, mantieni l'altezza corrente
+            // Se fallisce, la pagina resta comunque leggibile
           }
         },
       ),

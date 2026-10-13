@@ -1,5 +1,3 @@
-import 'package:pharma_box/models/prodotto.dart';
-
 class CategoriaMapper {
   static const Map<String, List<String>> _map = {
     'A': ['OMEOPATICO USO UMANO', 'O'],
@@ -62,6 +60,3 @@ class RendiIndennizzoMapper {
   static List<String> get codici => _map.keys.toList();
   static Map<String, String> get all => Map.unmodifiable(_map);
 }
-
-final Map<String, List<Prodotto>> eanToProdottiCache = {};
-final Map<String, Prodotto> minsanCache = {};
