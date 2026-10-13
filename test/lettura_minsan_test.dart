@@ -3,7 +3,9 @@
 // byte dallo scanner -> bleDecode -> tradCode -> MINSAN da cercare.
 //
 // Il gruppo "Farmadati" interroga il servizio reale ed è disattivato di
-// default: flutter test --dart-define=ONLINE=true test/lettura_minsan_test.dart
+// default. FARMADATI_PROXY vuoto = SOAP diretto (il Worker richiede il login):
+//   flutter test --dart-define=ONLINE=true --dart-define=FARMADATI_PROXY= \
+//     test/lettura_minsan_test.dart
 
 import 'dart:convert';
 
