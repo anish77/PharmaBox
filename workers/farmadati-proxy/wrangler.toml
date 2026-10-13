@@ -16,6 +16,6 @@ BUGIARDINO_UPLOAD = "http://api.doublecore.it/uploader.php"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "farmadati-cach"
-database_id = "1c4d8bab-3458-444e-86fd-f934598835ba"
+database_name = "farmadati-cache"
+database_id = "5d1fd923-9e8d-4dce-b4dd-77e49653fda9"
 migrations_dir = "migrations"

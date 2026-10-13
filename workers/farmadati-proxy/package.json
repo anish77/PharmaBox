@@ -7,8 +7,8 @@
     "deploy": "wrangler deploy",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:migrate:local": "wrangler d1 migrations apply farmadati-cach --local",
-    "db:migrate:remote": "wrangler d1 migrations apply farmadati-cach --remote"
+    "db:migrate:local": "wrangler d1 migrations apply farmadati-cache --local",
+    "db:migrate:remote": "wrangler d1 migrations apply farmadati-cache --remote"
   },
   "dependencies": {
     "fast-xml-parser": "^5.11.2",

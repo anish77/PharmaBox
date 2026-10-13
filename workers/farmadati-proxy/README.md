@@ -55,7 +55,7 @@ flutter run --dart-define=FARMADATI_PROXY=http://10.0.2.2:8787
 
 ```sh
 npx wrangler login
-npx wrangler d1 create farmadati-cach    # copiare database_id in wrangler.toml
+npx wrangler d1 create farmadati-cache   # copiare database_id in wrangler.toml
 npm run db:migrate:remote
 npx wrangler secret put FARMADATI_USERNAME
 npx wrangler secret put FARMADATI_PASSWORD
