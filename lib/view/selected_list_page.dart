@@ -790,7 +790,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     ref.listen<String?>(scannedBarcodeProvider, (prev, next) {
       final code = next;
       if (code == null || code.trim().isEmpty) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
+      dopoIlProssimoFrame(() async {
         if (!mounted) return;
         // Eventi da scanner BLE
         if (selectedIndex == 1) {

@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/widgets.dart' show VoidCallback, WidgetsBinding;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/web.dart';
@@ -13,6 +14,16 @@ import '../include/general_functions.dart';
 // rimuoviamo la dipendenza diretta dalla pagina UI per evitare cicli di import
 
 var logger = Logger(printer: PrettyPrinter());
+
+/// Esegue [azione] dopo il prossimo frame, assicurandosi che il frame arrivi.
+/// Una lettura dello scanner cambia solo scannedBarcodeProvider, ascoltato con
+/// ref.listen, che non ridisegna nulla: senza scheduleFrame la callback
+/// resterebbe in attesa fino al prossimo tocco dello schermo.
+void dopoIlProssimoFrame(VoidCallback azione) {
+  WidgetsBinding.instance.addPostFrameCallback((_) => azione());
+  WidgetsBinding.instance.scheduleFrame();
+}
+
 Future<bool> ensureBleReady() async {
   // 1. Permessi
   final statuses =
