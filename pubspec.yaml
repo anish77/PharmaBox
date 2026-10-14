@@ -4,7 +4,7 @@ description: "pharmabox leading inventory app"
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.2+2
+version: 1.0.3+3
 
 environment:
   sdk: ^3.7.2
@@ -43,6 +43,9 @@ dependencies:
   in_app_purchase_storekit: ^0.4.7
   in_app_purchase_platform_interface: ^1.4.0
   purchases_flutter: ^9.10.1
+  shared_preferences: ^2.5.6
+  wakelock_plus: ^1.5.2
+  audioplayers: ^6.8.1
 
 
 dev_dependencies:
@@ -66,6 +69,12 @@ flutter_launcher_icons:
 # The following section is specific to Flutter packages.
 flutter:
 
+  # iOS con CocoaPods: con Swift Package Manager (default da Flutter 3.47) il
+  # Package.swift di cloud_firestore non trova il proprio pubspec.yaml se il
+  # percorso del progetto contiene spazi ("Pharmabox Latest")
+  config:
+    enable-swift-package-manager: false
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -83,6 +92,7 @@ flutter:
     - assets/app_icon_512x512.png
     - assets/add-list.png
     - assets/scaner_ble.png
+    - assets/suoni/
     - assets/fonts/Roboto-Regular.ttf
     - assets/fonts/Roboto-Bold.ttf
  

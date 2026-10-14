@@ -1,3 +1,5 @@
+import 'package:pharma_box/logic/preferenze_dispositivo.dart';
+
 /// Pezzi di un prodotto letti da DataMatrix con lo stesso lotto e scadenza.
 class LottoConfezione {
   const LottoConfezione({
@@ -11,18 +13,27 @@ class LottoConfezione {
   final int quantity;
 }
 
-enum StatoScadenza { scaduto, entro3Mesi, entro6Mesi, ok }
+/// [inScadenza]: arancione, [prossima]: ocra
+enum StatoScadenza { scaduto, inScadenza, prossima, ok }
 
-/// Scaduto dal giorno dopo la data di scadenza.
-StatoScadenza statoScadenza(DateTime scadenza, {DateTime? oggi}) {
+/// Scaduto dal giorno dopo la data di scadenza. Soglie in mesi: se non
+/// indicate, quelle scelte nelle Opzioni (di default 3 e 6).
+StatoScadenza statoScadenza(
+  DateTime scadenza, {
+  DateTime? oggi,
+  int? mesiInScadenza,
+  int? mesiProssima,
+}) {
+  final m1 = mesiInScadenza ?? PreferenzeDispositivo.mesiInScadenza.value;
+  final m2 = mesiProssima ?? PreferenzeDispositivo.mesiProssima.value;
   final adesso = oggi ?? DateTime.now();
   final giorno = DateTime(adesso.year, adesso.month, adesso.day);
   if (scadenza.isBefore(giorno)) return StatoScadenza.scaduto;
-  if (scadenza.isBefore(DateTime(giorno.year, giorno.month + 3, giorno.day))) {
-    return StatoScadenza.entro3Mesi;
+  if (scadenza.isBefore(DateTime(giorno.year, giorno.month + m1, giorno.day))) {
+    return StatoScadenza.inScadenza;
   }
-  if (scadenza.isBefore(DateTime(giorno.year, giorno.month + 6, giorno.day))) {
-    return StatoScadenza.entro6Mesi;
+  if (scadenza.isBefore(DateTime(giorno.year, giorno.month + m2, giorno.day))) {
+    return StatoScadenza.prossima;
   }
   return StatoScadenza.ok;
 }

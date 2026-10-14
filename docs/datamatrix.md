@@ -75,7 +75,7 @@ notifiche BLE ──> AssemblatoreBle ──> bleDecode ──> interpretaLettur
    è su Farmadati riprova con l'EAN. Poi aggiunge il pezzo con lotto,
    scadenza e seriale e mostra gli avvisi:
    - confezione scaduta: avviso rosso e vibrazione;
-   - scadenza entro 3 mesi: avviso arancione;
+   - scadenza entro la soglia arancione (3 mesi, da Opzioni): avviso arancione;
    - seriale già in lista: "Confezione già contata", con **Conta di nuovo**;
    - lettura ambigua: invito a configurare lo scanner per il GS.
 
@@ -123,13 +123,37 @@ seriali.{chiave}  seriale
   - rosso: scaduto;
   - arancione: entro 3 mesi;
   - ocra: entro 6 mesi;
+
+  Le due soglie si cambiano in Opzioni (menu laterale), solo per il
+  dispositivo; lì si possono anche spegnere gli avvisi alla lettura, tranne
+  "già contata".
   - verde: oltre.
 
-  Toccandola si apre l'elenco dei lotti, con i pezzi senza scadenza.
+  Toccandola si apre sotto il prodotto l'elenco delle scadenze, ognuna con
+  il totale e tutti i suoi lotti; in fondo i pezzi senza scadenza.
 - **Ordinamento**: nella lista compare "Ordinati per nome / per scadenza"
   quando almeno un prodotto ha una scadenza.
 - **Export PDF e CSV**: nuova colonna **Scadenza**, con la scadenza più
   vicina.
+
+## DataMatrix di prova
+
+In `docs/datamatrix_esempi/` ci sono 8 DataMatrix GS1 dell'AIC 040295141 da
+scansionare a schermo (`index.html`) o stampare: scaduta, in scadenza, giorno
+00, giorno preciso, stesso lotto con altro seriale, stesso lotto con altra
+scadenza, stessa scadenza con altro lotto e seriale ripetuto ("già contata").
+Sono gli stessi codici dei test in `test/ble_simulator_test.dart` e di
+`integration_test/datamatrix_scadenze_test.dart`, che legge le confezioni dal
+simulatore e salva gli screenshot:
+
+```
+SCREEN_DIR=screenshots/datamatrix flutter drive \
+  --driver=test_driver/integration_test.dart \
+  --target=integration_test/datamatrix_scadenze_test.dart -d <device> \
+  --dart-define=TEST_EMAIL=... --dart-define=TEST_PASSWORD=...
+```
+
+Per rigenerarli: `cd tool/datamatrix && npm install && node genera.js`.
 
 ## Simulatore (solo debug)
 

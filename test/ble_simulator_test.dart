@@ -85,4 +85,65 @@ void main() {
       expect(BleSimulator.letturaDataMatrix('012745182'), isNull);
     });
   });
+
+  // Stessi codici di integration_test/datamatrix_scadenze_test.dart
+  group('DataMatrix AIC 040295141 (screenshot scadenze)', () {
+    const casi = [
+      (
+        '(01)08032082951415(17)260915(10)LA01(21)SN7K2M9QX4PA(716)040295141',
+        (2026, 9, 15),
+        'LA01',
+        'SN7K2M9QX4PA',
+      ),
+      (
+        '(01)08032082951415(17)261120(10)LB02(21)SN3HD8W2RT6B(716)040295141',
+        (2026, 11, 20),
+        'LB02',
+        'SN3HD8W2RT6B',
+      ),
+      (
+        '(01)08032082951415(17)270300(10)LC03(21)SN9PL4ZE7VJC(716)040295141',
+        (2027, 3, 31),
+        'LC03',
+        'SN9PL4ZE7VJC',
+      ),
+      (
+        '(01)08032082951415(17)280615(10)LD04(21)SN5TQ2NB8XKD(716)040295141',
+        (2028, 6, 15),
+        'LD04',
+        'SN5TQ2NB8XKD',
+      ),
+      (
+        '(01)08032082951415(17)280615(10)LD04(21)SN2WF6YC3MHE(716)040295141',
+        (2028, 6, 15),
+        'LD04',
+        'SN2WF6YC3MHE',
+      ),
+      (
+        '(01)08032082951415(17)280600(10)LD04(21)SN8RJ5UA4GLF(716)040295141',
+        (2028, 6, 30),
+        'LD04',
+        'SN8RJ5UA4GLF',
+      ),
+      (
+        '(01)08032082951415(17)280615(10)LD07(21)SN4CV7HN2QWG(716)040295141',
+        (2028, 6, 15),
+        'LD07',
+        'SN4CV7HN2QWG',
+      ),
+    ];
+
+    for (final (testo, (a, m, g), lotto, seriale) in casi) {
+      test('$seriale: scadenza $g/$m/$a, lotto $lotto dalla catena BLE', () {
+        final lettura = BleSimulator.letturaDataMatrix(testo)!;
+        expect(lettura.codice, '040295141');
+        final c = lettura.confezione!;
+        expect(c.gtin, '08032082951415');
+        expect(c.scadenza, DateTime(a, m, g));
+        expect(c.lotto, lotto);
+        expect(c.seriale, seriale);
+        expect(c.ambigua, isFalse);
+      });
+    }
+  });
 }

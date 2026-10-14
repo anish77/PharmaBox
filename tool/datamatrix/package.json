@@ -1,0 +1,7 @@
+{
+  "name": "pharmabox-datamatrix-esempi",
+  "private": true,
+  "description": "Genera i DataMatrix GS1 di prova in docs/datamatrix_esempi",
+  "scripts": { "genera": "node genera.js" },
+  "dependencies": { "bwip-js": "4.5.1" }
+}

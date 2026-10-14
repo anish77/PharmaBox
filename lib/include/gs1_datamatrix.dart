@@ -19,6 +19,7 @@ class ConfezioneGs1 {
     this.gtin,
     this.aic,
     this.scadenza,
+    this.scadenzaLetta,
     this.lotto,
     this.seriale,
     this.ambigua = false,
@@ -31,6 +32,9 @@ class ConfezioneGs1 {
 
   /// Ultimo giorno di validità (giorno 00 = ultimo giorno del mese)
   final DateTime? scadenza;
+
+  /// Scadenza AAMMGG come scritta nel codice (per il debug)
+  final String? scadenzaLetta;
   final String? lotto;
   final String? seriale;
 
@@ -142,6 +146,7 @@ ConfezioneGs1? parseGs1(String raw, {DateTime? oggi}) {
     gtin: gtinValido ? gtin : null,
     aic: aicValido ? aic : null,
     scadenza: c['17'] == null ? null : scadenzaGs1(c['17']!, oggi: oggi),
+    scadenzaLetta: c['17'],
     lotto: c['10'],
     seriale: c['21'],
     ambigua: ambigua,

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/include/gs1_datamatrix.dart';
 import 'package:pharma_box/include/lettura_scanner.dart';
+import 'package:pharma_box/logic/preferenze_dispositivo.dart';
 import 'package:pharma_box/main.dart' show scannedBarcodeProvider;
 import 'package:pharma_box/models/lotto_confezione.dart';
 
@@ -81,7 +82,7 @@ void main() {
     test('scaduto dal giorno dopo', () {
       expect(
         statoScadenza(DateTime(2026, 10, 13), oggi: oggi),
-        StatoScadenza.entro3Mesi,
+        StatoScadenza.inScadenza,
       );
       expect(
         statoScadenza(DateTime(2026, 10, 12), oggi: oggi),
@@ -91,14 +92,35 @@ void main() {
     test('soglie 3 e 6 mesi', () {
       expect(
         statoScadenza(DateTime(2027, 1, 12), oggi: oggi),
-        StatoScadenza.entro3Mesi,
+        StatoScadenza.inScadenza,
       );
       expect(
         statoScadenza(DateTime(2027, 1, 13), oggi: oggi),
-        StatoScadenza.entro6Mesi,
+        StatoScadenza.prossima,
       );
       expect(
         statoScadenza(DateTime(2027, 4, 13), oggi: oggi),
+        StatoScadenza.ok,
+      );
+    });
+    test('soglie scelte nelle Opzioni', () {
+      addTearDown(PreferenzeDispositivo.ripristinaPredefiniti);
+      PreferenzeDispositivo.mesiInScadenza.value = 1;
+      PreferenzeDispositivo.mesiProssima.value = 12;
+      expect(
+        statoScadenza(DateTime(2026, 11, 12), oggi: oggi),
+        StatoScadenza.inScadenza,
+      );
+      expect(
+        statoScadenza(DateTime(2026, 11, 13), oggi: oggi),
+        StatoScadenza.prossima,
+      );
+      expect(
+        statoScadenza(DateTime(2027, 10, 12), oggi: oggi),
+        StatoScadenza.prossima,
+      );
+      expect(
+        statoScadenza(DateTime(2027, 10, 13), oggi: oggi),
         StatoScadenza.ok,
       );
     });

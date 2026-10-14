@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/logic/preferenze_dispositivo.dart';
 import 'package:pharma_box/widgets/manual_counter_dialog.dart';
 
 class CounterButton extends StatefulWidget {
@@ -39,7 +40,18 @@ class _CounterButtonState extends State<CounterButton> {
     }
   }
 
+  /// Vibrazione leggera a ogni cambio; più decisa quando si arriva a 0
+  /// (il prodotto resta in lista ma lotti e seriali vengono azzerati).
+  void _vibra(int nuovoValore) {
+    if (nuovoValore == 0) {
+      Aptico.medio();
+    } else {
+      Aptico.leggero();
+    }
+  }
+
   void _increment() {
+    _vibra(_counter + 1);
     setState(() {
       _counter++;
       widget.onChanged?.call(_counter);
@@ -48,6 +60,7 @@ class _CounterButtonState extends State<CounterButton> {
 
   void _decrement() {
     if (_counter > 0) {
+      _vibra(_counter - 1);
       setState(() {
         _counter--;
         widget.onChanged?.call(_counter);
@@ -72,6 +85,7 @@ class _CounterButtonState extends State<CounterButton> {
 
     setState(() => _counter = newValue);
     if (newValue != previousValue) {
+      _vibra(newValue);
       widget.onChanged?.call(_counter);
     }
   }

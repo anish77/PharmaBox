@@ -9,6 +9,7 @@ import 'package:pharma_box/features/subscribtions/offerings_cubit.dart';
 import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
 import 'package:pharma_box/features/subscribtions/revenuecat_service.dart';
 import 'package:pharma_box/firebase/firebase_options.dart';
+import 'package:pharma_box/logic/preferenze_dispositivo.dart';
 import 'package:pharma_box/include/lettura_scanner.dart';
 import 'package:pharma_box/view/login_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await PreferenzeDispositivo.carica();
 
   // 🔒 BLOCCA L’APP IN PORTRAIT
   await SystemChrome.setPreferredOrientations([

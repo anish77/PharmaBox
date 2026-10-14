@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +13,8 @@ import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/include/gs1_datamatrix.dart';
 import 'package:pharma_box/include/lettura_scanner.dart';
+import 'package:pharma_box/logic/preferenze_dispositivo.dart';
+import 'package:pharma_box/logic/suoni.dart';
 import 'package:pharma_box/main.dart';
 import 'package:pharma_box/models/lotto_confezione.dart';
 import 'package:pharma_box/models/prodotto.dart';
@@ -25,6 +26,7 @@ import 'package:pharma_box/widgets/full_screen_loader.dart';
 import 'package:pharma_box/widgets/container_opzione.dart';
 import 'package:pharma_box/widgets/risultati_ricerca.dart';
 import 'package:pharma_box/widgets/carrello.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -68,11 +70,14 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     super.initState();
     // Associa il carrello alla lista corrente e ne ascolta i prodotti
     Carrello.instance.usaLista(widget.idLista);
+    // Durante il conteggio il telefono non va in standby (Opzioni)
+    if (PreferenzeDispositivo.schermoAcceso.value) WakelockPlus.enable();
     _loadSubscriptionStatus();
   }
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -90,6 +95,44 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         if (state is SubscribtionLoaded) _isAccountActive = state.isPro;
         _isFidelityLoading = false;
       });
+      if (_isAccountActive) _riconnettiUltimoScanner();
+    }
+  }
+
+  /// Ricollega l'ultimo scanner usato su questo telefono, se attivo nelle
+  /// Opzioni. Se non risponde resta il pulsante "Connetti scanner".
+  Future<void> _riconnettiUltimoScanner() async {
+    final id = PreferenzeDispositivo.ultimoScannerId.value;
+    if (!PreferenzeDispositivo.riconnettiScanner.value || id == null) return;
+    if (_isBleConnecting ||
+        ref.read(bleConnected) ||
+        ref.read(bleScanningProvider)) {
+      return;
+    }
+    try {
+      final adattatore = await FlutterBluePlus.adapterState
+          .firstWhere((s) => s != BluetoothAdapterState.unknown)
+          .timeout(const Duration(seconds: 3));
+      if (adattatore != BluetoothAdapterState.on) return;
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+
+    setState(() => _isBleConnecting = true);
+    final errore = await bleConnectToDevice(BluetoothDevice.fromId(id), ref);
+    if (!mounted) return;
+    setState(() => _isBleConnecting = false);
+    if (errore != null) {
+      final nome = PreferenzeDispositivo.ultimoScannerNome.value ?? 'scanner';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Ultimo $nome non raggiungibile: accendilo e usa '
+            '"Connetti scanner"',
+          ),
+        ),
+      );
     }
   }
 
@@ -432,6 +475,13 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 
     setState(() => _isBleConnecting = true);
     final errore = await bleConnectToDevice(device, ref);
+    if (errore == null) {
+      // Per ricollegarlo da solo la prossima volta (Opzioni)
+      await PreferenzeDispositivo.salvaUltimoScanner(
+        device.remoteId.str,
+        device.platformName,
+      );
+    }
     if (!mounted) return;
     setState(() => _isBleConnecting = false);
     if (errore != null) {
@@ -1085,6 +1135,7 @@ extension on _SelectedListPageState {
         results = await doSearch(ean);
       }
       if (results.isEmpty) {
+        Suoni.avviso();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Nessun prodotto trovato')),
@@ -1099,13 +1150,20 @@ extension on _SelectedListPageState {
         clearSearchState: false,
         confezione: confezione,
       );
-      if (confezione == null || !mounted) return;
+      if (confezione == null || !mounted) {
+        Suoni.lettura();
+        return;
+      }
       if (!aggiunto) {
+        Suoni.avviso();
         _avvisaGiaContata(prodotto, confezione);
+      } else if (_avvisaConfezione(confezione)) {
+        Suoni.avviso();
       } else {
-        _avvisaConfezione(confezione);
+        Suoni.lettura();
       }
     } catch (e) {
+      Suoni.avviso();
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -1129,46 +1187,55 @@ extension on _SelectedListPageState {
           ),
           backgroundColor: colore,
           action: azione,
-          duration: const Duration(seconds: 4),
+          // Con un'azione Flutter lo terrebbe aperto finché non lo si chiude
+          persist: false,
+          showCloseIcon: true,
+          closeIconColor: kWhite,
+          // Più tempo per "Conta di nuovo"
+          duration: Duration(seconds: azione == null ? 4 : 6),
         ),
       );
   }
 
-  /// Avviso alla lettura se la confezione è scaduta o scade entro 3 mesi
-  void _avvisaConfezione(ConfezioneGs1 confezione) {
+  /// Avviso alla lettura se la confezione è scaduta, in scadenza (soglia
+  /// arancione delle Opzioni) o letta in modo ambiguo, secondo gli avvisi
+  /// attivi nelle Opzioni. true se ha mostrato un avviso.
+  bool _avvisaConfezione(ConfezioneGs1 confezione) {
     final scadenza = confezione.scadenza;
     final lotto =
         confezione.lotto == null ? '' : ' · lotto ${confezione.lotto}';
-    if (scadenza != null) {
-      final stato = statoScadenza(scadenza);
-      if (stato == StatoScadenza.scaduto) {
-        HapticFeedback.heavyImpact();
-        _mostraAvviso(
-          'Confezione SCADUTA il ${formattaScadenza(scadenza)}$lotto',
-          colore: kRed,
-        );
-        return;
-      }
-      if (stato == StatoScadenza.entro3Mesi) {
-        HapticFeedback.mediumImpact();
-        _mostraAvviso(
-          'Scade il ${formattaScadenza(scadenza)}$lotto',
-          colore: kWarning,
-        );
-        return;
-      }
+    final stato = scadenza == null ? null : statoScadenza(scadenza);
+    if (stato == StatoScadenza.scaduto &&
+        PreferenzeDispositivo.avvisoScaduta.value) {
+      Aptico.forte();
+      _mostraAvviso(
+        'Confezione SCADUTA il ${formattaScadenza(scadenza!)}$lotto',
+        colore: kRed,
+      );
+      return true;
     }
-    if (confezione.ambigua) {
+    if (stato == StatoScadenza.inScadenza &&
+        PreferenzeDispositivo.avvisoInScadenza.value) {
+      Aptico.medio();
+      _mostraAvviso(
+        'Scade il ${formattaScadenza(scadenza!)}$lotto',
+        colore: kWarning,
+      );
+      return true;
+    }
+    if (confezione.ambigua && PreferenzeDispositivo.avvisoAmbigua.value) {
       _mostraAvviso(
         'Lotto o seriale non leggibili: imposta lo scanner per trasmettere '
         'il separatore GS (FNC1)',
         colore: kBluScuro,
       );
+      return true;
     }
+    return false;
   }
 
   void _avvisaGiaContata(Prodotto prodotto, ConfezioneGs1 confezione) {
-    HapticFeedback.heavyImpact();
+    Aptico.forte();
     _mostraAvviso(
       'Confezione già contata (SN ${confezione.seriale})',
       colore: kBluScuro,

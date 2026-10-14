@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/logic/preferenze_dispositivo.dart';
 import 'package:pharma_box/models/lotto_confezione.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/view/product_details.dart';
@@ -24,7 +25,7 @@ class ListaProdottiInventario extends StatefulWidget {
 
 class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
   int? _highlightedIndex;
-  bool _perScadenza = false;
+  bool _perScadenza = PreferenzeDispositivo.apriPerScadenza;
 
   /// Alfabetico, oppure prima i prodotti con la scadenza più vicina (quelli
   /// senza scadenza in fondo, in ordine alfabetico)
@@ -61,7 +62,10 @@ class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
             return Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: () => setState(() => _perScadenza = !_perScadenza),
+                onPressed: () {
+                  setState(() => _perScadenza = !_perScadenza);
+                  PreferenzeDispositivo.ultimoPerScadenza.imposta(_perScadenza);
+                },
                 icon: Icon(
                   _perScadenza ? Icons.event_outlined : Icons.sort_by_alpha,
                   size: 18,
