@@ -12,10 +12,15 @@ Bluetooth, si organizzano in liste e si esportano in PDF o CSV.
   dispositivi BLE vicini (`BarCode Scanner BLE` in evidenza). Sono supportati gli
   scanner che espongono il servizio GATT `FEEA` o `FFF0`; ogni lettura aggiunge
   un pezzo alla lista aperta. In alternativa, ricerca manuale e contatore.
+- **DataMatrix dei farmaci** (GS1, obbligatorio dal febbraio 2027): dalla
+  lettura si ricavano AIC, scadenza, lotto e seriale. La lista mostra la
+  scadenza più vicina e si può ordinare per scadenza. Alla lettura compaiono
+  avvisi per confezioni scadute o in scadenza, e una confezione già contata
+  non viene contata due volte. Dettagli in [docs/datamatrix.md](docs/datamatrix.md).
 - **Ricerca prodotti** per nome, EAN o MINSAN tramite servizio SOAP, con scheda
   prodotto e bugiardino.
-- **Export** delle liste selezionate in PDF o CSV, con nome file, nome farmacia
-  e totale pezzi.
+- **Export** delle liste selezionate in PDF o CSV, con nome file, nome farmacia,
+  totale pezzi e scadenza più vicina.
 - **Abbonamento** gestito con RevenueCat (entitlement `Premium`).
 - **Invita un amico** con codice invito personale.
 
@@ -55,8 +60,11 @@ lib/
     liste_repository.dart    tutte le operazioni su liste e prodotti
   features/subscribtions/    stato abbonamento e offerte (Bloc + RevenueCat)
   include/ble_functions.dart connessione e letture dello scanner Bluetooth
+  include/gs1_datamatrix.dart parser del GS1 DataMatrix (AIC, scadenza, lotto)
+  include/lettura_scanner.dart lettura dello scanner -> codice da cercare
   logic/                     ricerca SOAP, apertura email
   models/prodotto.dart       modello prodotto
+  models/lotto_confezione.dart lotti e scadenze letti dai DataMatrix
   view/                      schermate
   widgets/                   componenti riutilizzabili; carrello.dart è la
                              copia locale della lista aperta
@@ -67,7 +75,8 @@ lib/
 ```
 users/{uid}                                dati account, codiceInvito, UID_BLE
 users/{uid}/liste/{idLista}                nome, totalePezzi, createdAt, updatedAt
-users/{uid}/liste/{idLista}/items/{minsan} minsan, titolo, quantity, updatedAt
+users/{uid}/liste/{idLista}/items/{minsan} minsan, titolo, quantity, updatedAt,
+                                           lotti, seriali (solo da DataMatrix)
 ```
 
 - Ogni lista e ogni prodotto è un documento separato: più telefoni possono
@@ -112,6 +121,13 @@ convertiti in MINSAN con `tradCode`; i MINSAN sono inviati direttamente al
 provider delle letture. Durante la sequenza, il pulsante di arresto permette
 di interromperla. Gli ultimi otto codici sono disponibili per letture singole.
 
+**DataMatrix**: **Inserisci DataMatrix di esempio** aggiunge 6 confezioni con
+scadenze diverse. **Componi DataMatrix…** permette di scegliere prodotto,
+scadenza, lotto e seriale. La casella **DataMatrix senza separatore GS** simula
+uno scanner non configurato. I DataMatrix passano dalla stessa catena BLE delle
+letture vere: notifiche da 20 byte, riassemblaggio e decodifica. Vedi
+[docs/datamatrix.md](docs/datamatrix.md).
+
 Il simulatore usa il normale flusso della lista: le letture possono aggiornare
 i dati dell'account collegato. Per le prove usare una lista dedicata.
 
@@ -121,10 +137,13 @@ i dati dell'account collegato. Per le prove usare una lista dedicata.
 flutter test test/liste_repository_test.dart
 flutter test test/ble_simulator_test.dart
 flutter test test/lettura_minsan_test.dart
+flutter test test/gs1_datamatrix_test.dart test/lettura_datamatrix_ble_test.dart
+flutter test test/scadenza_chip_test.dart
 ```
 
 I test di `ListeRepository` usano `fake_cloud_firestore` e non toccano i dati
-reali. Coprono liste, prodotti, incrementi concorrenti e migrazione.
+reali. Coprono liste, prodotti, incrementi concorrenti, migrazione, lotti e
+seriali da DataMatrix.
 I test del simulatore controllano i 30 codici di esempio, il formato a 9 cifre
 e la conversione reversibile MINSAN/Code 32. I test di lettura verificano anche
 la decodifica dei pacchetti BLE; le ricerche sul servizio Farmadati reale sono

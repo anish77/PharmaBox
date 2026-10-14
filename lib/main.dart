@@ -9,13 +9,14 @@ import 'package:pharma_box/features/subscribtions/offerings_cubit.dart';
 import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
 import 'package:pharma_box/features/subscribtions/revenuecat_service.dart';
 import 'package:pharma_box/firebase/firebase_options.dart';
+import 'package:pharma_box/include/lettura_scanner.dart';
 import 'package:pharma_box/view/login_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Provider BLE globali
 final bleScanningProvider = StateProvider<bool>((ref) => false);
 final bleStatusProvider = StateProvider<String>((ref) => "");
-final scannedBarcodeProvider = StateProvider<String?>((ref) => null);
+final scannedBarcodeProvider = StateProvider<LetturaScanner?>((ref) => null);
 final bleConnected = StateProvider<bool>((ref) => false);
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

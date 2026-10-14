@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pharma_box/firebase/liste_repository.dart';
+import 'package:pharma_box/include/gs1_datamatrix.dart';
 
 const uid = 'utente_test';
 
@@ -249,6 +250,76 @@ void main() {
       await repo.migraListeLegacy(uid);
 
       expect(await repo.leggiListe(uid), isEmpty);
+    });
+  });
+
+  group('confezioni da DataMatrix', () {
+    late String id;
+    setUp(() async => id = await nuovaLista('Scadenze'));
+
+    ConfezioneGs1 confezione(String seriale, {String lotto = 'L1.2/A'}) =>
+        ConfezioneGs1(
+          aic: '012745182',
+          lotto: lotto,
+          scadenza: DateTime(2028, 3, 31),
+          seriale: seriale,
+        );
+
+    Future<void> leggi(ConfezioneGs1 c) => repo.incrementa(
+      uid,
+      id,
+      minsan: '012745182',
+      titolo: 'Tachipirina',
+      confezione: c,
+    );
+
+    test(
+      'lotti per lotto+scadenza, seriali delle confezioni contate',
+      () async {
+        await leggi(confezione('SN1'));
+        await leggi(confezione('SN2'));
+        await leggi(confezione('SN3', lotto: 'B9'));
+        await repo.incrementa(
+          uid,
+          id,
+          minsan: '012745182',
+          titolo: 'Tachipirina',
+        );
+
+        final item = (await repo.leggiItems(uid, id)).single;
+        expect(item.quantity, 4);
+        expect(item.seriali, {'SN1', 'SN2', 'SN3'});
+        final lotti = {for (final l in item.lotti) l.lotto: l};
+        // '.' e '/' nel lotto non rompono i nomi dei campi
+        expect(lotti['L1.2/A']!.quantity, 2);
+        expect(lotti['L1.2/A']!.scadenza, DateTime(2028, 3, 31));
+        expect(lotti['B9']!.quantity, 1);
+        expect((await lista(id))['totalePezzi'], 4);
+      },
+    );
+
+    test('azzerando la quantità si azzerano lotti e seriali', () async {
+      await leggi(confezione('SN1'));
+      await repo.impostaQuantita(
+        uid,
+        id,
+        minsan: '012745182',
+        titolo: 'Tachipirina',
+        quantity: 0,
+        delta: -1,
+      );
+
+      final item = (await repo.leggiItems(uid, id)).single;
+      expect(item.quantity, 0);
+      expect(item.lotti, isEmpty);
+      expect(item.seriali, isEmpty);
+    });
+
+    test('chiaveCampo: sicura e senza collisioni tra caratteri diversi', () {
+      expect(chiaveCampo('AB-12'), 'AB-12');
+      expect(chiaveCampo('A.B'), 'A_2EB');
+      expect(chiaveCampo('A/B'), 'A_2FB');
+      expect(chiaveCampo('A_B'), 'A_5FB');
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/models/lotto_confezione.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/view/product_details.dart';
 import 'package:pharma_box/widgets/carrello.dart';
@@ -23,20 +24,62 @@ class ListaProdottiInventario extends StatefulWidget {
 
 class _ListaProdottiInventarioState extends State<ListaProdottiInventario> {
   int? _highlightedIndex;
+  bool _perScadenza = false;
+
+  /// Alfabetico, oppure prima i prodotti con la scadenza più vicina (quelli
+  /// senza scadenza in fondo, in ordine alfabetico)
+  List<Prodotto> _ordina(List<Prodotto> prodotti) {
+    int perNome(Prodotto a, Prodotto b) =>
+        a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+    final ordinati = List<Prodotto>.from(prodotti);
+    if (!_perScadenza) return ordinati..sort(perNome);
+    final scadenze = {
+      for (final p in ordinati) p.minsan: scadenzaPiuVicina(p.lotti.value),
+    };
+    return ordinati..sort((a, b) {
+      final sa = scadenze[a.minsan];
+      final sb = scadenze[b.minsan];
+      if (sa == null && sb == null) return perNome(a, b);
+      if (sa == null) return 1;
+      if (sb == null) return -1;
+      final c = sa.compareTo(sb);
+      return c != 0 ? c : perNome(a, b);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 8),
+        ValueListenableBuilder<List<Prodotto>>(
+          valueListenable: Carrello.instance.prodotti,
+          builder: (context, prodotti, _) {
+            final conScadenze = prodotti.any(
+              (p) => scadenzaPiuVicina(p.lotti.value) != null,
+            );
+            if (!conScadenze) return const SizedBox(height: 8);
+            return Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _perScadenza = !_perScadenza),
+                icon: Icon(
+                  _perScadenza ? Icons.event_outlined : Icons.sort_by_alpha,
+                  size: 18,
+                ),
+                label: Text(
+                  _perScadenza ? 'Ordinati per scadenza' : 'Ordinati per nome',
+                ),
+                style: TextButton.styleFrom(foregroundColor: kPrimary),
+              ),
+            );
+          },
+        ),
         Expanded(
           child: ValueListenableBuilder<List<Prodotto>>(
             valueListenable: Carrello.instance.prodotti,
             builder: (context, prodotti, _) {
-              // Ordina alfabeticamente per titolo (case-insensitive)
-              final sorted = List<Prodotto>.from(prodotti)..sort(
-                (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
-              );
+              // Per nome (case-insensitive) o per scadenza più vicina
+              final sorted = _ordina(prodotti);
               if (sorted.isEmpty) {
                 return Center(
                   child: Padding(

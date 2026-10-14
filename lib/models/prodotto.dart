@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pharma_box/models/lotto_confezione.dart';
 
 class Prodotto {
   final String nome;
@@ -13,6 +14,8 @@ class Prodotto {
   final String codice;
   final List<String> rendibile; // Array di 3 stringhe
   final ValueNotifier<int> pezzi; // 👈 diventa osservabile
+  /// Lotti e scadenze letti dai DataMatrix (solo per i prodotti in lista)
+  final ValueNotifier<List<LottoConfezione>> lotti = ValueNotifier(const []);
 
   Prodotto({
     required this.nome,

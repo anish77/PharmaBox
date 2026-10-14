@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show VoidCallback, WidgetsBinding;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/web.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pharma_box/main.dart';
-import '../include/general_functions.dart';
+import 'package:pharma_box/include/gs1_datamatrix.dart' show kGs;
+import 'package:pharma_box/include/lettura_scanner.dart';
 // rimuoviamo la dipendenza diretta dalla pagina UI per evitare cicli di import
 
 var logger = Logger(printer: PrettyPrinter());
@@ -119,6 +119,7 @@ Future<String?> readSerialNumber(BluetoothDevice dev) async {
 //String _bleStatus = 'BLE pronto';
 BluetoothDevice? _bleDevice;
 final List<StreamSubscription> _bleSubs = [];
+AssemblatoreBle? _assemblatore;
 final Guid _feea = Guid('0000FEEA-0000-1000-8000-00805F9B34FB');
 // Servizio "seriale" usato da altri modelli di scanner BLE
 final Guid _fff0 = Guid('0000FFF0-0000-1000-8000-00805F9B34FB');
@@ -132,7 +133,7 @@ Future<void> _bleEnsurePerms() async {
   ].request();
 }
 
-@visibleForTesting
+/// Byte ricevuti dallo scanner -> testo letto (usato anche dal simulatore)
 String bleDecode(List<int> bytes) {
   if (bytes.length == 17) {
     String barcode = String.fromCharCodes(bytes).trim().substring(10, 16);
@@ -144,6 +145,53 @@ String bleDecode(List<int> bytes) {
     return utf8.decode(bytes, allowMalformed: true).trim();
   } catch (_) {
     return String.fromCharCodes(bytes).trim();
+  }
+}
+
+/// Ricompone una lettura arrivata in più notifiche BLE. Un DataMatrix
+/// (45-70 caratteri) supera i 20 byte di una notifica e lo scanner lo spezza:
+/// i pezzi si accumulano fino al terminatore CR/LF o a una pausa di [attesa].
+/// Il pacchetto da 17 byte del bollino arriva sempre intero e passa subito.
+class AssemblatoreBle {
+  AssemblatoreBle(
+    this.onLettura, {
+    this.attesa = const Duration(milliseconds: 80),
+  });
+
+  final void Function(List<int> bytes) onLettura;
+  final Duration attesa;
+  final List<int> _buffer = [];
+  Timer? _timer;
+
+  void aggiungi(List<int> pezzo) {
+    if (pezzo.isEmpty) return;
+    if (_buffer.isEmpty && pezzo.length == 17) {
+      onLettura(pezzo);
+      return;
+    }
+    _timer?.cancel();
+    _buffer.addAll(pezzo);
+    final ultimo = pezzo.last;
+    if (ultimo == 0x0D || ultimo == 0x0A) {
+      _svuota();
+    } else {
+      _timer = Timer(attesa, _svuota);
+    }
+  }
+
+  void _svuota() {
+    _timer?.cancel();
+    _timer = null;
+    if (_buffer.isEmpty) return;
+    final bytes = List<int>.of(_buffer);
+    _buffer.clear();
+    onLettura(bytes);
+  }
+
+  void chiudi() {
+    _timer?.cancel();
+    _timer = null;
+    _buffer.clear();
   }
 }
 
@@ -323,18 +371,26 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
     if (c.properties.notify || c.properties.indicate) {
       await c.setNotifyValue(true);
       subscribed++;
-      final s = c.onValueReceived.listen((data) async {
-        logger.i('BLE ricevuto (${data.length} byte): $data');
+      final assemblatore = AssemblatoreBle((data) {
+        logger.i('BLE lettura (${data.length} byte): $data');
         final barcode = bleDecode(data);
         logger.i('BLE decodificato: "$barcode"');
         if (barcode.isEmpty) return;
         //if (!mounted) return;
         //setState(() => _bleStatus = 'Letto: $barcode');
-        ref.read(bleStatusProvider.notifier).state = 'Letto: $barcode';
+        ref.read(bleStatusProvider.notifier).state =
+            'Letto: ${barcode.replaceAll(kGs, ' ')}';
 
-        // Pubblica il barcode convertito su un provider di stato
-        // L'UI lo ascolta e apre la ricerca
-        ref.read(scannedBarcodeProvider.notifier).state = tradCode(barcode);
+        // Pubblica la lettura interpretata (bollino o DataMatrix) su un
+        // provider di stato: l'UI lo ascolta e apre la ricerca
+        ref.read(scannedBarcodeProvider.notifier).state = interpretaLettura(
+          barcode,
+        );
+      });
+      _assemblatore = assemblatore;
+      final s = c.onValueReceived.listen((data) {
+        logger.i('BLE ricevuto (${data.length} byte): $data');
+        assemblatore.aggiungi(data);
       }, onError: (_) {});
       _bleSubs.add(s);
       // Sottoscrivi una sola caratteristica notify per evitare duplicati
@@ -355,6 +411,8 @@ Future<void> _bleDispose() async {
     } catch (_) {}
   }
   _bleSubs.clear();
+  _assemblatore?.chiudi();
+  _assemblatore = null;
   if (_bleDevice != null) {
     try {
       await _bleDevice!.disconnect();

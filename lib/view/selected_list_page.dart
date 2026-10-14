@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,10 @@ import 'package:pharma_box/features/subscribtions/offerings_state.dart';
 import 'package:pharma_box/features/subscribtions/subscribtion_cubit.dart';
 import 'package:pharma_box/features/subscribtions/subscribtion_state.dart';
 import 'package:pharma_box/include/ble_functions.dart';
+import 'package:pharma_box/include/gs1_datamatrix.dart';
+import 'package:pharma_box/include/lettura_scanner.dart';
 import 'package:pharma_box/main.dart';
+import 'package:pharma_box/models/lotto_confezione.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/view/ble_device_picker_page.dart';
 import 'package:pharma_box/view/cerca_prodotto_field.dart';
@@ -106,10 +110,21 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
     return ordered.where((f) => _selectedFilters.contains(f)).toList();
   }
 
-  void _aggiungi(Prodotto p, {bool clearSearchState = true}) {
+  /// false se la [confezione] (DataMatrix) era già stata contata
+  bool _aggiungi(
+    Prodotto p, {
+    bool clearSearchState = true,
+    ConfezioneGs1? confezione,
+    bool forza = false,
+  }) {
     // Aggiungi/aggiorna nel carrello (fonte verità usata dalla tab Lista)
     if (p.pezzi.value <= 0) p.pezzi.value = 1;
-    Carrello.instance.aggiungiProdotto(p);
+    final aggiunto = Carrello.instance.aggiungiProdotto(
+      p,
+      confezione: confezione,
+      forza: forza,
+    );
+    if (!aggiunto) return false;
     // Mantieni anche lo stato locale per eventuali usi interni
     setState(() {
       if (_codiciSelezionati.contains(p.codice)) {
@@ -124,6 +139,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
         _searchCtrl.clear();
       }
     });
+    return true;
   }
 
   Future<void> openSearch(String q, {bool autoAddIfSingle = true}) async {
@@ -787,18 +803,19 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
   @override
   Widget build(BuildContext context) {
     // Listener agli eventi di barcode (registrato durante il build)
-    ref.listen<String?>(scannedBarcodeProvider, (prev, next) {
-      final code = next;
-      if (code == null || code.trim().isEmpty) return;
+    ref.listen<LetturaScanner?>(scannedBarcodeProvider, (prev, next) {
+      final lettura = next;
+      if (lettura == null || lettura.codice.trim().isEmpty) return;
+      final code = lettura.codice;
       dopoIlProssimoFrame(() async {
         if (!mounted) return;
         // Eventi da scanner BLE
         if (selectedIndex == 1) {
           // In "Lista": aggiungi/incrementa direttamente
-          await _handleScannedCode(code);
+          await _handleScannedCode(lettura);
         } else if (selectedIndex == 0) {
           // In "Cerca": incrementa di 1 e mostra anche i risultati
-          await _handleScannedCode(code);
+          await _handleScannedCode(lettura);
           _searchCtrl.text = code;
           setState(() => productToSearch = code);
           await openSearch(code, autoAddIfSingle: false);
@@ -1058,9 +1075,15 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
 }
 
 extension on _SelectedListPageState {
-  Future<void> _handleScannedCode(String code) async {
+  Future<void> _handleScannedCode(LetturaScanner lettura) async {
+    final confezione = lettura.confezione;
     try {
-      final results = await doSearch(code.trim());
+      var results = await doSearch(lettura.codice.trim());
+      // AIC sconosciuto a Farmadati: si riprova con l'EAN del GTIN
+      final ean = confezione?.ean;
+      if (results.isEmpty && ean != null && ean != lettura.codice) {
+        results = await doSearch(ean);
+      }
       if (results.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1071,7 +1094,17 @@ extension on _SelectedListPageState {
       }
       // Se più risultati, per ora aggiunge il primo
       final prodotto = results.first;
-      _aggiungi(prodotto, clearSearchState: false);
+      final aggiunto = _aggiungi(
+        prodotto,
+        clearSearchState: false,
+        confezione: confezione,
+      );
+      if (confezione == null || !mounted) return;
+      if (!aggiunto) {
+        _avvisaGiaContata(prodotto, confezione);
+      } else {
+        _avvisaConfezione(confezione);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -1079,5 +1112,77 @@ extension on _SelectedListPageState {
         ).showSnackBar(SnackBar(content: Text('Errore ricerca: $e')));
       }
     }
+  }
+
+  void _mostraAvviso(
+    String testo, {
+    required Color colore,
+    SnackBarAction? azione,
+  }) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            testo,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: colore,
+          action: azione,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+  }
+
+  /// Avviso alla lettura se la confezione è scaduta o scade entro 3 mesi
+  void _avvisaConfezione(ConfezioneGs1 confezione) {
+    final scadenza = confezione.scadenza;
+    final lotto =
+        confezione.lotto == null ? '' : ' · lotto ${confezione.lotto}';
+    if (scadenza != null) {
+      final stato = statoScadenza(scadenza);
+      if (stato == StatoScadenza.scaduto) {
+        HapticFeedback.heavyImpact();
+        _mostraAvviso(
+          'Confezione SCADUTA il ${formattaScadenza(scadenza)}$lotto',
+          colore: kRed,
+        );
+        return;
+      }
+      if (stato == StatoScadenza.entro3Mesi) {
+        HapticFeedback.mediumImpact();
+        _mostraAvviso(
+          'Scade il ${formattaScadenza(scadenza)}$lotto',
+          colore: kWarning,
+        );
+        return;
+      }
+    }
+    if (confezione.ambigua) {
+      _mostraAvviso(
+        'Lotto o seriale non leggibili: imposta lo scanner per trasmettere '
+        'il separatore GS (FNC1)',
+        colore: kBluScuro,
+      );
+    }
+  }
+
+  void _avvisaGiaContata(Prodotto prodotto, ConfezioneGs1 confezione) {
+    HapticFeedback.heavyImpact();
+    _mostraAvviso(
+      'Confezione già contata (SN ${confezione.seriale})',
+      colore: kBluScuro,
+      azione: SnackBarAction(
+        label: 'Conta di nuovo',
+        textColor: kYellow.withValues(alpha: 1),
+        onPressed:
+            () => _aggiungi(
+              prodotto,
+              clearSearchState: false,
+              confezione: confezione,
+              forza: true,
+            ),
+      ),
+    );
   }
 }

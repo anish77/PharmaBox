@@ -4,6 +4,7 @@ import 'package:pharma_box/include/general_functions.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
+import 'package:pharma_box/widgets/scadenza_chip.dart';
 
 const double _titleFontSize = 14.0;
 const double _titleLineHeight = 1.3;
@@ -201,6 +202,8 @@ class _ProdottoCellState extends State<ProdottoCell> {
                                 ),
                               ],
                             ),
+                            if (mostraQuantita)
+                              ScadenzaChip(prodotto: widget.prodotto),
                           ],
                         );
                       },

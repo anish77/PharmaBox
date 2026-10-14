@@ -1,10 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+
 import 'package:logger/web.dart';
+import 'package:pharma_box/include/gs1_datamatrix.dart';
+import 'package:pharma_box/models/lotto_confezione.dart';
 
 /// Struttura dati:
 ///   users/{uid}/liste/{idLista}                 nome, totalePezzi, createdAt, updatedAt
-///   users/{uid}/liste/{idLista}/items/{minsan}  minsan, titolo, quantity, updatedAt
+///   users/{uid}/liste/{idLista}/items/{minsan}  minsan, titolo, quantity, updatedAt,
+///                                               lotti, seriali
+///
+/// Solo per le letture da DataMatrix:
+///   lotti.{chiave}    lotto, scadenza ('AAAA-MM-GG'), quantity
+///   seriali.{chiave}  seriale: le confezioni già contate
+/// Le chiavi passano da [chiaveCampo]: lotto e seriale possono contenere
+/// caratteri non ammessi nei nomi dei campi.
 ///
 /// Le letture dello scanner usano FieldValue.increment: più telefoni sullo
 /// stesso account possono scrivere in contemporanea senza perdere pezzi.
@@ -41,20 +52,51 @@ class ItemLista {
     required this.minsan,
     required this.titolo,
     required this.quantity,
+    this.lotti = const [],
+    this.seriali = const {},
   });
 
   final String minsan;
   final String titolo;
   final int quantity;
+  final List<LottoConfezione> lotti;
+  final Set<String> seriali;
 
   factory ItemLista.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? const <String, dynamic>{};
+    final lotti = data['lotti'];
+    final seriali = data['seriali'];
     return ItemLista(
       minsan: (data['minsan'] ?? doc.id).toString(),
       titolo: (data['titolo'] ?? '').toString(),
       quantity: _toInt(data['quantity']),
+      lotti: [
+        if (lotti is Map)
+          for (final l in lotti.values.whereType<Map>())
+            LottoConfezione(
+              lotto: (l['lotto'] ?? '').toString(),
+              scadenza: scadenzaDaIso(l['scadenza']),
+              quantity: _toInt(l['quantity']),
+            ),
+      ],
+      seriali: {if (seriali is Map) ...seriali.values.map((v) => v.toString())},
     );
   }
+}
+
+/// Nome di campo Firestore sicuro per un testo qualsiasi: lettere, cifre e
+/// '-' restano, il resto diventa _XX (byte UTF-8 in esadecimale).
+String chiaveCampo(String testo) {
+  final sb = StringBuffer();
+  for (final byte in utf8.encode(testo)) {
+    final c = String.fromCharCode(byte);
+    if (RegExp(r'[A-Za-z0-9-]').hasMatch(c)) {
+      sb.write(c);
+    } else {
+      sb.write('_${byte.toRadixString(16).padLeft(2, '0').toUpperCase()}');
+    }
+  }
+  return sb.toString();
 }
 
 int _toInt(dynamic value) {
@@ -192,20 +234,37 @@ class ListeRepository {
   }
 
   /// Aggiunge [delta] pezzi in modo atomico (lettura scanner, "Aggiungi").
+  /// Con una [confezione] da DataMatrix registra anche lotto, scadenza e
+  /// seriale: niente transazione, così la lettura funziona anche offline.
   Future<void> incrementa(
     String uid,
     String idLista, {
     required String minsan,
     required String titolo,
     int delta = 1,
+    ConfezioneGs1? confezione,
   }) {
     final adesso = Timestamp.now();
     final batch = _db.batch();
+    final lotto = confezione?.lotto;
+    final scadenza = confezione?.scadenza;
+    final seriale = confezione?.seriale;
     batch.set(_items(uid, idLista).doc(_idItem(minsan)), {
       'minsan': minsan,
       'titolo': titolo,
       'quantity': FieldValue.increment(delta),
       'updatedAt': adesso,
+      if (lotto != null || scadenza != null)
+        'lotti': {
+          chiaveCampo(
+            '${lotto ?? ''}|${scadenza == null ? '' : scadenzaIso(scadenza)}',
+          ): {
+            'lotto': lotto ?? '',
+            'scadenza': scadenza == null ? null : scadenzaIso(scadenza),
+            'quantity': FieldValue.increment(delta),
+          },
+        },
+      if (seriale != null) 'seriali': {chiaveCampo(seriale): seriale},
     }, SetOptions(merge: true));
     batch.update(_liste(uid).doc(idLista), {
       'totalePezzi': FieldValue.increment(delta),
@@ -217,6 +276,8 @@ class ListeRepository {
   /// Imposta la quantità esatta (contatore, inserimento manuale). [delta] è
   /// la differenza rispetto alla quantità precedente, per il totale lista.
   /// A quantità 0 il prodotto resta in lista: si elimina con [rimuoviItem].
+  /// Azzerando si azzerano anche lotti e seriali: rileggendo le confezioni
+  /// vengono contate di nuovo.
   Future<void> impostaQuantita(
     String uid,
     String idLista, {
@@ -232,6 +293,10 @@ class ListeRepository {
       'titolo': titolo,
       'quantity': quantity < 0 ? 0 : quantity,
       'updatedAt': adesso,
+      if (quantity <= 0) ...{
+        'lotti': FieldValue.delete(),
+        'seriali': FieldValue.delete(),
+      },
     }, SetOptions(merge: true));
     batch.update(_liste(uid).doc(idLista), {
       'totalePezzi': FieldValue.increment(delta),

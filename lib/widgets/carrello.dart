@@ -6,6 +6,8 @@ import '../models/prodotto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pharma_box/firebase/liste_repository.dart';
 import 'package:pharma_box/data/constants.dart';
+import 'package:pharma_box/include/gs1_datamatrix.dart';
+import 'package:pharma_box/models/lotto_confezione.dart';
 
 /// Specchio locale della lista aperta, sincronizzato in tempo reale con
 /// Firestore: le letture fatte da altri telefoni sullo stesso account
@@ -20,6 +22,8 @@ class Carrello {
   final ValueNotifier<List<Prodotto>> prodotti = ValueNotifier([]);
 
   final Map<String, Prodotto> _perMinsan = {};
+  // Seriali delle confezioni già contate, per MINSAN
+  final Map<String, Set<String>> _seriali = {};
   String? _uid;
   String? _idLista;
   StreamSubscription<List<ItemLista>>? _sub;
@@ -34,6 +38,7 @@ class Carrello {
     _uid = uid;
     _idLista = idLista;
     _perMinsan.clear();
+    _seriali.clear();
     prodotti.value = [];
     if (uid == null) return;
 
@@ -54,26 +59,48 @@ class Carrello {
       if (prodotto.pezzi.value != item.quantity) {
         prodotto.pezzi.value = item.quantity;
       }
+      prodotto.lotti.value = item.lotti;
       aggiornati[item.minsan] = prodotto;
     }
     _perMinsan
       ..clear()
       ..addAll(aggiornati);
+    _seriali
+      ..clear()
+      ..addAll({
+        for (final item in items) item.minsan: {...item.seriali},
+      });
     prodotti.value = _perMinsan.values.toList();
   }
 
-  /// Aggiunge [quantita] pezzi (default 1) con un incremento atomico
-  void aggiungiProdotto(Prodotto prodotto, {int quantita = 1}) {
+  /// true se la confezione con questo seriale è già nella lista
+  bool giaContata(String minsan, ConfezioneGs1? confezione) {
+    final seriale = confezione?.seriale;
+    return seriale != null && (_seriali[minsan]?.contains(seriale) ?? false);
+  }
+
+  /// Aggiunge [quantita] pezzi (default 1) con un incremento atomico.
+  /// Con una [confezione] letta da DataMatrix registra lotto e scadenza; se
+  /// il seriale è già in lista non aggiunge nulla e restituisce false, a
+  /// meno di [forza].
+  bool aggiungiProdotto(
+    Prodotto prodotto, {
+    int quantita = 1,
+    ConfezioneGs1? confezione,
+    bool forza = false,
+  }) {
     final uid = _uid;
     final idLista = _idLista;
-    if (uid == null || idLista == null || prodotto.minsan.isEmpty) return;
+    if (uid == null || idLista == null || prodotto.minsan.isEmpty) {
+      return false;
+    }
+    if (!forza && giaContata(prodotto.minsan, confezione)) return false;
 
     final esistente = _perMinsan[prodotto.minsan];
-    if (esistente != null) {
-      esistente.pezzi.value += quantita;
-    } else {
-      _perMinsan[prodotto.minsan] = _copia(prodotto, quantita);
-    }
+    final inLista = esistente ?? _copia(prodotto, 0);
+    inLista.pezzi.value += quantita;
+    _perMinsan[prodotto.minsan] = inLista;
+    if (confezione != null) _registraConfezione(inLista, confezione, quantita);
     prodotti.value = _perMinsan.values.toList();
 
     ListeRepository.instance
@@ -83,14 +110,47 @@ class Carrello {
           minsan: prodotto.minsan,
           titolo: prodotto.nome,
           delta: quantita,
+          confezione: confezione,
         )
         .catchError((e) => _logger.e('Errore salvataggio lettura: $e'));
+    return true;
+  }
+
+  /// Aggiornamento locale immediato; lo snapshot di Firestore lo conferma
+  void _registraConfezione(
+    Prodotto prodotto,
+    ConfezioneGs1 confezione,
+    int quantita,
+  ) {
+    final seriale = confezione.seriale;
+    if (seriale != null) {
+      _seriali.putIfAbsent(prodotto.minsan, () => {}).add(seriale);
+    }
+    if (confezione.lotto == null && confezione.scadenza == null) return;
+    final lotto = confezione.lotto ?? '';
+    final lotti = List<LottoConfezione>.of(prodotto.lotti.value);
+    final i = lotti.indexWhere(
+      (l) => l.lotto == lotto && l.scadenza == confezione.scadenza,
+    );
+    final precedente = i == -1 ? 0 : lotti[i].quantity;
+    final aggiornato = LottoConfezione(
+      lotto: lotto,
+      scadenza: confezione.scadenza,
+      quantity: precedente + quantita,
+    );
+    if (i == -1) {
+      lotti.add(aggiornato);
+    } else {
+      lotti[i] = aggiornato;
+    }
+    prodotto.lotti.value = lotti;
   }
 
   void svuotaLista() {
     final uid = _uid;
     final idLista = _idLista;
     _perMinsan.clear();
+    _seriali.clear();
     prodotti.value = [];
     if (uid == null || idLista == null) return;
 
@@ -113,6 +173,10 @@ class Carrello {
     if (nuova == attuale) return;
 
     esistente.pezzi.value = nuova;
+    if (nuova == 0) {
+      esistente.lotti.value = const [];
+      _seriali.remove(prodotto.minsan);
+    }
     prodotti.value = _perMinsan.values.toList();
 
     ListeRepository.instance
@@ -134,6 +198,7 @@ class Carrello {
     if (uid == null || idLista == null) return;
     final esistente = _perMinsan.remove(prodotto.minsan);
     if (esistente == null) return;
+    _seriali.remove(prodotto.minsan);
     prodotti.value = _perMinsan.values.toList();
 
     ListeRepository.instance

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:logger/web.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pharma_box/models/lotto_confezione.dart';
 import 'package:pharma_box/data/constants.dart';
 import 'package:pharma_box/firebase/liste_repository.dart';
 import 'package:pharma_box/logic/open_email.dart';
@@ -53,11 +54,18 @@ class _ListExportItem {
     required this.nome,
     required this.minsan,
     required this.quantity,
+    this.scadenza,
   });
 
   final String nome;
   final String minsan;
   final int quantity;
+
+  /// Scadenza più vicina tra le confezioni lette da DataMatrix
+  final DateTime? scadenza;
+
+  String get scadenzaTesto =>
+      scadenza == null ? '' : formattaScadenza(scadenza!);
 }
 
 class _CreaNuovaListaState extends State<CreaNuovaLista> {
@@ -182,6 +190,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                     nome: item.titolo,
                     minsan: item.minsan,
                     quantity: item.quantity,
+                    scadenza: scadenzaPiuVicina(item.lotti),
                   ),
                 )
                 .toList()
@@ -464,7 +473,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             } else {
               widgets.add(
                 pw.TableHelper.fromTextArray(
-                  headers: ['Nome prodotto', 'Minsan', 'Pezzi'],
+                  headers: ['Nome prodotto', 'Minsan', 'Pezzi', 'Scadenza'],
                   data:
                       lista.items
                           .map(
@@ -472,6 +481,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                               item.nome,
                               item.minsan,
                               item.quantity.toString(),
+                              item.scadenzaTesto,
                             ],
                           )
                           .toList(),
@@ -512,7 +522,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     if (pharmacyName != null) {
       buffer.writeln(_escapeCsv('Nome Farmacia: "$pharmacyName"'));
     }
-    buffer.writeln('Lista;Nome prodotto;Minsan;Pezzi');
+    buffer.writeln('Lista;Nome prodotto;Minsan;Pezzi;Scadenza');
 
     for (final lista in liste) {
       final totalePezzi = lista.items.fold<int>(
@@ -520,15 +530,15 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
         (total, item) => total + item.quantity,
       );
       if (lista.items.isEmpty) {
-        buffer.writeln('${_escapeCsv(lista.nome)};Nessun prodotto;;');
+        buffer.writeln('${_escapeCsv(lista.nome)};Nessun prodotto;;;');
       } else {
         for (final item in lista.items) {
           buffer.writeln(
-            '${_escapeCsv(lista.nome)};${_escapeCsv(item.nome)};${_escapeCsv(item.minsan)};${item.quantity}',
+            '${_escapeCsv(lista.nome)};${_escapeCsv(item.nome)};${_escapeCsv(item.minsan)};${item.quantity};${item.scadenzaTesto}',
           );
         }
       }
-      buffer.writeln('${_escapeCsv(lista.nome)};Totale pezzi;;$totalePezzi');
+      buffer.writeln('${_escapeCsv(lista.nome)};Totale pezzi;;$totalePezzi;');
     }
 
     final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
