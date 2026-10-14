@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:pharma_box/main.dart';
 import 'package:pharma_box/include/gs1_datamatrix.dart' show kGs;
 import 'package:pharma_box/include/lettura_scanner.dart';
+
 // rimuoviamo la dipendenza diretta dalla pagina UI per evitare cicli di import
 
 var logger = Logger(printer: PrettyPrinter());
@@ -195,7 +196,26 @@ class AssemblatoreBle {
   }
 }
 
-Future<void> bleStartScanAndListen(WidgetRef ref) async {
+/// Le callback BLE vivono più della pagina che ha collegato lo scanner: il
+/// suo WidgetRef, dopo la chiusura della pagina (es. si apre un'altra lista),
+/// lancia StateError a ogni lettura. Si usa il ProviderContainer dell'app.
+ProviderContainer _providers(WidgetRef ref) =>
+    ProviderScope.containerOf(ref.context, listen: false);
+
+/// Pubblica una lettura completa dello scanner (bollino o DataMatrix) su
+/// scannedBarcodeProvider: l'UI lo ascolta e apre la ricerca.
+void pubblicaLettura(ProviderContainer ref, List<int> data) {
+  logger.i('BLE lettura (${data.length} byte): $data');
+  final barcode = bleDecode(data);
+  logger.i('BLE decodificato: "$barcode"');
+  if (barcode.isEmpty) return;
+  ref.read(bleStatusProvider.notifier).state =
+      'Letto: ${barcode.replaceAll(kGs, ' ')}';
+  ref.read(scannedBarcodeProvider.notifier).state = interpretaLettura(barcode);
+}
+
+Future<void> bleStartScanAndListen(WidgetRef widgetRef) async {
+  final ref = _providers(widgetRef);
   await _bleEnsurePerms();
   // Evita listener duplicati da sessioni precedenti
   await _bleDispose();
@@ -274,7 +294,11 @@ Future<void> bleRequestPermissions() => _bleEnsurePerms();
 /// Connette il dispositivo scelto dall'utente e si mette in ascolto dei
 /// barcode. Restituisce null se lo scanner è pronto, altrimenti il motivo
 /// dell'errore da mostrare all'utente.
-Future<String?> bleConnectToDevice(BluetoothDevice dev, WidgetRef ref) async {
+Future<String?> bleConnectToDevice(
+  BluetoothDevice dev,
+  WidgetRef widgetRef,
+) async {
+  final ref = _providers(widgetRef);
   await _bleDispose();
   ref.read(bleStatusProvider.notifier).state =
       'Connessione a ${dev.remoteId.str}…';
@@ -299,7 +323,10 @@ Future<String?> bleConnectToDevice(BluetoothDevice dev, WidgetRef ref) async {
   return ref.read(bleStatusProvider);
 }
 
-Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
+Future<void> _bleConnectAndSubscribe(
+  BluetoothDevice dev,
+  ProviderContainer ref,
+) async {
   _bleDevice = dev;
   try {
     await dev.connect(timeout: const Duration(seconds: 10));
@@ -371,22 +398,9 @@ Future<void> _bleConnectAndSubscribe(BluetoothDevice dev, ref) async {
     if (c.properties.notify || c.properties.indicate) {
       await c.setNotifyValue(true);
       subscribed++;
-      final assemblatore = AssemblatoreBle((data) {
-        logger.i('BLE lettura (${data.length} byte): $data');
-        final barcode = bleDecode(data);
-        logger.i('BLE decodificato: "$barcode"');
-        if (barcode.isEmpty) return;
-        //if (!mounted) return;
-        //setState(() => _bleStatus = 'Letto: $barcode');
-        ref.read(bleStatusProvider.notifier).state =
-            'Letto: ${barcode.replaceAll(kGs, ' ')}';
-
-        // Pubblica la lettura interpretata (bollino o DataMatrix) su un
-        // provider di stato: l'UI lo ascolta e apre la ricerca
-        ref.read(scannedBarcodeProvider.notifier).state = interpretaLettura(
-          barcode,
-        );
-      });
+      final assemblatore = AssemblatoreBle(
+        (data) => pubblicaLettura(ref, data),
+      );
       _assemblatore = assemblatore;
       final s = c.onValueReceived.listen((data) {
         logger.i('BLE ricevuto (${data.length} byte): $data');

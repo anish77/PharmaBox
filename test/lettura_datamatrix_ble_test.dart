@@ -3,10 +3,13 @@
 
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pharma_box/include/ble_functions.dart';
 import 'package:pharma_box/include/gs1_datamatrix.dart';
 import 'package:pharma_box/include/lettura_scanner.dart';
+import 'package:pharma_box/main.dart' show scannedBarcodeProvider;
 import 'package:pharma_box/models/lotto_confezione.dart';
 
 const aic = '012745182';
@@ -99,5 +102,49 @@ void main() {
         StatoScadenza.ok,
       );
     });
+  });
+
+  // Lo scanner si collega dalla pagina di una lista; se poi si torna indietro
+  // e si apre un'altra lista quella pagina è chiusa, ma lo scanner resta
+  // collegato. Il suo WidgetRef non è più utilizzabile: le letture devono
+  // passare dal ProviderContainer dell'app.
+  testWidgets('le letture arrivano anche dopo la chiusura della pagina che '
+      'ha collegato lo scanner', (tester) async {
+    late WidgetRef refPagina;
+    final mostraPagina = ValueNotifier(true);
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: ValueListenableBuilder<bool>(
+            valueListenable: mostraPagina,
+            builder:
+                (context, mostra, _) =>
+                    mostra
+                        ? Consumer(
+                          builder: (context, ref, _) {
+                            refPagina = ref;
+                            return const Text('Lista A');
+                          },
+                        )
+                        : const Text('Lista B'),
+          ),
+        ),
+      ),
+    );
+    // Come fa bleConnectToDevice al collegamento
+    final providers = ProviderScope.containerOf(
+      refPagina.context,
+      listen: false,
+    );
+
+    mostraPagina.value = false;
+    await tester.pump();
+    expect(find.text('Lista B'), findsOneWidget);
+    expect(() => refPagina.read(scannedBarcodeProvider), throwsStateError);
+
+    pubblicaLettura(providers, utf8.encode('$dataMatrix\r'));
+    final lettura = providers.read(scannedBarcodeProvider)!;
+    expect(lettura.codice, aic);
+    expect(lettura.confezione!.seriale, 'SN9X7Q2K');
   });
 }
