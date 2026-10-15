@@ -82,7 +82,7 @@ lib/
 ## Dati su Firestore
 
 ```
-users/{uid}                                dati account, codiceInvito, UID_BLE
+users/{uid}                                dati account, UID_BLE
 users/{uid}/liste/{idLista}                nome, totalePezzi, createdAt, updatedAt
 users/{uid}/liste/{idLista}/items/{minsan} minsan, titolo, quantity, updatedAt,
                                            lotti, seriali (solo da DataMatrix)
