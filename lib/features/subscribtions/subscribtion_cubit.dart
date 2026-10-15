@@ -53,7 +53,7 @@ class SubscriptionCubit extends Cubit<SubscribtionState> {
     final entitlement = info.entitlements.active['Premium'];
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) return;
+    if (user == null || !user.emailVerified) return;
 
     // Ensure we store a Firestore Timestamp for expirationDate
     final Object? rawExpiration = entitlement?.expirationDate;
@@ -73,8 +73,9 @@ class SubscriptionCubit extends Cubit<SubscribtionState> {
           expirationTs = Timestamp.fromDate(parsed);
         } else {
           final ms = int.tryParse(s);
-          if (ms != null)
+          if (ms != null) {
             expirationTs = Timestamp.fromMillisecondsSinceEpoch(ms);
+          }
         }
       }
     }
