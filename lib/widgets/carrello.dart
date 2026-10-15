@@ -24,6 +24,8 @@ class Carrello {
   final Map<String, Prodotto> _perMinsan = {};
   // Seriali delle confezioni già contate, per MINSAN
   final Map<String, Set<String>> _seriali = {};
+  // Per MINSAN: chiave del lotto -> seriali letti, dal più vecchio
+  final Map<String, Map<String, List<String>>> _serialiPerLotto = {};
   String? _uid;
   String? _idLista;
   StreamSubscription<List<ItemLista>>? _sub;
@@ -39,6 +41,7 @@ class Carrello {
     _idLista = idLista;
     _perMinsan.clear();
     _seriali.clear();
+    _serialiPerLotto.clear();
     prodotti.value = [];
     if (uid == null) return;
 
@@ -70,7 +73,128 @@ class Carrello {
       ..addAll({
         for (final item in items) item.minsan: {...item.seriali},
       });
+    _serialiPerLotto
+      ..clear()
+      ..addAll({
+        for (final item in items)
+          item.minsan: {
+            for (final MapEntry(:key, :value) in item.serialiPerLotto.entries)
+              key: [...value],
+          },
+      });
     prodotti.value = _perMinsan.values.toList();
+  }
+
+  /// Il prodotto come è nella lista aperta (con pezzi e lotti), se c'è
+  Prodotto? inLista(String minsan) => _perMinsan[minsan];
+
+  /// true se il prodotto in lista ha pezzi attribuiti a un lotto: le sue
+  /// quantità si modificano dal pannello dei lotti
+  bool haLotti(String minsan) =>
+      _perMinsan[minsan]?.lotti.value.any((l) => l.quantity > 0) ?? false;
+
+  /// Pezzi del prodotto non attribuiti a un lotto (bollino o a mano)
+  static int pezziSenzaLotto(Prodotto prodotto) {
+    final conLotto = prodotto.lotti.value.fold<int>(
+      0,
+      (somma, l) => somma + (l.quantity > 0 ? l.quantity : 0),
+    );
+    final senza = prodotto.pezzi.value - conLotto;
+    return senza > 0 ? senza : 0;
+  }
+
+  /// Aggiunge o toglie [delta] pezzi di un lotto preciso. Togliendo, libera
+  /// l'ultimo seriale letto di quel lotto: la confezione si può rileggere.
+  void modificaLotto(Prodotto prodotto, LottoConfezione lotto, int delta) {
+    final uid = _uid;
+    final idLista = _idLista;
+    final esistente = _perMinsan[prodotto.minsan];
+    if (uid == null || idLista == null || esistente == null || delta == 0) {
+      return;
+    }
+
+    final lotti = List<LottoConfezione>.of(esistente.lotti.value);
+    final i = lotti.indexWhere(
+      (l) => l.lotto == lotto.lotto && l.scadenza == lotto.scadenza,
+    );
+    final precedente = i == -1 ? 0 : lotti[i].quantity;
+    final nuova = precedente + delta;
+    if (nuova < 0) return;
+    final effettivo = nuova - precedente;
+
+    final aggiornato = LottoConfezione(
+      lotto: lotto.lotto,
+      scadenza: lotto.scadenza,
+      quantity: nuova,
+    );
+    if (i == -1) {
+      lotti.add(aggiornato);
+    } else if (nuova == 0) {
+      lotti.removeAt(i);
+    } else {
+      lotti[i] = aggiornato;
+    }
+
+    String? seriale;
+    if (effettivo < 0) {
+      final letti =
+          _serialiPerLotto[prodotto.minsan]?[chiaveLotto(
+            lotto.lotto,
+            lotto.scadenza,
+          )];
+      if (letti != null && letti.isNotEmpty) {
+        seriale = letti.removeLast();
+        _seriali[prodotto.minsan]?.remove(seriale);
+      }
+    }
+
+    esistente.lotti.value = lotti;
+    esistente.pezzi.value += effettivo;
+    prodotti.value = _perMinsan.values.toList();
+
+    ListeRepository.instance
+        .modificaLotto(
+          uid,
+          idLista,
+          minsan: prodotto.minsan,
+          titolo: esistente.nome,
+          lotto: lotto,
+          delta: effettivo,
+          quantitaLotto: nuova,
+          serialeDaLiberare: seriale,
+        )
+        .catchError((e) => _logger.e('Errore modifica lotto: $e'));
+  }
+
+  /// Toglie un pezzo senza chiedere il lotto: prima dai pezzi senza scadenza,
+  /// poi dal lotto che scade prima (scaduti per primi, senza data per ultimi).
+  /// Restituisce da dove l'ha tolto, null se non c'era nulla da togliere.
+  String? togliUnPezzo(Prodotto prodotto) {
+    final esistente = _perMinsan[prodotto.minsan];
+    if (esistente == null || esistente.pezzi.value <= 0) return null;
+    if (pezziSenzaLotto(esistente) > 0) {
+      modificaSenzaLotto(esistente, -1);
+      return 'Tolto 1 pezzo senza scadenza';
+    }
+    final lotto = lottoDaTogliere(esistente.lotti.value);
+    if (lotto == null) return null;
+    modificaLotto(esistente, lotto, -1);
+    final nome = lotto.lotto.isEmpty ? 'senza numero' : lotto.lotto;
+    final scadenza =
+        lotto.scadenza == null
+            ? ''
+            : ', scad. ${formattaScadenza(lotto.scadenza!)}';
+    return 'Tolto 1 pezzo dal lotto $nome$scadenza';
+  }
+
+  /// Aggiunge o toglie pezzi senza lotto: il totale non scende mai sotto i
+  /// pezzi attribuiti ai lotti.
+  void modificaSenzaLotto(Prodotto prodotto, int delta) {
+    final esistente = _perMinsan[prodotto.minsan];
+    if (esistente == null) return;
+    final senza = pezziSenzaLotto(esistente);
+    if (senza + delta < 0) return;
+    aggiornaQuantita(esistente, esistente.pezzi.value + delta);
   }
 
   /// true se la confezione con questo seriale è già nella lista
@@ -128,6 +252,12 @@ class Carrello {
     }
     if (confezione.lotto == null && confezione.scadenza == null) return;
     final lotto = confezione.lotto ?? '';
+    if (seriale != null) {
+      _serialiPerLotto
+          .putIfAbsent(prodotto.minsan, () => {})
+          .putIfAbsent(chiaveLotto(lotto, confezione.scadenza), () => [])
+          .add(seriale);
+    }
     final lotti = List<LottoConfezione>.of(prodotto.lotti.value);
     final i = lotti.indexWhere(
       (l) => l.lotto == lotto && l.scadenza == confezione.scadenza,
@@ -151,6 +281,7 @@ class Carrello {
     final idLista = _idLista;
     _perMinsan.clear();
     _seriali.clear();
+    _serialiPerLotto.clear();
     prodotti.value = [];
     if (uid == null || idLista == null) return;
 
@@ -176,6 +307,7 @@ class Carrello {
     if (nuova == 0) {
       esistente.lotti.value = const [];
       _seriali.remove(prodotto.minsan);
+      _serialiPerLotto.remove(prodotto.minsan);
     }
     prodotti.value = _perMinsan.values.toList();
 
@@ -199,6 +331,7 @@ class Carrello {
     final esistente = _perMinsan.remove(prodotto.minsan);
     if (esistente == null) return;
     _seriali.remove(prodotto.minsan);
+    _serialiPerLotto.remove(prodotto.minsan);
     prodotti.value = _perMinsan.values.toList();
 
     ListeRepository.instance

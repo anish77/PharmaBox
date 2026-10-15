@@ -9,10 +9,19 @@ class CounterButton extends StatefulWidget {
   final double height;
   final double width;
 
+  /// Se impostato, −, + e il tocco sul numero chiamano questo invece di
+  /// cambiare il valore (prodotti con lotti: si modifica lotto per lotto)
+  final VoidCallback? onModificaGuidata;
+
+  /// Se impostato, il − chiama questo (ha la precedenza su [onModificaGuidata])
+  final VoidCallback? onMeno;
+
   const CounterButton({
     super.key,
     this.initialValue = 1,
     this.onChanged,
+    this.onModificaGuidata,
+    this.onMeno,
     this.height = 40.0, // 👈 altezza predefinita
     this.width = 120.0, // 👈 larghezza predefinita
   });
@@ -102,7 +111,7 @@ class _CounterButtonState extends State<CounterButton> {
           // Button -
           Expanded(
             child: GestureDetector(
-              onTap: _decrement,
+              onTap: widget.onMeno ?? widget.onModificaGuidata ?? _decrement,
               child: Container(
                 height: widget.height,
                 alignment: Alignment.center,
@@ -125,7 +134,7 @@ class _CounterButtonState extends State<CounterButton> {
           // Counter (centrale)
           Expanded(
             child: GestureDetector(
-              onTap: _showManualEntryDialog,
+              onTap: widget.onModificaGuidata ?? _showManualEntryDialog,
               child: Container(
                 height: widget.height,
                 alignment: Alignment.center,
@@ -148,7 +157,7 @@ class _CounterButtonState extends State<CounterButton> {
           // Button +
           Expanded(
             child: GestureDetector(
-              onTap: _increment,
+              onTap: widget.onModificaGuidata ?? _increment,
               child: Container(
                 height: widget.height,
                 alignment: Alignment.center,

@@ -35,6 +35,7 @@ class OpzioniPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
+          const _Sezione('Lista', [_Ordinamento()]),
           const _Sezione('Scanner', [_Scanner()]),
           _Sezione('Lettura', [
             _Interruttore(
@@ -92,13 +93,20 @@ class OpzioniPage extends StatelessWidget {
               sottotitolo:
                   'Mentre una lista è aperta il telefono non va in standby.',
             ),
-            const _Ordinamento(),
             _Interruttore(
               preferenza: PreferenzeDispositivo.scadenzeAperte,
               icona: Icons.unfold_more,
               titolo: 'Scadenze e lotti sempre aperti',
               sottotitolo:
                   'Nella lista, sotto ogni prodotto letto da DataMatrix.',
+            ),
+            _Interruttore(
+              preferenza: PreferenzeDispositivo.menoDiretto,
+              icona: Icons.remove_circle_outline,
+              titolo: 'Togli senza scegliere il lotto',
+              sottotitolo:
+                  'Il − toglie subito un pezzo: prima quelli senza scadenza, '
+                  'poi dal lotto che scade prima. Spento: chiede il lotto.',
             ),
           ]),
           const Padding(

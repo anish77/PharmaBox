@@ -3,6 +3,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pharma_box/firebase/liste_repository.dart';
 import 'package:pharma_box/include/gs1_datamatrix.dart';
+import 'package:pharma_box/models/lotto_confezione.dart';
 
 const uid = 'utente_test';
 
@@ -319,6 +320,124 @@ void main() {
       expect(item.quantity, 0);
       expect(item.lotti, isEmpty);
       expect(item.seriali, isEmpty);
+    });
+
+    group('modificaLotto', () {
+      final lottoA = LottoConfezione(
+        lotto: 'L1.2/A',
+        scadenza: DateTime(2028, 3, 31),
+        quantity: 0,
+      );
+      final lottoB = LottoConfezione(
+        lotto: 'B9',
+        scadenza: DateTime(2028, 3, 31),
+        quantity: 0,
+      );
+
+      // letture distanziate: l'ordine dei seriali segue l'ora di lettura
+      Future<void> leggiInOrdine(List<ConfezioneGs1> confezioni) async {
+        for (final c in confezioni) {
+          await leggi(c);
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+      }
+
+      Future<void> modifica(
+        LottoConfezione lotto,
+        int delta,
+        int quantitaLotto, {
+        String? seriale,
+      }) => repo.modificaLotto(
+        uid,
+        id,
+        minsan: '012745182',
+        titolo: 'Tachipirina',
+        lotto: lotto,
+        delta: delta,
+        quantitaLotto: quantitaLotto,
+        serialeDaLiberare: seriale,
+      );
+
+      test(
+        'i seriali sono raggruppati per lotto in ordine di lettura',
+        () async {
+          await leggiInOrdine([
+            confezione('SN1'),
+            confezione('SN3', lotto: 'B9'),
+            confezione('SN2'),
+          ]);
+
+          final item = (await repo.leggiItems(uid, id)).single;
+          expect(item.serialiPerLotto, {
+            chiaveLotto('L1.2/A', DateTime(2028, 3, 31)): ['SN1', 'SN2'],
+            chiaveLotto('B9', DateTime(2028, 3, 31)): ['SN3'],
+          });
+        },
+      );
+
+      test('togliere un pezzo da un lotto libera il suo seriale', () async {
+        await leggiInOrdine([
+          confezione('SN1'),
+          confezione('SN2'),
+          confezione('SN3', lotto: 'B9'),
+        ]);
+
+        await modifica(lottoA, -1, 1, seriale: 'SN2');
+
+        final item = (await repo.leggiItems(uid, id)).single;
+        expect(item.quantity, 2);
+        expect(
+          {for (final l in item.lotti) l.lotto: l.quantity},
+          {'L1.2/A': 1, 'B9': 1},
+        );
+        expect(item.seriali, {'SN1', 'SN3'});
+        expect(
+          item.serialiPerLotto[chiaveLotto('L1.2/A', DateTime(2028, 3, 31))],
+          ['SN1'],
+        );
+        expect((await lista(id))['totalePezzi'], 2);
+      });
+
+      test('a 0 il lotto sparisce e gli altri restano', () async {
+        await leggiInOrdine([
+          confezione('SN1'),
+          confezione('SN3', lotto: 'B9'),
+        ]);
+
+        await modifica(lottoB, -1, 0, seriale: 'SN3');
+
+        final item = (await repo.leggiItems(uid, id)).single;
+        expect(item.quantity, 1);
+        expect(item.lotti.map((l) => l.lotto), ['L1.2/A']);
+        expect(item.seriali, {'SN1'});
+        expect((await lista(id))['totalePezzi'], 1);
+      });
+
+      test('un lotto azzerato si può ricreare con +', () async {
+        await leggi(confezione('SN3', lotto: 'B9'));
+        await modifica(lottoB, -1, 0, seriale: 'SN3');
+
+        await modifica(lottoB, 1, 1);
+
+        final item = (await repo.leggiItems(uid, id)).single;
+        expect(item.quantity, 1);
+        expect(item.lotti.single.lotto, 'B9');
+        expect(item.lotti.single.scadenza, DateTime(2028, 3, 31));
+        expect(item.lotti.single.quantity, 1);
+      });
+
+      test('letture salvate prima di serialiLotti restano leggibili', () async {
+        await db.doc('users/$uid/liste/$id/items/012745182').set({
+          'minsan': '012745182',
+          'titolo': 'Tachipirina',
+          'quantity': 1,
+          'seriali': {'SN1': 'SN1'},
+        });
+
+        final item = (await repo.leggiItems(uid, id)).single;
+        expect(item.seriali, {'SN1'});
+        expect(item.serialiPerLotto, isEmpty);
+      });
     });
 
     test('chiaveCampo: sicura e senza collisioni tra caratteri diversi', () {

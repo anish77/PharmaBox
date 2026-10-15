@@ -60,3 +60,17 @@ String scadenzaIso(DateTime d) => '${d.year}-${_dd(d.month)}-${_dd(d.day)}';
 
 DateTime? scadenzaDaIso(dynamic valore) =>
     valore is String && valore.isNotEmpty ? DateTime.tryParse(valore) : null;
+
+/// Lotto da cui togliere un pezzo senza chiedere: quello con pezzi che scade
+/// prima (scaduti per primi, senza data per ultimi); null se nessuno.
+LottoConfezione? lottoDaTogliere(Iterable<LottoConfezione> lotti) {
+  LottoConfezione? scelto;
+  for (final l in lotti) {
+    if (l.quantity <= 0) continue;
+    final s = l.scadenza ?? DateTime(9999);
+    if (scelto == null || s.isBefore(scelto.scadenza ?? DateTime(9999))) {
+      scelto = l;
+    }
+  }
+  return scelto;
+}

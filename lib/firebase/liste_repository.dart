@@ -14,6 +14,9 @@ import 'package:pharma_box/models/lotto_confezione.dart';
 /// Solo per le letture da DataMatrix:
 ///   lotti.{chiave}    lotto, scadenza ('AAAA-MM-GG'), quantity
 ///   seriali.{chiave}  seriale: le confezioni già contate
+///   serialiLotti.{chiave seriale}  lotto (chiave del lotto), t (lettura):
+///                     per liberare il seriale giusto togliendo un pezzo
+///                     da un lotto (assente nelle letture precedenti)
 /// Le chiavi passano da [chiaveCampo]: lotto e seriale possono contenere
 /// caratteri non ammessi nei nomi dei campi.
 ///
@@ -54,6 +57,7 @@ class ItemLista {
     required this.quantity,
     this.lotti = const [],
     this.seriali = const {},
+    this.serialiPerLotto = const {},
   });
 
   final String minsan;
@@ -62,11 +66,33 @@ class ItemLista {
   final List<LottoConfezione> lotti;
   final Set<String> seriali;
 
+  /// Chiave del lotto -> seriali letti, dal più vecchio al più recente
+  final Map<String, List<String>> serialiPerLotto;
+
   factory ItemLista.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? const <String, dynamic>{};
     final lotti = data['lotti'];
     final seriali = data['seriali'];
+    final serialiLotti = data['serialiLotti'];
+    final letture = <({String lotto, String seriale, int t})>[
+      if (seriali is Map && serialiLotti is Map)
+        for (final MapEntry(:key, :value) in serialiLotti.entries)
+          if (value is Map && seriali[key] != null)
+            (
+              lotto: (value['lotto'] ?? '').toString(),
+              seriale: seriali[key].toString(),
+              t:
+                  value['t'] is Timestamp
+                      ? (value['t'] as Timestamp).millisecondsSinceEpoch
+                      : 0,
+            ),
+    ]..sort((a, b) => a.t.compareTo(b.t));
+    final perLotto = <String, List<String>>{};
+    for (final l in letture) {
+      perLotto.putIfAbsent(l.lotto, () => []).add(l.seriale);
+    }
     return ItemLista(
+      serialiPerLotto: perLotto,
       minsan: (data['minsan'] ?? doc.id).toString(),
       titolo: (data['titolo'] ?? '').toString(),
       quantity: _toInt(data['quantity']),
@@ -83,6 +109,11 @@ class ItemLista {
     );
   }
 }
+
+/// Chiave del lotto nel campo `lotti`: stesso lotto con scadenze diverse
+/// sono lotti distinti.
+String chiaveLotto(String lotto, DateTime? scadenza) =>
+    chiaveCampo('$lotto|${scadenza == null ? '' : scadenzaIso(scadenza)}');
 
 /// Nome di campo Firestore sicuro per un testo qualsiasi: lettere, cifre e
 /// '-' restano, il resto diventa _XX (byte UTF-8 in esadecimale).
@@ -246,22 +277,28 @@ class ListeRepository {
     final lotto = confezione?.lotto;
     final scadenza = confezione?.scadenza;
     final seriale = confezione?.seriale;
+    final conLotto = lotto != null || scadenza != null;
+    final chiave = chiaveLotto(lotto ?? '', scadenza);
     batch.set(_items(uid, idLista).doc(_idItem(minsan)), {
       'minsan': minsan,
       'titolo': titolo,
       'quantity': FieldValue.increment(delta),
       'updatedAt': adesso,
-      if (lotto != null || scadenza != null)
+      if (conLotto)
         'lotti': {
-          chiaveCampo(
-            '${lotto ?? ''}|${scadenza == null ? '' : scadenzaIso(scadenza)}',
-          ): {
+          chiave: {
             'lotto': lotto ?? '',
             'scadenza': scadenza == null ? null : scadenzaIso(scadenza),
             'quantity': FieldValue.increment(delta),
           },
         },
-      if (seriale != null) 'seriali': {chiaveCampo(seriale): seriale},
+      if (seriale != null) ...{
+        'seriali': {chiaveCampo(seriale): seriale},
+        if (conLotto)
+          'serialiLotti': {
+            chiaveCampo(seriale): {'lotto': chiave, 't': adesso},
+          },
+      },
     }, SetOptions(merge: true));
     batch.update(_liste(uid).doc(idLista), {
       'totalePezzi': FieldValue.increment(delta),
@@ -293,8 +330,57 @@ class ListeRepository {
       if (quantity <= 0) ...{
         'lotti': FieldValue.delete(),
         'seriali': FieldValue.delete(),
+        'serialiLotti': FieldValue.delete(),
       },
     }, SetOptions(merge: true));
+    batch.update(_liste(uid).doc(idLista), {
+      'totalePezzi': FieldValue.increment(delta),
+      'updatedAt': adesso,
+    });
+    return batch.commit();
+  }
+
+  /// Aggiunge o toglie [delta] pezzi di un lotto preciso (pannello "Modifica
+  /// lotti"): cambiano insieme il lotto, il totale del prodotto e quello della
+  /// lista. [quantitaLotto] è la quantità del lotto dopo la modifica: a 0 il
+  /// lotto sparisce. [serialeDaLiberare] (togliendo un pezzo) torna leggibile.
+  Future<void> modificaLotto(
+    String uid,
+    String idLista, {
+    required String minsan,
+    required String titolo,
+    required LottoConfezione lotto,
+    required int delta,
+    required int quantitaLotto,
+    String? serialeDaLiberare,
+  }) {
+    final adesso = Timestamp.now();
+    final chiave = chiaveLotto(lotto.lotto, lotto.scadenza);
+    final item = _items(uid, idLista).doc(_idItem(minsan));
+    final batch = _db.batch();
+    batch.set(item, {
+      'minsan': minsan,
+      'titolo': titolo,
+      'quantity': FieldValue.increment(delta),
+      'updatedAt': adesso,
+      if (quantitaLotto > 0)
+        'lotti': {
+          chiave: {
+            'lotto': lotto.lotto,
+            'scadenza':
+                lotto.scadenza == null ? null : scadenzaIso(lotto.scadenza!),
+            'quantity': FieldValue.increment(delta),
+          },
+        },
+    }, SetOptions(merge: true));
+    final rimozioni = <String, Object>{
+      if (quantitaLotto <= 0) 'lotti.$chiave': FieldValue.delete(),
+      if (serialeDaLiberare != null) ...{
+        'seriali.${chiaveCampo(serialeDaLiberare)}': FieldValue.delete(),
+        'serialiLotti.${chiaveCampo(serialeDaLiberare)}': FieldValue.delete(),
+      },
+    };
+    if (rimozioni.isNotEmpty) batch.update(item, rimozioni);
     batch.update(_liste(uid).doc(idLista), {
       'totalePezzi': FieldValue.increment(delta),
       'updatedAt': adesso,

@@ -4,6 +4,7 @@ import 'package:pharma_box/include/general_functions.dart';
 import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button.dart';
+import 'package:pharma_box/widgets/modifica_lotti_sheet.dart';
 import 'package:pharma_box/widgets/scadenza_chip.dart';
 
 const double _titleFontSize = 14.0;
@@ -63,6 +64,17 @@ class _ProdottoCellState extends State<ProdottoCell> {
   void dispose() {
     _smettiDiOsservare();
     super.dispose();
+  }
+
+  /// Con lotti in lista il contatore apre il pannello dei lotti: togliere un
+  /// pezzo senza dire da quale lotto lascerebbe lotti e totale incoerenti
+  VoidCallback? _modificaGuidata(BuildContext context) {
+    final minsan = widget.prodotto.minsan;
+    if (!Carrello.instance.haLotti(minsan)) return null;
+    return () {
+      final inLista = Carrello.instance.inLista(minsan);
+      if (inLista != null) mostraModificaLotti(context, inLista);
+    };
   }
 
   void _smettiDiOsservare() {
@@ -228,6 +240,11 @@ class _ProdottoCellState extends State<ProdottoCell> {
                               ),
                               initialValue: widget.inListQty ?? 0,
                               height: actionHeight,
+                              onModificaGuidata: _modificaGuidata(context),
+                              onMeno: menoDiretto(
+                                context,
+                                widget.prodotto.minsan,
+                              ),
                               onChanged: (newValue) {
                                 Carrello.instance.aggiornaQuantita(
                                   widget.prodotto,

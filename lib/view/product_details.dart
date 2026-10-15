@@ -7,6 +7,7 @@ import 'package:pharma_box/models/prodotto.dart';
 import 'package:pharma_box/widgets/carrello.dart';
 import 'package:pharma_box/widgets/counter_button_large.dart';
 import 'package:pharma_box/widgets/custom_button.dart';
+import 'package:pharma_box/widgets/modifica_lotti_sheet.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class ProductDetails extends StatefulWidget {
@@ -304,6 +305,15 @@ class _ProductDetailsState extends State<ProductDetails> {
                       return CounterButtonLarge(
                         key: ValueKey(currentQty),
                         initialValue: currentQty,
+                        // con lotti si modifica lotto per lotto
+                        onModificaGuidata:
+                            Carrello.instance.haLotti(widget.prodotto.minsan)
+                                ? () => mostraModificaLotti(
+                                  context,
+                                  prodotti[index],
+                                )
+                                : null,
+                        onMeno: menoDiretto(context, widget.prodotto.minsan),
                         onChanged: (newValue) {
                           // Aggiorna la quantità nel carrello
                           Carrello.instance.aggiornaQuantita(

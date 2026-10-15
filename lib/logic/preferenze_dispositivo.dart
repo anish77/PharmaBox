@@ -64,6 +64,10 @@ abstract final class PreferenzeDispositivo {
   );
   static final scadenzeAperte = Preferenza<bool>('scadenze_aperte', false);
 
+  /// Con lotti in lista il − toglie subito un pezzo invece di aprire il
+  /// pannello dei lotti (prima senza scadenza, poi scadenza più vicina)
+  static final menoDiretto = Preferenza<bool>('meno_diretto', false);
+
   // Scadenze: arancione entro [mesiInScadenza], ocra entro [mesiProssima]
   static final mesiInScadenza = Preferenza<int>('mesi_in_scadenza', 3);
   static final mesiProssima = Preferenza<int>('mesi_prossima', 6);
@@ -83,6 +87,7 @@ abstract final class PreferenzeDispositivo {
     _ordinamento,
     ultimoPerScadenza,
     scadenzeAperte,
+    menoDiretto,
     mesiInScadenza,
     mesiProssima,
     avvisoScaduta,
