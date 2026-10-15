@@ -30,6 +30,7 @@ const _ttlVendibilita = Duration(hours: 1);
 /// entro questa finestra partono insieme in una sola chiamata al Worker.
 const _finestraGruppo = Duration(milliseconds: 40);
 const _maxCodiciPerRichiesta = 50;
+const _attesaRiprova = Duration(milliseconds: 400);
 
 /// Parla con il Worker Cloudflare (workers/farmadati-proxy), che interroga
 /// Farmadati e tiene la cache condivisa. Qui c'è solo la cache locale.
@@ -234,15 +235,31 @@ class WorkerFarmadatiRepository implements FarmadatiRepository {
     Map<String, String> params,
   ) async {
     final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: params);
-    var resp = await _send(uri, await _token());
+    var resp = await _sendConRiprova(uri, await _token());
     if (resp.statusCode == 401) {
       // token scaduto nel frattempo: un nuovo tentativo con token rinnovato
-      resp = await _send(uri, await _token(forceRefresh: true));
+      resp = await _sendConRiprova(uri, await _token(forceRefresh: true));
     }
     if (resp.statusCode != 200) {
       throw Exception('Worker ${resp.statusCode}: ${resp.body}');
     }
     return jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+  }
+
+  /// Un secondo tentativo per errori 5xx o di rete: una lettura dello scanner
+  /// la cui ricerca fallisce andrebbe persa. Sono tutte GET di sola lettura.
+  Future<http.Response> _sendConRiprova(Uri uri, String? token) async {
+    try {
+      final resp = await _send(uri, token);
+      if (resp.statusCode < 500) return resp;
+      _log.w('Worker ${resp.statusCode} su ${uri.path}, nuovo tentativo');
+    } on Exception catch (errore) {
+      _log.w(
+        'Worker non raggiungibile su ${uri.path} ($errore), nuovo tentativo',
+      );
+    }
+    await Future<void>.delayed(_attesaRiprova);
+    return _send(uri, token);
   }
 
   Future<http.Response> _send(Uri uri, String? token) {

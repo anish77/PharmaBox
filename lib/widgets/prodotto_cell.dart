@@ -81,7 +81,11 @@ class _ProdottoCellState extends State<ProdottoCell> {
     final altezzaSchermo = MediaQuery.sizeOf(context).height;
     if (top + box.size.height >= 0 && top <= altezzaSchermo) {
       _smettiDiOsservare();
-      setState(() => _vendibilitaFuture = _loadVendibilita());
+      // corpo a blocco: con la freccia setState riceverebbe il Future
+      // assegnato e in debug lancerebbe un'eccezione
+      setState(() {
+        _vendibilitaFuture = _loadVendibilita();
+      });
     }
   }
 

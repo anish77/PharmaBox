@@ -13,6 +13,7 @@ void main() {
   late DateTime now;
   late int rinnovi;
   late bool tokenScaduto;
+  late int erroriWorker;
 
   WorkerFarmadatiRepository repository() => WorkerFarmadatiRepository(
     baseUrl: 'https://proxy.test/',
@@ -29,6 +30,10 @@ void main() {
       if (request.headers['authorization'] != 'Bearer nuovo') {
         return http.Response('{"errore":"token non valido"}', 401);
       }
+      if (erroriWorker > 0) {
+        erroriWorker--;
+        return http.Response('error code: 1101', 500);
+      }
       final rotta = rotte[request.url.path];
       if (rotta == null) return http.Response('{}', 404);
       return http.Response(jsonEncode(rotta(request.url)), 200);
@@ -40,6 +45,7 @@ void main() {
     now = DateTime(2026, 10, 13, 9);
     rinnovi = 0;
     tokenScaduto = false;
+    erroriWorker = 0;
     rotte = {
       '/v1/prodotti':
           (_) => {
@@ -135,6 +141,31 @@ void main() {
     expect(await repo.vendibilita('000000002'), isNull);
     expect(richieste, hasLength(2));
   });
+
+  test(
+    'errore 5xx del Worker: un secondo tentativo, la lettura non va persa',
+    () async {
+      erroriWorker = 1;
+      final repo = repository();
+
+      expect(
+        (await repo.cercaProdotti('034329110')).single.codice,
+        '034329110',
+      );
+      expect(richieste, hasLength(2));
+    },
+  );
+
+  test(
+    'due errori 5xx di fila: nessun risultato, nessun terzo tentativo',
+    () async {
+      erroriWorker = 2;
+      final repo = repository();
+
+      expect(await repo.cercaProdotti('034329110'), isEmpty);
+      expect(richieste, hasLength(2));
+    },
+  );
 
   test('token scaduto: rinnova e riprova una volta', () async {
     tokenScaduto = true;
