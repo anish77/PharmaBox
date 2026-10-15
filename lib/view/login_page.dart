@@ -126,7 +126,6 @@ class _LoginPageState extends State<LoginPage> {
           'email': user.email,
           'uid': user.uid,
           'listeMigrate': true,
-          'codiceInvito': user.uid.substring(10, 16).toUpperCase(),
           'isPro': false,
           'subscription': [],
         });

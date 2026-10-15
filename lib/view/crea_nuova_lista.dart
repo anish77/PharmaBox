@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -66,7 +65,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   final Set<String> _checkedLists = <String>{};
   final Set<String> _dismissedListIds = <String>{};
   int? selectedIndex;
-  String referralCode = '';
   late final Stream<List<_ListaViewData>> _listeStream = getListeStream();
 
   String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
@@ -74,7 +72,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
   @override
   void initState() {
     super.initState();
-    _caricaReferralCode();
     _migraListe();
   }
 
@@ -86,31 +83,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
     } catch (error, stackTrace) {
       _logger.e(
         'Errore nella migrazione delle liste: $error',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  Future<void> _caricaReferralCode() async {
-    final uid = _currentUid;
-    if (uid == null) {
-      _logger.w('_caricaReferralCode invocato senza utente autenticato');
-      return;
-    }
-
-    try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (!snapshot.exists) return;
-
-      final rawCode = snapshot.data()?['codiceInvito'];
-      final codice = rawCode is String ? rawCode : rawCode?.toString() ?? '';
-
-      if (!mounted) return;
-      setState(() => referralCode = codice);
-    } catch (error, stackTrace) {
-      _logger.e(
-        'Errore nel recupero del codice invito: $error',
         stackTrace: stackTrace,
       );
     }
