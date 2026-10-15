@@ -44,6 +44,8 @@ void main() {
     );
     await FirebaseAuth.instance.signOut();
 
+    // su Android gli screenshot richiedono la superficie convertita in immagine
+    if (Platform.isAndroid) await binding.convertFlutterSurfaceToImage();
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await _attendi(tester, find.text('Accedi'));
     await foto(tester, 'login');
