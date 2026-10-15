@@ -3,6 +3,15 @@
 App Flutter per l'inventario in farmacia: si leggono i prodotti con uno scanner
 Bluetooth, si organizzano in liste e si esportano in PDF o CSV.
 
+## Manuale utente
+
+La guida completa in italiano, con screenshot e procedure dalla registrazione
+all'esportazione, è disponibile in [PDF](docs/manuale-utente/Manuale-PharmaBox.pdf),
+[HTML](docs/manuale-utente/Manuale-PharmaBox.html) e
+[Markdown](docs/manuale-utente/Manuale-PharmaBox.md).
+Le [istruzioni di aggiornamento](docs/manuale-utente/README.md) spiegano come
+rigenerare il manuale e acquisire nuove schermate.
+
 ## Funzionalità
 
 - **Account** con Firebase Authentication: registrazione, login, recupero password.
