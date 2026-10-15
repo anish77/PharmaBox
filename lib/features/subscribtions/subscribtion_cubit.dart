@@ -105,7 +105,7 @@ class SubscriptionCubit extends Cubit<SubscribtionState> {
     await firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(profile);
       final data = snapshot.data();
-      transaction.set(profile, {
+      final values = <String, dynamic>{
         'isPro': entitlement?.isActive ?? false,
         if (entitlement != null) ...{
           // Preserve the first activation across checks and renewals.
@@ -117,7 +117,16 @@ class SubscriptionCubit extends Cubit<SubscribtionState> {
           // This is the store purchase/renewal time, not the time of a check.
           'updatedAt': latestPurchaseAt,
         },
-      }, SetOptions(merge: true));
+      };
+      final changes = <String, dynamic>{
+        for (final entry in values.entries)
+          if (data == null ||
+              !data.containsKey(entry.key) ||
+              data[entry.key] != entry.value)
+            entry.key: entry.value,
+      };
+      if (changes.isEmpty) return;
+      transaction.set(profile, changes, SetOptions(merge: true));
     });
   }
 
