@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/web.dart';
@@ -106,16 +105,6 @@ class _NewAccountPageState extends State<NewAccountPage> {
       if (user == null) throw StateError('Utente non disponibile');
       createdUser = user;
 
-      final uid = user.uid;
-      final codiceInvito = uid.substring(10, 16).toUpperCase();
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'email': _emailController.text.trim(),
-        'uid': uid,
-        'listeMigrate': true, // le liste sono in users/{uid}/liste
-        'codiceInvito': codiceInvito,
-        'isPro': false,
-        'subscription': [],
-      });
       await user.sendEmailVerification();
       await _firebase.signOut();
 

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -78,35 +79,60 @@ class _LoginPageState extends State<LoginPage> {
         password: _enteredPassword.trim(),
       );
 
-      final user = credentials.user;
-      if (user != null) {
-        await user.reload();
-        if (!user.emailVerified) {
-          var message =
-              'Email non verificata. Controlla la posta in arrivo e lo spam.';
-          try {
-            await user.sendEmailVerification();
-            message = 'Ti abbiamo inviato un nuovo link di verifica.';
-          } on FirebaseAuthException catch (error) {
-            logger.e('Invio link verifica fallito: ${error.code}');
-            if (error.code == 'too-many-requests') {
-              message = 'Troppe richieste. Attendi qualche minuto e riprova.';
-            } else {
-              message =
-                  'Email non verificata e invio del link non riuscito. '
-                  'Riprova più tardi.';
-            }
-          }
+      await credentials.user?.reload();
+      final user = _firebase.currentUser;
+      if (user == null) throw StateError('Utente non disponibile');
+      if (!user.emailVerified) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .delete();
+        } catch (_) {
           await _firebase.signOut();
-          if (!mounted) return;
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
-          return;
+          rethrow;
         }
+        var message =
+            'Email non verificata. Controlla la posta in arrivo e lo spam.';
+        try {
+          await user.sendEmailVerification();
+          message = 'Ti abbiamo inviato un nuovo link di verifica.';
+        } on FirebaseAuthException catch (error) {
+          logger.e('Invio link verifica fallito: ${error.code}');
+          if (error.code == 'too-many-requests') {
+            message = 'Troppe richieste. Attendi qualche minuto e riprova.';
+          } else {
+            message =
+                'Email non verificata e invio del link non riuscito. '
+                'Riprova più tardi.';
+          }
+        }
+        await _firebase.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        return;
       }
 
-      logger.i('Login OK: ${user?.email}');
+      await user.getIdToken(true);
+      final profile = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(profile);
+        if (snapshot.exists) return;
+        transaction.set(profile, {
+          'email': user.email,
+          'uid': user.uid,
+          'listeMigrate': true,
+          'codiceInvito': user.uid.substring(10, 16).toUpperCase(),
+          'isPro': false,
+          'subscription': [],
+        });
+      });
+
+      logger.i('Login OK: ${user.email}');
 
       if (_rememberCredentials) {
         await _secureStorage.write(
@@ -142,6 +168,15 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       logger.e('Login error $e');
+    } catch (error) {
+      await _firebase.signOut();
+      logger.e('Completamento accesso fallito: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossibile completare l’accesso. Riprova.'),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
