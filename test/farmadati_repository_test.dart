@@ -150,17 +150,26 @@ void main() {
     expect(ws.chiamate, hasLength(1));
   });
 
-  test('immagine: dopo il primo ingest su R2 niente più TDZ né ingest', () async {
-    ws.risposte['TDZ|012345678'] =
-        '<Products><Product><FDI_T218>012345678</FDI_T218>'
-        '<FDI_T438>img.jpg</FDI_T438></Product></Products>';
-    final repo = repository();
+  test(
+    'immagine: dopo il primo ingest su R2 niente più TDZ né ingest',
+    () async {
+      ws.risposte['TDZ|012345678'] =
+          '<Products><Product><FDI_T218>012345678</FDI_T218>'
+          '<FDI_T438>img.jpg</FDI_T438></Product></Products>';
+      final repo = repository();
 
-    expect(await repo.immagineUrl('012345678'), 'https://cdn.test/012345678.jpg');
-    expect(await repo.immagineUrl('012345678'), 'https://cdn.test/012345678.jpg');
-    expect(ws.chiamate, ['TDZ|012345678']);
-    expect(ingest, 1);
-  });
+      expect(
+        await repo.immagineUrl('012345678'),
+        'https://cdn.test/012345678.jpg',
+      );
+      expect(
+        await repo.immagineUrl('012345678'),
+        'https://cdn.test/012345678.jpg',
+      );
+      expect(ws.chiamate, ['TDZ|012345678']);
+      expect(ingest, 1);
+    },
+  );
 
   test('la cache su disco sopravvive al riavvio dell\'app', () async {
     final dir = await Directory.systemTemp.createTemp('farmadati_cache');

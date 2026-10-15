@@ -526,7 +526,6 @@ class _ProductDetailsState extends State<ProductDetails> {
     }
   })();
   """);
-
           } catch (_) {
             // Se fallisce, la pagina resta comunque leggibile
           }

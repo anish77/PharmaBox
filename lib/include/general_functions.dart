@@ -85,8 +85,7 @@ String _numericToAlpha(int value) {
 // Accesso ai dati Farmadati: delegano al repository (con cache).
 Future<List<Prodotto>> doSearch(String q) => farmadati.cercaProdotti(q);
 
-Future<String?> loadRendibilita(String minsan) =>
-    farmadati.rendibilita(minsan);
+Future<String?> loadRendibilita(String minsan) => farmadati.rendibilita(minsan);
 
 Future<bool?> loadVendibilita(String minsan) => farmadati.vendibilita(minsan);
 

@@ -13,10 +13,7 @@ class OpenEmail {
       return;
     }
 
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched) {
       debugPrint('Launch fallito per: $url');
     }

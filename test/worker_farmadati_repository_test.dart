@@ -73,40 +73,50 @@ void main() {
     };
   });
 
-  test('prodotti: mappa la categoria e la seconda volta usa la cache', () async {
-    final repo = repository();
+  test(
+    'prodotti: mappa la categoria e la seconda volta usa la cache',
+    () async {
+      final repo = repository();
 
-    final primo = await repo.cercaProdotti('tachipirina');
-    final secondo = await repo.cercaProdotti('TACHIPIRINA');
+      final primo = await repo.cercaProdotti('tachipirina');
+      final secondo = await repo.cercaProdotti('TACHIPIRINA');
 
-    expect(primo.single.nome, 'TACHIPIRINA FLASHTAB*12CPR 125');
-    expect(primo.single.tipoProdotto, 'FARMACO ETICO');
-    expect(primo.single.tipoProdottoDettaglio, 'F');
-    expect(secondo.single.codice, '034329110');
-    expect(richieste, hasLength(1));
-    expect(richieste.single.toString(), 'https://proxy.test/v1/prodotti?q=tachipirina');
-  });
+      expect(primo.single.nome, 'TACHIPIRINA FLASHTAB*12CPR 125');
+      expect(primo.single.tipoProdotto, 'FARMACO ETICO');
+      expect(primo.single.tipoProdottoDettaglio, 'F');
+      expect(secondo.single.codice, '034329110');
+      expect(richieste, hasLength(1));
+      expect(
+        richieste.single.toString(),
+        'https://proxy.test/v1/prodotti?q=tachipirina',
+      );
+    },
+  );
 
-  test('vendibilità: le celle ravvicinate partono in una sola richiesta', () async {
-    final repo = repository();
+  test(
+    'vendibilità: le celle ravvicinate partono in una sola richiesta',
+    () async {
+      final repo = repository();
 
-    final esiti = await Future.wait([
-      repo.vendibilita('000000001'),
-      repo.vendibilita('034329110'),
-      repo.vendibilita('012745182'),
-      repo.vendibilita('034329110'),
-    ]);
+      final esiti = await Future.wait([
+        repo.vendibilita('000000001'),
+        repo.vendibilita('034329110'),
+        repo.vendibilita('012745182'),
+        repo.vendibilita('034329110'),
+      ]);
 
-    expect(esiti, [false, true, true, true]);
-    expect(richieste, hasLength(1));
-    expect(
-      richieste.single.queryParameters['codici']!.split(',')..sort(),
-      ['000000001', '012745182', '034329110'],
-    );
+      expect(esiti, [false, true, true, true]);
+      expect(richieste, hasLength(1));
+      expect(richieste.single.queryParameters['codici']!.split(',')..sort(), [
+        '000000001',
+        '012745182',
+        '034329110',
+      ]);
 
-    await repo.vendibilita('034329110');
-    expect(richieste, hasLength(1));
-  });
+      await repo.vendibilita('034329110');
+      expect(richieste, hasLength(1));
+    },
+  );
 
   test('vendibilità: in cache locale per un\'ora', () async {
     final repo = repository();
@@ -135,14 +145,20 @@ void main() {
     expect(richieste, hasLength(2));
   });
 
-  test('rendibilità e immagine passano dal Worker e restano in cache', () async {
-    final repo = repository();
+  test(
+    'rendibilità e immagine passano dal Worker e restano in cache',
+    () async {
+      final repo = repository();
 
-    expect(await repo.rendibilita('012745182'), await repo.rendibilita('012745182'));
-    expect(await repo.immagineUrl('012745182'), 'https://cdn.test/1.jpg');
-    expect(await repo.immagineUrl('012745182'), 'https://cdn.test/1.jpg');
-    expect(richieste.map((u) => u.path), ['/v1/rendibilita', '/v1/immagine']);
-  });
+      expect(
+        await repo.rendibilita('012745182'),
+        await repo.rendibilita('012745182'),
+      );
+      expect(await repo.immagineUrl('012745182'), 'https://cdn.test/1.jpg');
+      expect(await repo.immagineUrl('012745182'), 'https://cdn.test/1.jpg');
+      expect(richieste.map((u) => u.path), ['/v1/rendibilita', '/v1/immagine']);
+    },
+  );
 
   test('bugiardino: i link firmati /v1/doc non vanno in cache', () async {
     var url = 'https://proxy.test/v1/doc?tipo=F&nome=a.htm&exp=1&sig=x';
@@ -159,16 +175,22 @@ void main() {
     expect(richieste, hasLength(3));
   });
 
-  test('Worker irraggiungibile: dato scaduto se c\'è, altrimenti nessun risultato', () async {
-    final repo = repository();
-    await repo.cercaProdotti('034329110');
+  test(
+    'Worker irraggiungibile: dato scaduto se c\'è, altrimenti nessun risultato',
+    () async {
+      final repo = repository();
+      await repo.cercaProdotti('034329110');
 
-    now = now.add(const Duration(days: 31));
-    rotte.clear();
+      now = now.add(const Duration(days: 31));
+      rotte.clear();
 
-    expect((await repo.cercaProdotti('034329110')).single.codice, '034329110');
-    expect(await repo.cercaProdotti('999999999'), isEmpty);
-  });
+      expect(
+        (await repo.cercaProdotti('034329110')).single.codice,
+        '034329110',
+      );
+      expect(await repo.cercaProdotti('999999999'), isEmpty);
+    },
+  );
 
   group('calcolaVendibilita', () {
     final oggi = DateTime(2026, 10, 13);
@@ -176,8 +198,12 @@ void main() {
       expect(calcolaVendibilita(haLotto: false), isTrue);
     });
     test('VF/RD vendibili fino alla data, RI dalla data in poi', () {
-      bool? v(String stato, String data) =>
-          calcolaVendibilita(haLotto: true, stato: stato, data: data, oggi: oggi);
+      bool? v(String stato, String data) => calcolaVendibilita(
+        haLotto: true,
+        stato: stato,
+        data: data,
+        oggi: oggi,
+      );
       expect(v('VF', '2026-12-01'), isTrue);
       expect(v('VF', '2026-01-01'), isFalse);
       expect(v('RD', '2026-12-01'), isTrue);

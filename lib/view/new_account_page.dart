@@ -208,9 +208,7 @@ class _NewAccountPageState extends State<NewAccountPage> {
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder:
-              (_) => ForgotPassword(
-                initialEmail: _emailController.text.trim(),
-              ),
+              (_) => ForgotPassword(initialEmail: _emailController.text.trim()),
         ),
       );
     } else if (resetPassword == false) {

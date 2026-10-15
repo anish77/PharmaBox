@@ -39,9 +39,10 @@ class WorkerFarmadatiRepository implements FarmadatiRepository {
     FarmadatiCache? cache,
     http.Client? client,
     TokenProvider? token,
-  }) : _baseUrl = baseUrl.endsWith('/')
-           ? baseUrl.substring(0, baseUrl.length - 1)
-           : baseUrl,
+  }) : _baseUrl =
+           baseUrl.endsWith('/')
+               ? baseUrl.substring(0, baseUrl.length - 1)
+               : baseUrl,
        _cache = cache ?? FarmadatiCache(),
        _client = client ?? http.Client(),
        _token = token ?? _firebaseToken;
@@ -61,7 +62,8 @@ class WorkerFarmadatiRepository implements FarmadatiRepository {
       final payload = await _cached(
         'w|prodotti|${query.toUpperCase()}',
         RegExp(r'^[0-9]+$').hasMatch(query) ? _ttlCodice : _ttlNome,
-        () async => jsonEncode((await _get('/v1/prodotti', {'q': query}))['prodotti']),
+        () async =>
+            jsonEncode((await _get('/v1/prodotti', {'q': query}))['prodotti']),
       );
       final prodotti = jsonDecode(payload!) as List<dynamic>;
       return prodotti.cast<Map<String, dynamic>>().map(_prodotto).toList();
@@ -77,7 +79,8 @@ class WorkerFarmadatiRepository implements FarmadatiRepository {
       final payload = await _cached(
         'w|rendibilita|$codice',
         _ttlRendibilita,
-        () async => jsonEncode(await _get('/v1/rendibilita', {'codice': codice})),
+        () async =>
+            jsonEncode(await _get('/v1/rendibilita', {'codice': codice})),
       );
       final esito = jsonDecode(payload!) as Map<String, dynamic>;
       if (esito['trovato'] != true) return null;
@@ -125,7 +128,8 @@ class WorkerFarmadatiRepository implements FarmadatiRepository {
     final payload = await _cached(
       'w|immagine|$codice',
       _ttlImmagine,
-      () async => (await _get('/v1/immagine', {'codice': codice}))['url'] as String?,
+      () async =>
+          (await _get('/v1/immagine', {'codice': codice}))['url'] as String?,
     );
     return payload ?? "";
   }

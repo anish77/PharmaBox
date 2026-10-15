@@ -55,5 +55,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'pharmabox-1c149.firebasestorage.app',
     iosBundleId: 'com.example.pharmaBox',
   );
-
 }

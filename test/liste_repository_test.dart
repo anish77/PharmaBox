@@ -77,7 +77,9 @@ void main() {
       await repo.incrementa(uid, id, minsan: '111', titolo: 'Tachipirina');
       await repo.incrementa(uid, id, minsan: '222', titolo: 'Oki', delta: 5);
 
-      final items = {for (final i in await repo.leggiItems(uid, id)) i.minsan: i};
+      final items = {
+        for (final i in await repo.leggiItems(uid, id)) i.minsan: i,
+      };
       expect(items['111']!.quantity, 2);
       expect(items['111']!.titolo, 'Tachipirina');
       expect(items['222']!.quantity, 5);
@@ -218,7 +220,11 @@ void main() {
 
       final utente = (await db.doc('users/$uid').get()).data()!;
       expect(utente['listeMigrate'], isTrue);
-      expect(utente['liste'], hasLength(3), reason: 'array lasciato come backup');
+      expect(
+        utente['liste'],
+        hasLength(3),
+        reason: 'array lasciato come backup',
+      );
     });
 
     test('rieseguita non duplica le liste', () async {

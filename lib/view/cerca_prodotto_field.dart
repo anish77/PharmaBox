@@ -102,19 +102,12 @@ class _CercaProdottoFieldState extends State<CercaProdottoField> {
             const SizedBox(height: 7),
             const Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 15,
-                  color: Color(0xFF8589A7),
-                ),
+                Icon(Icons.info_outline, size: 15, color: Color(0xFF8589A7)),
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Inserisci almeno 3 caratteri per cercare',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF8589A7),
-                    ),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF8589A7)),
                   ),
                 ),
               ],

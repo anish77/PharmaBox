@@ -192,9 +192,7 @@ class BleSimulator {
 
   static Future<void> mostra(BuildContext context, WidgetRef ref) async {
     final codiciCtrl = TextEditingController();
-    final ripetizioniCtrl = TextEditingController(
-      text: '$_ultimeRipetizioni',
-    );
+    final ripetizioniCtrl = TextEditingController(text: '$_ultimeRipetizioni');
     final ritardoCtrl = TextEditingController(text: '$_ultimoRitardoMs');
 
     _Richiesta leggiCampi() => (

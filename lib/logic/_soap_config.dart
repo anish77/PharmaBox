@@ -1,12 +1,17 @@
 import 'package:pharma_box/data/constants.dart';
 
-enum SearchKind { prodotti, ean, lottiInvendibili, immagine, bugiardino, bugiardinoparafarmaco, rendibili }
+enum SearchKind {
+  prodotti,
+  ean,
+  lottiInvendibili,
+  immagine,
+  bugiardino,
+  bugiardinoparafarmaco,
+  rendibili,
+}
 
 class _SoapConfig {
-  const _SoapConfig({
-    required this.dataset,
-    required this.filterKey,
-  });
+  const _SoapConfig({required this.dataset, required this.filterKey});
 
   final String dataset;
   final String filterKey;
@@ -15,18 +20,25 @@ class _SoapConfig {
 const Map<SearchKind, _SoapConfig> _soapConfigs = {
   SearchKind.prodotti: _SoapConfig(dataset: 'TR001', filterKey: 'FDI_0004'),
   SearchKind.ean: _SoapConfig(dataset: 'TR016', filterKey: 'FDI_0002'),
-  SearchKind.lottiInvendibili: _SoapConfig(dataset: 'TR012', filterKey: 'FDI_T291'),
+  SearchKind.lottiInvendibili: _SoapConfig(
+    dataset: 'TR012',
+    filterKey: 'FDI_T291',
+  ),
   SearchKind.immagine: _SoapConfig(dataset: 'TDZ', filterKey: 'FDI_T218'),
   SearchKind.bugiardino: _SoapConfig(dataset: 'TDF', filterKey: 'FDI_T218'),
-  SearchKind.bugiardinoparafarmaco: _SoapConfig(dataset: 'TD1', filterKey: 'FDI_T218'),
-  SearchKind.rendibili: _SoapConfig(dataset: 'TR015', filterKey: 'FDI_0001')
+  SearchKind.bugiardinoparafarmaco: _SoapConfig(
+    dataset: 'TD1',
+    filterKey: 'FDI_T218',
+  ),
+  SearchKind.rendibili: _SoapConfig(dataset: 'TR015', filterKey: 'FDI_0001'),
 };
 
 String buildSearchXml(String query, {SearchKind kind = SearchKind.prodotti}) {
   final config = _soapConfigs[kind]!;
-  final filterKey = kind == SearchKind.prodotti && int.tryParse(query) != null
-      ? 'FDI_0001'
-      : config.filterKey;
+  final filterKey =
+      kind == SearchKind.prodotti && int.tryParse(query) != null
+          ? 'FDI_0001'
+          : config.filterKey;
 
   return _buildExecuteQueryEnvelope(
     dataset: config.dataset,
@@ -40,9 +52,10 @@ String _buildExecuteQueryEnvelope({
   required String filterKey,
   required String filterValue,
 }) {
-  final filtersXml = filterKey.trim().isEmpty
-      ? ''
-      : '''
+  final filtersXml =
+      filterKey.trim().isEmpty
+          ? ''
+          : '''
       <web:Filtri>
         <fdiw:Filter>
           <fdiw:Key>$filterKey</fdiw:Key>

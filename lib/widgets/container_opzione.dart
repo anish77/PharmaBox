@@ -44,12 +44,13 @@ class _ContainerOpzioneState extends State<ContainerOpzione> {
     }
 
     return InkWell(
-      onTap: _selected
-          ? null
-          : () {
-              setState(() => _selected = true);
-              widget.onSelectedChanged?.call(true);
-            },
+      onTap:
+          _selected
+              ? null
+              : () {
+                setState(() => _selected = true);
+                widget.onSelectedChanged?.call(true);
+              },
       child: Container(
         decoration: BoxDecoration(
           color: _selected ? kPrimary : kSecondary,

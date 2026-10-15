@@ -70,19 +70,20 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
         labelStyle: widget.labelStyle ?? const TextStyle(color: kBluScuro),
         floatingLabelStyle:
             widget.floatingLabelStyle ?? const TextStyle(color: kPrimary),
-        suffixIcon: shouldToggle
-            ? IconButton(
-                icon: Icon(
-                  _obscureText ? Icons.visibility_off : Icons.visibility,
-                  color: widget.textStyle?.color ?? kPrimary,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscureText = !_obscureText;
-                  });
-                },
-              )
-            : null,
+        suffixIcon:
+            shouldToggle
+                ? IconButton(
+                  icon: Icon(
+                    _obscureText ? Icons.visibility_off : Icons.visibility,
+                    color: widget.textStyle?.color ?? kPrimary,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureText = !_obscureText;
+                    });
+                  },
+                )
+                : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: kPrimary, width: 1.2),

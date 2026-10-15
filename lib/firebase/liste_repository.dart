@@ -158,11 +158,7 @@ class ListeRepository {
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
-  Future<bool> esisteNome(
-    String uid,
-    String nome, {
-    String? escludiId,
-  }) async {
+  Future<bool> esisteNome(String uid, String nome, {String? escludiId}) async {
     final cercato = nome.trim().toLowerCase();
     final liste = await leggiListe(uid);
     return liste.any(
@@ -223,9 +219,10 @@ class ListeRepository {
   // ---------------------------- PRODOTTI ----------------------------
 
   Stream<List<ItemLista>> streamItems(String uid, String idLista) {
-    return _items(uid, idLista).snapshots().map(
-      (snap) => snap.docs.map(ItemLista.fromDoc).toList(),
-    );
+    return _items(
+      uid,
+      idLista,
+    ).snapshots().map((snap) => snap.docs.map(ItemLista.fromDoc).toList());
   }
 
   Future<List<ItemLista>> leggiItems(String uid, String idLista) async {
@@ -392,9 +389,7 @@ class ListeRepository {
 
     // Il flag va nell'ultimo batch: se la migrazione si interrompe viene
     // ripetuta al login successivo
-    operazioni.add(
-      (b) => b.update(_utente(uid), {'listeMigrate': true}),
-    );
+    operazioni.add((b) => b.update(_utente(uid), {'listeMigrate': true}));
     await _commitInBlocchi(operazioni);
     _logger.i('Migrazione liste completata per $uid (${legacy.length} liste)');
   }

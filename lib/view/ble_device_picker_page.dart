@@ -240,9 +240,7 @@ class _BleDevicePickerPageState extends State<BleDevicePickerPage> {
               _nome(r),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(
-              scanner ? 'Scanner barcode' : r.device.remoteId.str,
-            ),
+            subtitle: Text(scanner ? 'Scanner barcode' : r.device.remoteId.str),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

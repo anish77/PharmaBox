@@ -33,10 +33,26 @@ const _seed = int.fromEnvironment('SEED');
 
 /// Stessi codici di test/lettura_minsan_test.dart
 const _minsan = [
-  '012745182', '012745170', '012745220', '012745028', '022593204',
-  '052892015', '041962034', '004763330', '004763544', '025669019',
-  '025669072', '025669185', '026089019', '013046038', '013046040',
-  '034548065', '048414104', '020582209', '034936171', '034248068',
+  '012745182',
+  '012745170',
+  '012745220',
+  '012745028',
+  '022593204',
+  '052892015',
+  '041962034',
+  '004763330',
+  '004763544',
+  '025669019',
+  '025669072',
+  '025669185',
+  '026089019',
+  '013046038',
+  '013046040',
+  '034548065',
+  '048414104',
+  '020582209',
+  '034936171',
+  '034248068',
 ];
 
 void main() {
@@ -106,7 +122,10 @@ void main() {
         ),
       ),
     );
-    await _attendi(tester, () async => find.text('Lista').evaluate().isNotEmpty);
+    await _attendi(
+      tester,
+      () async => find.text('Lista').evaluate().isNotEmpty,
+    );
 
     // Tab "Lista": ogni lettura aggiunge direttamente un pezzo
     await tester.tap(find.text('Lista'));
