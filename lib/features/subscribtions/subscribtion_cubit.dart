@@ -1,5 +1,8 @@
 /* Checks if user is pro or not */
 
+import 'dart:async';
+
+import 'package:pharma_box/features/subscribtions/revenuecat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,84 +12,119 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 class SubscriptionCubit extends Cubit<SubscribtionState> {
   SubscriptionCubit() : super(SubscribtionInitial()) {
-    Purchases.addCustomerInfoUpdateListener((customerInfo) {
+    Purchases.addCustomerInfoUpdateListener(_onCustomerInfoUpdated);
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((_) {
+      emit(SubscribtionInitial());
       checkProStatus();
     });
   }
 
-  /// 🔹 Chiamare dopo login, app start, acquisto, restore
-  Future<void> checkProStatus() async {
-    // TODO: TEMPORANEO - Pro forzato per a@a2.it, rimuovere prima del rilascio
-    if (FirebaseAuth.instance.currentUser?.uid ==
-        'nYas3ZC5YgZVzwYR0Rqe0fmqJSW2') {
-      logger.w('Pro forzato (hardcoded) per a@a2.it');
-      emit(SubscribtionLoaded(true));
+  late final StreamSubscription<User?> _authSubscription;
+  Future<void> _pending = Future<void>.value();
+  bool _checking = false;
+
+  void _onCustomerInfoUpdated(CustomerInfo info) {
+    // getCustomerInfo/logIn may notify listeners while a check is running.
+    if (!_checking) checkProStatus();
+  }
+
+  /// Serialize checks so account switches cannot mix RevenueCat identities.
+  Future<void> checkProStatus() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    _pending = _pending.then((_) => _checkProStatus(uid));
+    return _pending;
+  }
+
+  Future<void> _checkProStatus(String? uid) async {
+    if (isClosed || FirebaseAuth.instance.currentUser?.uid != uid) return;
+    if (uid == null) {
+      emit(SubscribtionLoaded(false));
       return;
     }
-
+    _checking = true;
     try {
-      logger.i('🔥 checkProStatus CALLED');
-
-      final info = await Purchases.getCustomerInfo();
-      logger.i('🔥 CustomerInfo received');
-
-      await syncSubscriptionWithFirebase(info);
-
-      final isPro = info.entitlements.active.isEmpty == true ? false : true;
-
-      logger.i('🔥 isPro = $isPro');
-      final e = info.entitlements.all['Premium'];
-      logger.i('isActive: ${e?.isActive}');
-      logger.i("lattesExpirationDate: ${info.latestExpirationDate}");
-      logger.i('willRenew: ${e?.willRenew}');
-      logger.i('expirationDate: ${e?.expirationDate}');
-
+      final info = await RevenuecatService.getCustomerInfo();
+      if (isClosed || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      final isPro = info.entitlements.all['Premium']?.isActive ?? false;
       emit(SubscribtionLoaded(isPro));
-    } catch (e) {
-      logger.e('Errore in checkProStatus: $e');
-      emit(SubscribtionLoaded(false)); // Assume not pro on error
+      try {
+        await syncSubscriptionWithFirebase(info, expectedUid: uid);
+      } catch (error) {
+        // A Firestore failure must not revoke a verified store entitlement.
+        logger.e('Errore sincronizzazione abbonamento: $error');
+      }
+    } catch (error) {
+      logger.e('Errore in checkProStatus: $error');
+      // A failed request says nothing about whether the subscription expired.
+      if (!isClosed &&
+          FirebaseAuth.instance.currentUser?.uid == uid &&
+          state is! SubscribtionLoaded) {
+        emit(
+          SubscribtionError('Impossibile verificare l’abbonamento. Riprova.'),
+        );
+      }
+    } finally {
+      _checking = false;
     }
   }
 
-  /// 🔹 Sincronizza lo stato dell'abbonamento con Firestore
-  Future<void> syncSubscriptionWithFirebase(CustomerInfo info) async {
-    final entitlement = info.entitlements.active['Premium'];
+  Future<void> syncSubscriptionWithFirebase(
+    CustomerInfo info, {
+    String? expectedUid,
+  }) async {
+    final entitlement = info.entitlements.all['Premium'];
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null || !user.emailVerified) return;
-
-    // Ensure we store a Firestore Timestamp for expirationDate
-    final Object? rawExpiration = entitlement?.expirationDate;
-    Timestamp? expirationTs;
-    if (rawExpiration != null) {
-      if (rawExpiration is Timestamp) {
-        expirationTs = rawExpiration;
-      } else if (rawExpiration is DateTime) {
-        expirationTs = Timestamp.fromDate(rawExpiration);
-      } else if (rawExpiration is int) {
-        // assume milliseconds since epoch
-        expirationTs = Timestamp.fromMillisecondsSinceEpoch(rawExpiration);
-      } else {
-        final s = rawExpiration.toString();
-        final parsed = DateTime.tryParse(s);
-        if (parsed != null) {
-          expirationTs = Timestamp.fromDate(parsed);
-        } else {
-          final ms = int.tryParse(s);
-          if (ms != null) {
-            expirationTs = Timestamp.fromMillisecondsSinceEpoch(ms);
-          }
-        }
-      }
+    if (user == null ||
+        !user.emailVerified ||
+        (expectedUid != null && user.uid != expectedUid)) {
+      return;
     }
 
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-      'isPro': entitlement?.isActive ?? false,
-      'subscriptionActivatedAt': entitlement?.latestPurchaseDate,
-      'expirationDate': expirationTs,
-      'willRenew': entitlement?.willRenew,
-      'platform': entitlement?.store.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    // RevenueCat supplies ISO 8601 dates; store both as Firestore timestamps.
+    // originalPurchaseDate is the first activation, not the latest renewal.
+    final activatedAt =
+        entitlement == null
+            ? null
+            : Timestamp.fromDate(
+              DateTime.parse(entitlement.originalPurchaseDate),
+            );
+    final expiration = entitlement?.expirationDate;
+    final expirationTs =
+        expiration == null
+            ? null
+            : Timestamp.fromDate(DateTime.parse(expiration));
+
+    final latestPurchaseAt =
+        entitlement == null
+            ? null
+            : Timestamp.fromDate(
+              DateTime.parse(entitlement.latestPurchaseDate),
+            );
+    final firestore = FirebaseFirestore.instance;
+    final profile = firestore.collection('users').doc(user.uid);
+    await firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(profile);
+      final data = snapshot.data();
+      transaction.set(profile, {
+        'isPro': entitlement?.isActive ?? false,
+        if (entitlement != null) ...{
+          // Preserve the first activation across checks and renewals.
+          if (data?['subscriptionActivatedAt'] == null)
+            'subscriptionActivatedAt': activatedAt,
+          'expirationDate': expirationTs,
+          'willRenew': entitlement.willRenew,
+          'platform': entitlement.store.name,
+          // This is the store purchase/renewal time, not the time of a check.
+          'updatedAt': latestPurchaseAt,
+        },
+      }, SetOptions(merge: true));
+    });
+  }
+
+  @override
+  Future<void> close() async {
+    Purchases.removeCustomerInfoUpdateListener(_onCustomerInfoUpdated);
+    await _authSubscription.cancel();
+    return super.close();
   }
 }

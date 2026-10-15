@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:pharma_box/include/general_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -5,12 +6,26 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 class RevenuecatService {
   /// 🔹 Configure RevenueCat
   static Future<void> configurRevenuecat(String apiKey) async {
-    try { 
+    try {
       await Purchases.configure(PurchasesConfiguration(apiKey));
       logger.i('✅ RevenueCat configurato con successo');
     } catch (e) {
       logger.e('❌ Errore configurazione RevenueCat: $e');
       rethrow;
+    }
+  }
+
+  /// Use the Firebase identity before reading, buying or restoring purchases.
+  static Future<void> identifyCurrentUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !user.emailVerified) {
+      throw StateError('Accedi con un account verificato.');
+    }
+    if (await Purchases.appUserID != user.uid) {
+      await Purchases.logIn(user.uid);
+    }
+    if (FirebaseAuth.instance.currentUser?.uid != user.uid) {
+      throw StateError('Account cambiato durante la verifica.');
     }
   }
 
@@ -28,6 +43,7 @@ class RevenuecatService {
 
   static Future<CustomerInfo?> purchasePackage(Package package) async {
     try {
+      await identifyCurrentUser();
       final result = await Purchases.purchase(PurchaseParams.package(package));
 
       logger.i('✅ Acquisto completato');
@@ -54,6 +70,7 @@ class RevenuecatService {
 
   /// 🔹 Get latest CustomerInfo (single source of truth)
   static Future<CustomerInfo> getCustomerInfo() async {
+    await identifyCurrentUser();
     final info = await Purchases.getCustomerInfo();
     return info;
   }
@@ -61,6 +78,7 @@ class RevenuecatService {
   /// 🔹 Restore purchases for the current user
   static Future<CustomerInfo?> restorePurchases() async {
     try {
+      await identifyCurrentUser();
       final customerInfo = await Purchases.restorePurchases();
       logger.i('✅ Acquisti ripristinati con successo');
       return customerInfo;
