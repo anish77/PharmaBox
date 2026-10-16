@@ -674,7 +674,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ),
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.info_outline),
               title: const Text('Info', style: TextStyle(color: kBluScuro)),
               onTap: () {
                 Navigator.push(
@@ -684,7 +683,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.tune),
               title: const Text('Opzioni', style: TextStyle(color: kBluScuro)),
               onTap: () {
                 Navigator.push(
@@ -694,12 +692,10 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.language),
               title: const Text('Website', style: TextStyle(color: kBluScuro)),
               onTap: () => {OpenEmail().openWebsite(kWebsiteURL)},
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.mail_outline),
               title: const Text(
                 'Contattaci',
                 style: TextStyle(color: kBluScuro),
@@ -714,7 +710,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               ),
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.workspace_premium_outlined),
               title: const Text(
                 'Abbonamento & Scanner',
                 style: TextStyle(color: kBluScuro),
@@ -728,7 +723,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.restore),
               title: const Text(
                 'Ripristina',
                 style: TextStyle(color: kBluScuro),
@@ -740,7 +734,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
               },
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.privacy_tip_outlined),
               title: const Text(
                 'Privacy Policy',
                 style: TextStyle(color: kBluScuro),
@@ -751,7 +744,6 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
                   ),
             ),
             ListTile(
-              leading: const _IconaMenu(Icons.description_outlined),
               title: const Text(
                 'Termini di Utilizzo',
                 style: TextStyle(color: kBluScuro),
@@ -763,7 +755,7 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
             ),
 
             ListTile(
-              leading: const _IconaMenu(Icons.logout, colore: kRed),
+              leading: const Icon(Icons.logout, color: kRed),
               title: const Text(
                 'Log out',
                 style: TextStyle(
@@ -1276,17 +1268,3 @@ class _CreaNuovaListaState extends State<CreaNuovaLista> {
 }
 
 /// Icona delle voci del menu laterale, come nelle Opzioni
-class _IconaMenu extends StatelessWidget {
-  const _IconaMenu(this.icona, {this.colore = kPrimary});
-
-  final IconData icona;
-  final Color colore;
-
-  @override
-  Widget build(BuildContext context) => CircleAvatar(
-    radius: 18,
-    backgroundColor:
-        colore == kPrimary ? kSecondary : colore.withValues(alpha: 0.12),
-    child: Icon(icona, color: colore, size: 20),
-  );
-}
