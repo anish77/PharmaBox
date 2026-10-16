@@ -201,18 +201,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                     FutureBuilder<bool?>(
                       future: _vendibilitaFuture,
                       builder: (context, snapshot) {
-                        final isDone =
-                            snapshot.connectionState == ConnectionState.done;
-                        final hasError = snapshot.hasError;
-                        final isVendibile = snapshot.data == true;
-
-                        bool showAlert = false;
-                        if (hasError) {
-                          showAlert = true;
-                        } else if (isDone) {
-                          showAlert = !isVendibile;
-                        }
-                        if (!showAlert) {
+                        // solo un divieto certo: un errore o un dato
+                        // incompleto non dicono che il prodotto è invendibile
+                        if (snapshot.data != false) {
                           return const SizedBox.shrink();
                         }
 

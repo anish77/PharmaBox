@@ -38,16 +38,37 @@ class ProdottoCell extends StatefulWidget {
 }
 
 class _ProdottoCellState extends State<ProdottoCell> {
-  /// Parte solo quando la cella è sullo schermo: le liste di risultati
-  /// costruiscono tutte le celle subito e una ricerca da 100 risultati
-  /// farebbe 100 richieste contemporanee a Farmadati.
-  Future<bool?>? _vendibilitaFuture;
+  /// La verifica parte solo quando la cella è sullo schermo: le liste di
+  /// risultati costruiscono tutte le celle subito e una ricerca da 100
+  /// risultati farebbe 100 richieste contemporanee a Farmadati.
+  bool _verificaAvviata = false;
+
+  /// false solo per un divieto certo; null finché manca l'esito o se non è
+  /// determinabile.
+  bool? _vendibile;
   final List<ScrollPosition> _scrollPositions = [];
+
+  String get _codice =>
+      widget.prodotto.codice.isNotEmpty
+          ? widget.prodotto.codice
+          : widget.prodotto.minsan;
+
+  @override
+  void initState() {
+    super.initState();
+    // la lista ricrea le celle che rientrano nello schermo: con l'esito già
+    // noto non serve né attendere né chiederlo di nuovo
+    final nota = vendibilitaNota(_codice);
+    if (nota != null) {
+      _verificaAvviata = true;
+      _vendibile = nota.esito;
+    }
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_vendibilitaFuture != null) return;
+    if (_verificaAvviata) return;
     _smettiDiOsservare();
     // tutti gli scroll antenati: la lista interna dei risultati non scorre,
     // a scorrere è la pagina che la contiene
@@ -85,7 +106,7 @@ class _ProdottoCellState extends State<ProdottoCell> {
   }
 
   void _controllaVisibilita() {
-    if (!mounted || _vendibilitaFuture != null) return;
+    if (!mounted || _verificaAvviata) return;
     final box = context.findRenderObject();
     if (box is! RenderBox || !box.attached || !box.hasSize) return;
 
@@ -93,36 +114,30 @@ class _ProdottoCellState extends State<ProdottoCell> {
     final altezzaSchermo = MediaQuery.sizeOf(context).height;
     if (top + box.size.height >= 0 && top <= altezzaSchermo) {
       _smettiDiOsservare();
-      // corpo a blocco: con la freccia setState riceverebbe il Future
-      // assegnato e in debug lancerebbe un'eccezione
-      setState(() {
-        _vendibilitaFuture = _loadVendibilita();
-      });
+      _verificaAvviata = true;
+      _caricaVendibilita();
     }
   }
 
-  Future<bool?> _loadVendibilita() async {
-    final codice =
-        widget.prodotto.codice.isNotEmpty
-            ? widget.prodotto.codice
-            : widget.prodotto.minsan;
-    if (codice.isEmpty) return null;
+  Future<void> _caricaVendibilita() async {
+    final codice = _codice;
+    if (codice.isEmpty) return;
 
     try {
-      return await loadVendibilita(codice);
+      final esito = await loadVendibilita(codice);
+      if (mounted) setState(() => _vendibile = esito);
     } catch (error) {
       debugPrint('Errore durante il recupero dei dati vendibilita: $error');
-      return null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final mostraQuantita = widget.inListQty != null;
-    final codiceDaMostrare =
-        widget.prodotto.codice.isNotEmpty
-            ? widget.prodotto.codice
-            : widget.prodotto.minsan;
+    final codiceDaMostrare = _codice;
+    // solo un divieto certo: un errore o un dato incompleto non dicono che
+    // il prodotto è invendibile
+    final showAlert = _vendibile == false;
 
     const actionWidth = 120.0;
     const actionHeight = 40.0;
@@ -147,82 +162,65 @@ class _ProdottoCellState extends State<ProdottoCell> {
                     hoverColor: Colors.transparent,
                     focusColor: Colors.transparent,
                     splashFactory: NoSplash.splashFactory,
-                    child: FutureBuilder<bool?>(
-                      future: _vendibilitaFuture,
-                      builder: (context, snapshot) {
-                        final isDone =
-                            snapshot.connectionState == ConnectionState.done;
-                        final hasError = snapshot.hasError;
-                        final isVendibile = snapshot.data == true;
-
-                        bool showAlert = false;
-                        if (hasError) {
-                          showAlert = true;
-                        } else if (isDone) {
-                          showAlert = !isVendibile;
-                        }
-
-                        return Column(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (showAlert)
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: const BoxDecoration(
-                                          color: kRed,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        kProdottoNonConsentito,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: kRed,
-                                        ),
-                                      ),
-                                    ],
+                            if (showAlert)
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: kRed,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
-                                if (showAlert) const SizedBox(height: 8),
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    minHeight: _twoLineTitleHeight,
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    kProdottoNonConsentito,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: kRed,
+                                    ),
                                   ),
-                                  child: Text(
-                                    widget.prodotto.nome,
-                                    maxLines: 2,
-                                    softWrap: true,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: _titleStyle,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            if (showAlert) const SizedBox(height: 8),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: _twoLineTitleHeight,
+                              ),
+                              child: Text(
+                                widget.prodotto.nome,
+                                maxLines: 2,
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                style: _titleStyle,
+                              ),
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  codiceDaMostrare,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: kBluScuro),
-                                ),
-                              ],
-                            ),
-                            if (mostraQuantita)
-                              ScadenzaChip(prodotto: widget.prodotto),
                           ],
-                        );
-                      },
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              codiceDaMostrare,
+                              maxLines: 1,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: kBluScuro),
+                            ),
+                          ],
+                        ),
+                        if (mostraQuantita)
+                          ScadenzaChip(prodotto: widget.prodotto),
+                      ],
                     ),
                   ),
                 ),

@@ -26,9 +26,21 @@ export interface Prodotto {
   categoria: string;
 }
 
+/** Un record TR012: stato VF/RI/RD, data stato, motivo (TS031), inizio esaurimento scorte. */
+export interface Provvedimento {
+  stato: string;
+  data: string;
+  motivo: string;
+  esaurimento: string;
+}
+
+/**
+ * `lotto` è il primo record, per le versioni dell'app che leggono solo quello;
+ * `provvedimenti` li riporta tutti (un codice può averne uno per stato).
+ */
 export type EsitoVendibilita =
-  | { lotto: null }
-  | { lotto: { stato: string; data: string } }
+  | { lotto: null; provvedimenti: [] }
+  | { lotto: { stato: string; data: string }; provvedimenti: Provvedimento[] }
   | { errore: true };
 
 export interface ServiceDeps {
@@ -126,11 +138,22 @@ export class FarmadatiService {
     const esiti = await Promise.all(
       unici.map(async (codice): Promise<[string, EsitoVendibilita]> => {
         try {
-          const lotti = await this.records("TR012", "FDI_T291", codice, POLICIES.lotti);
-          if (!lotti) return [codice, { lotto: null }];
+          // il filtro Farmadati è CONTIENE: si tengono solo i record del codice esatto
+          const lotti = (
+            (await this.records("TR012", "FDI_T291", codice, POLICIES.lotti)) ?? []
+          ).filter((r) => !r.FDI_T291 || r.FDI_T291 === codice);
+          if (lotti.length === 0) return [codice, { lotto: null, provvedimenti: [] }];
           return [
             codice,
-            { lotto: { stato: lotti[0].FDI_T292 ?? "", data: lotti[0].FDI_T293 ?? "" } },
+            {
+              lotto: { stato: lotti[0].FDI_T292 ?? "", data: lotti[0].FDI_T293 ?? "" },
+              provvedimenti: lotti.map((r) => ({
+                stato: r.FDI_T292 ?? "",
+                data: r.FDI_T293 ?? "",
+                motivo: r.FDI_T294 ?? "",
+                esaurimento: r.FDI_T298 ?? "",
+              })),
+            },
           ];
         } catch (e) {
           console.warn(`vendibilita ${codice}: ${e}`);

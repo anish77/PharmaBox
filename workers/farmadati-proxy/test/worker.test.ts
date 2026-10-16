@@ -132,10 +132,26 @@ describe("vendibilità", () => {
     await get("/v1/vendibilita?codici=012745182,034329110");
 
     expect(r.body.esiti).toEqual({
-      "034329110": { lotto: { stato: "VF", data: "2020-01-01" } },
-      "012745182": { lotto: null },
+      "034329110": { lotto: { stato: "VF", data: "2020-01-01" }, provvedimenti: [{ stato: "VF", data: "2020-01-01", motivo: "", esaurimento: "" }] },
+      "012745182": { lotto: null, provvedimenti: [] },
     });
     expect(world.chiamateFarmadati.sort()).toEqual(["TR012|012745182", "TR012|034329110"]);
+  });
+
+  it("tutti i provvedimenti del codice esatto, scartati quelli di altri codici", async () => {
+    const { get, world } = setup();
+    world.dati.set("TR012|034629016", [
+      { FDI_T291: "034629016", FDI_T292: "RI", FDI_T293: "2026-02-26", FDI_T294: "X" },
+      { FDI_T291: "034629016", FDI_T292: "VF", FDI_T293: "2025-11-30", FDI_T294: "D" },
+      { FDI_T291: "134629016", FDI_T292: "RD", FDI_T293: "2020-01-01" },
+    ]);
+
+    const r = await get("/v1/vendibilita?codici=034629016");
+
+    expect(r.body.esiti["034629016"].provvedimenti).toEqual([
+      { stato: "RI", data: "2026-02-26", motivo: "X", esaurimento: "" },
+      { stato: "VF", data: "2025-11-30", motivo: "D", esaurimento: "" },
+    ]);
   });
 
   it("scade dopo 12 ore e si aspetta il dato nuovo (niente dato vecchio)", async () => {
@@ -148,7 +164,10 @@ describe("vendibilità", () => {
     vi.setSystemTime(new Date(Date.now() + 13 * HOUR));
     const r = await get("/v1/vendibilita?codici=012745182");
 
-    expect(r.body.esiti["012745182"]).toEqual({ lotto: { stato: "RI", data: "2026-10-13" } });
+    expect(r.body.esiti["012745182"]).toEqual({
+      lotto: { stato: "RI", data: "2026-10-13" },
+      provvedimenti: [{ stato: "RI", data: "2026-10-13", motivo: "", esaurimento: "" }],
+    });
     expect(world.chiamateFarmadati).toHaveLength(2);
   });
 
@@ -163,7 +182,7 @@ describe("vendibilità", () => {
     world.farmadatiGiu = true;
     const r = await get("/v1/vendibilita?codici=012745182,099999999");
 
-    expect(r.body.esiti["012745182"]).toEqual({ lotto: { stato: "VF", data: "2020-01-01" } });
+    expect(r.body.esiti["012745182"]).toEqual({ lotto: { stato: "VF", data: "2020-01-01" }, provvedimenti: [{ stato: "VF", data: "2020-01-01", motivo: "", esaurimento: "" }] });
     expect(r.body.esiti["099999999"]).toEqual({ errore: true });
   });
 

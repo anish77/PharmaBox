@@ -130,17 +130,23 @@ class SoapFarmadatiRepository implements FarmadatiRepository {
   Future<bool?> vendibilita(String codice) async {
     try {
       final inner = await _query(SearchKind.lottiInvendibili, codice);
-      if (inner == null) return calcolaVendibilita(haLotto: false);
+      if (inner == null) return calcolaVendibilita(const []);
 
-      final prodotti = xml.XmlDocument.parse(inner).findAllElements('Product');
-      if (prodotti.isEmpty) return null;
-
-      final p = prodotti.first;
-      return calcolaVendibilita(
-        haLotto: true,
-        stato: p.getElement('FDI_T292')?.innerText.trim(),
-        data: p.getElement('FDI_T293')?.innerText.trim(),
-      );
+      String? campo(xml.XmlElement p, String nome) =>
+          p.getElement(nome)?.innerText.trim();
+      // il filtro Farmadati è CONTIENE: si tengono solo i record del codice esatto
+      final prodotti = xml.XmlDocument.parse(inner)
+          .findAllElements('Product')
+          .where((p) => (campo(p, 'FDI_T291') ?? codice) == codice);
+      return calcolaVendibilita([
+        for (final p in prodotti)
+          Provvedimento(
+            stato: campo(p, 'FDI_T292') ?? '',
+            data: campo(p, 'FDI_T293'),
+            motivo: campo(p, 'FDI_T294'),
+            esaurimento: campo(p, 'FDI_T298'),
+          ),
+      ]);
     } catch (errore) {
       _log.e('Errore vendibilita: $errore');
     }

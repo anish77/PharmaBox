@@ -87,7 +87,32 @@ Future<List<Prodotto>> doSearch(String q) => farmadati.cercaProdotti(q);
 
 Future<String?> loadRendibilita(String minsan) => farmadati.rendibilita(minsan);
 
-Future<bool?> loadVendibilita(String minsan) => farmadati.vendibilita(minsan);
+/// Esiti di vendibilità già ottenuti in questa sessione, leggibili senza
+/// attendere: una cella che rientra nello schermo li mostra subito.
+final _vendibilitaNote = <String, ({bool? esito, DateTime scadenza})>{};
+
+/// Come la cache del repository per gli esiti certi; un esito non
+/// determinabile (spesso un errore di rete) si riprova dopo poco.
+const _durataEsitoNoto = Duration(hours: 1);
+const _durataEsitoIncerto = Duration(minutes: 5);
+
+/// L'esito già noto per [codice], null se va ancora chiesto.
+({bool? esito})? vendibilitaNota(String codice) {
+  final nota = _vendibilitaNote[codice];
+  if (nota == null || DateTime.now().isAfter(nota.scadenza)) return null;
+  return (esito: nota.esito);
+}
+
+Future<bool?> loadVendibilita(String minsan) async {
+  final esito = await farmadati.vendibilita(minsan);
+  _vendibilitaNote[minsan] = (
+    esito: esito,
+    scadenza: DateTime.now().add(
+      esito == null ? _durataEsitoIncerto : _durataEsitoNoto,
+    ),
+  );
+  return esito;
+}
 
 Future<String> getOrPutImage(String minsan) => farmadati.immagineUrl(minsan);
 

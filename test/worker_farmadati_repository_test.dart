@@ -66,6 +66,19 @@ void main() {
               c:
                   c == '000000001'
                       ? {
+                        'lotto': {'stato': 'RD', 'data': '2020-01-01'},
+                        'provvedimenti': [
+                          {
+                            'stato': 'RD',
+                            'data': '2020-01-01',
+                            'motivo': 'U',
+                            'esaurimento': '',
+                          },
+                        ],
+                      }
+                      : c == '000000003'
+                      ? {
+                        // risposta del Worker precedente: solo il primo record
                         'lotto': {'stato': 'VF', 'data': '2020-01-01'},
                       }
                       : c == '000000002'
@@ -123,6 +136,11 @@ void main() {
       expect(richieste, hasLength(1));
     },
   );
+
+  test('vendibilità: accetta anche le risposte con il solo lotto', () async {
+    final repo = repository();
+    expect(await repo.vendibilita('000000003'), isFalse);
+  });
 
   test('vendibilità: in cache locale per un\'ora', () async {
     final repo = repository();
@@ -225,25 +243,69 @@ void main() {
 
   group('calcolaVendibilita', () {
     final oggi = DateTime(2026, 10, 13);
-    test('nessun lotto: vendibile', () {
-      expect(calcolaVendibilita(haLotto: false), isTrue);
+    bool? v(List<Provvedimento> p) => calcolaVendibilita(p, oggi: oggi);
+    Provvedimento p(
+      String stato, [
+      String? data,
+      String? motivo,
+      String? esaurimento,
+    ]) => Provvedimento(
+      stato: stato,
+      data: data,
+      motivo: motivo,
+      esaurimento: esaurimento,
+    );
+
+    test('nessun provvedimento: vendibile', () {
+      expect(v(const []), isTrue);
     });
-    test('VF/RD vendibili fino alla data, RI dalla data in poi', () {
-      bool? v(String stato, String data) => calcolaVendibilita(
-        haLotto: true,
-        stato: stato,
-        data: data,
-        oggi: oggi,
+
+    test('VF vendibile fino al giorno indicato compreso', () {
+      expect(v([p('VF', '2026-12-01')]), isTrue);
+      expect(v([p('VF', '2026-10-13')]), isTrue);
+      expect(v([p('VF', '2026-10-12')]), isFalse);
+    });
+
+    test('RD ritiro dalla data, RI ricommercializzabile dalla data', () {
+      expect(v([p('RD', '2026-12-01')]), isTrue);
+      expect(v([p('RD', '2026-10-13')]), isFalse);
+      expect(v([p('RI', '2026-01-01')]), isTrue);
+      expect(v([p('RI', '2026-12-01')]), isFalse);
+    });
+
+    test('decide il provvedimento più recente in vigore', () {
+      // UNIVIT 034629016: vendibile fino al 30/11/2025, poi ricommercializzato
+      expect(
+        v([p('RI', '2026-02-26', 'X'), p('VF', '2025-11-30', 'D')]),
+        isTrue,
       );
-      expect(v('VF', '2026-12-01'), isTrue);
-      expect(v('VF', '2026-01-01'), isFalse);
-      expect(v('RD', '2026-12-01'), isTrue);
-      expect(v('RI', '2026-01-01'), isTrue);
-      expect(v('RI', '2026-12-01'), isFalse);
+      // ritiro definitivo dopo il reintegro
+      expect(v([p('RI', '2020-01-01'), p('RD', '2025-01-01')]), isFalse);
+      // reintegro futuro: oggi è ancora ritirato
+      expect(v([p('RD', '2025-01-01'), p('RI', '2027-01-01')]), isFalse);
     });
-    test('dati incompleti o data non valida: non determinabile', () {
-      expect(calcolaVendibilita(haLotto: true, stato: 'VF', data: ''), isNull);
-      expect(calcolaVendibilita(haLotto: true, stato: 'VF', data: 'x'), isNull);
+
+    test('ad esaurimento scorte senza data stato: vendibile', () {
+      // DARZALEX 044885010: VF motivo E con sola FDI_T298
+      expect(v([p('VF', null, 'E', '2027-06-30')]), isTrue);
+      expect(v([p('VF', null, 'E')]), isTrue);
+      // il caso che mostrava "non consentito": RD senza data, reintegro dopo
+      expect(
+        v([
+          p('RD', null, 'E', '2007-07-11'),
+          p('RI', '2009-08-03', 'X'),
+          p('VF', '2009-07-22', 'R'),
+        ]),
+        isTrue,
+      );
+    });
+
+    test('senza date o con stato sconosciuto: non determinabile', () {
+      expect(v([p('VF', null, 'R')]), isNull);
+      expect(v([p('VF', 'x', 'R')]), isNull);
+      expect(v([p('ZZ', '2020-01-01')]), isNull);
+      // un divieto in vigore resta tale anche con un record incompleto
+      expect(v([p('RD', '2020-01-01'), p('VF', null, 'R')]), isFalse);
     });
   });
 }

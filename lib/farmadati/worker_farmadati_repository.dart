@@ -111,13 +111,21 @@ class WorkerFarmadatiRepository implements FarmadatiRepository {
           return jsonEncode(esito);
         },
       );
-      final lotto = (jsonDecode(payload!) as Map<String, dynamic>)['lotto'];
-      if (lotto == null) return calcolaVendibilita(haLotto: false);
-      return calcolaVendibilita(
-        haLotto: true,
-        stato: lotto['stato'] as String?,
-        data: lotto['data'] as String?,
-      );
+      final esito = jsonDecode(payload!) as Map<String, dynamic>;
+      // risposte del Worker precedente (o in cache): solo il primo record
+      final grezzi =
+          (esito['provvedimenti'] ??
+                  [if (esito['lotto'] != null) esito['lotto']])
+              as List;
+      return calcolaVendibilita([
+        for (final p in grezzi.cast<Map<String, dynamic>>())
+          Provvedimento(
+            stato: p['stato'] as String? ?? '',
+            data: p['data'] as String?,
+            motivo: p['motivo'] as String?,
+            esaurimento: p['esaurimento'] as String?,
+          ),
+      ]);
     } catch (errore) {
       _log.e('Errore vendibilita: $errore');
       return null;
