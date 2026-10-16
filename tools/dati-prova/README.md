@@ -12,6 +12,7 @@ Senza `--scrivi` ogni script mostra cosa farebbe senza modificare nulla.
 |---|---|
 | `crea_liste.mjs` | Crea liste nuove; quelle con lo stesso nome vengono saltate. |
 | `aggiungi_pezzi.mjs` | Aggiunge pezzi a liste esistenti, in parte su prodotti già presenti e in parte su MINSAN nuovi, con incrementi atomici come l'app. |
+| `modifiche_casuali.mjs` | Simula il lavoro di un operatore: cancella 2–3 liste (con i prodotti), ne rinomina 3–4 e in altre 2–3 toglie prodotti e cambia quantità, tenendo coerente il totale. Con lo stesso `SEED` ripete le stesse scelte. |
 | `verifica_liste.mjs` | Sola lettura: per ogni lista confronta il totale salvato con la somma delle quantità. |
 
 ## Esempi (PowerShell)
