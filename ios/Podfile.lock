@@ -1396,13 +1396,13 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
-  - purchases_flutter (9.10.8):
+  - purchases_flutter (10.16.0):
     - Flutter
-    - PurchasesHybridCommon (= 17.30.0)
-  - PurchasesHybridCommon (17.30.0):
-    - RevenueCat (= 5.56.0)
+    - PurchasesHybridCommon (= 19.12.0)
+  - PurchasesHybridCommon (19.12.0):
+    - RevenueCat (= 5.95.0)
   - RecaptchaInterop (101.0.0)
-  - RevenueCat (5.56.0)
+  - RevenueCat (5.95.0)
   - share_plus (0.0.1):
     - Flutter
   - shared_preferences_foundation (0.0.1):
@@ -1533,10 +1533,10 @@ SPEC CHECKSUMS:
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  purchases_flutter: 0a71872a86b871009c5c4533134b68dc56732d24
-  PurchasesHybridCommon: c00f6ce5933b9928e99766a45c9e53c0a5a03240
+  purchases_flutter: ef42088709f8d213b3f879102d3c1e58cfe06085
+  PurchasesHybridCommon: 7ba4a84cdd9738a936b2091f7e982952c1feb6f6
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RevenueCat: 9e2a13bead55198a72272ff105a7265e9510cd11
+  RevenueCat: 431637b02e9e5dc1165c2031936947d0468e1ed4
   share_plus: 8b6f8b3447e494cca5317c8c3073de39b3600d1f
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   url_launcher_ios: bb13df5870e8c4234ca12609d04010a21be43dfa
