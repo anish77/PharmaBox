@@ -117,10 +117,10 @@ class ManualDoc(BaseDocTemplate):
         canvas.setFillColor(INK)
         if doc.page > 1:
             canvas.drawString(18*mm, A4[1]-13*mm, 'PHARMABOX  /  MANUALE UTENTE')
-            canvas.drawRightString(A4[0]-18*mm, A4[1]-13*mm, 'Edizione 12 ottobre 2026')
+            canvas.drawRightString(A4[0]-18*mm, A4[1]-13*mm, 'Edizione 15 ottobre 2026')
         canvas.setStrokeColor(colors.HexColor('#e5e6ff'))
         canvas.line(18*mm, 14*mm, A4[0]-18*mm, 14*mm)
-        canvas.drawString(18*mm, 9*mm, 'Versione di riferimento 1.0.2+2')
+        canvas.drawString(18*mm, 9*mm, 'Versione di riferimento 1.0.4+34')
         canvas.drawRightString(A4[0]-18*mm, 9*mm, str(doc.page))
         canvas.restoreState()
 
@@ -160,8 +160,8 @@ def build_pdf(raw):
             Spacer(1, 15*mm), Paragraph('PharmaBox', ss['CoverTitle']),
             Paragraph('Manuale utente<br/>completo', ss['CoverSub']),
             Paragraph('Dall’accesso al primo inventario, fino all’esportazione e alla gestione dell’account.', ss['Text']),
-            Spacer(1, 12*mm), Paragraph('23 capitoli · Screenshot dell’app · Procedure passo passo', ss['Subhead']),
-            Paragraph('Edizione 12 ottobre 2026<br/>Versione di riferimento 1.0.2+2', ss['Text']),
+            Spacer(1, 12*mm), Paragraph('24 capitoli · Screenshot dell’app · Procedure passo passo', ss['Subhead']),
+            Paragraph('Edizione 15 ottobre 2026<br/>Versione di riferimento 1.0.4+34', ss['Text']),
             Spacer(1, 20*mm), Paragraph('Una guida operativa per il lavoro quotidiano in farmacia.', ss['Text']),
             PageBreak(), Paragraph('Indice', ss['Chapter'])]
     toc = TableOfContents()

@@ -1,11 +1,11 @@
 # Manuale utente PharmaBox
 
-Edizione italiana del 12 ottobre 2026, riferita alla versione 1.0.2+2.
+Edizione italiana del 15 ottobre 2026, riferita alla versione 1.0.4+34.
 
 - [Manuale PDF](Manuale-PharmaBox.pdf): pronto da consultare, stampare o condividere, con indice e segnalibri.
 - [Manuale HTML](Manuale-PharmaBox.html): file autonomo, con indice cliccabile e screenshot incorporati. Non richiede un server né una connessione.
 - [Sorgente Markdown](Manuale-PharmaBox.md): testo modificabile, con collegamenti agli screenshot originali.
-- [Screenshot](screenshots/): 23 acquisizioni PNG dall'emulatore Android.
+- [Screenshot](screenshots/): 28 acquisizioni PNG dall'emulatore Android.
 
 Le immagini sono catture reali dell'app installata, non ricostruzioni grafiche.
 I dati mostrati appartengono alle liste di prova dell'ambiente. Per accesso e
