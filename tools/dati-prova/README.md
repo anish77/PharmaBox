@@ -14,6 +14,7 @@ Senza `--scrivi` ogni script mostra cosa farebbe senza modificare nulla.
 | `aggiungi_pezzi.mjs` | Aggiunge pezzi a liste esistenti, in parte su prodotti già presenti e in parte su MINSAN nuovi, con incrementi atomici come l'app. |
 | `modifiche_casuali.mjs` | Simula il lavoro di un operatore: cancella 2–3 liste (con i prodotti), ne rinomina 3–4 e in altre 2–3 toglie prodotti e cambia quantità, tenendo coerente il totale. Con lo stesso `SEED` ripete le stesse scelte. |
 | `verifica_liste.mjs` | Sola lettura: per ogni lista confronta il totale salvato con la somma delle quantità. |
+| `crea_demo_screenshot.mjs` | Prepara l'account demo degli screenshot App Store: 5 liste con nomi realistici, lotti e scadenze, un prodotto ritirato e parafarmaci con immagine. Sceglie solo prodotti con la vendibilità già nella cache del Worker; `--rifai` ricrea le liste demo e si ferma se l'account ha altre liste. Poi `tool/screenshot_app_store.sh`. |
 
 ## Esempi (PowerShell)
 

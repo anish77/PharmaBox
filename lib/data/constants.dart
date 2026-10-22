@@ -117,6 +117,10 @@ const kFarmadatiProxyEndpoint = String.fromEnvironment(
   defaultValue: 'https://farmadati-proxy.gianluca-carta.workers.dev',
 );
 
+// --dart-define=SCREENSHOT_APP_STORE=true: build di debug senza gli strumenti
+// di sviluppo visibili (integration_test/screenshot_app_store_test.dart).
+const kScreenshotAppStore = bool.fromEnvironment('SCREENSHOT_APP_STORE');
+
 // Cloudflare R2 integration (configura questi valori nel tuo ambiente)
 // Dominio pubblico (CDN) collegato al bucket R2 "prod-images"
 const kR2CdnBaseUrl = 'https://doublecore.it';

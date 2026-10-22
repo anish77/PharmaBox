@@ -908,7 +908,7 @@ class _SelectedListPageState extends ConsumerState<SelectedListPage> {
               titleSpacing: 0,
               actions: [
                 // Solo debug: simula letture dello scanner Bluetooth
-                if (!kReleaseMode)
+                if (!kReleaseMode && !kScreenshotAppStore)
                   ValueListenableBuilder(
                     valueListenable: BleSimulator.raffica,
                     builder: (context, raffica, _) {
