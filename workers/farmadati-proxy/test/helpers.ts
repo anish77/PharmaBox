@@ -88,6 +88,12 @@ export class FakeWorld {
       const { ean } = JSON.parse(String(init?.body));
       return Response.json({ ok: true, origUrl: `https://cdn.test/${ean}.jpg` });
     }
+    if (url.startsWith(env.FARMADATI_DOC_ENDPOINT) && url.includes("tipodoc=Z")) {
+      // come GetDoc: file assente = pagina HTML con stato 200
+      return url.includes("mancante")
+        ? new Response("File non specificato o non valido", { headers: { "content-type": "text/html" } })
+        : new Response(new Uint8Array([0xff, 0xd8, 0xff]), { headers: { "content-type": "image/jpg" } });
+    }
     if (url.startsWith(env.FARMADATI_DOC_ENDPOINT)) {
       return new Response("<html>bugiardino</html>", { headers: { "content-type": "text/html" } });
     }

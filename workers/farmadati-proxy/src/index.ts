@@ -11,6 +11,11 @@ export interface Env {
   FARMADATI_USERNAME: string;
   FARMADATI_PASSWORD: string;
   R2_INGEST_ENDPOINT: string;
+  /**
+   * Service binding verso pharmabox-r2-ingest: un Worker non può chiamare un
+   * altro Worker dello stesso account dal suo URL *.workers.dev (risponde 404).
+   */
+  R2_INGEST?: Fetcher;
   R2_API_KEY: string;
   BUGIARDINO_BASE: string;
   BUGIARDINO_UPLOAD: string;
@@ -96,6 +101,9 @@ export function createHandler(overrides: Overrides = {}) {
             ),
           ),
         fetch: fetchFn,
+        ingestFetch: env.R2_INGEST
+          ? (input, init) => env.R2_INGEST!.fetch(input, init)
+          : fetchFn,
         password: env.FARMADATI_PASSWORD,
         docEndpoint: env.FARMADATI_DOC_ENDPOINT,
         r2IngestEndpoint: env.R2_INGEST_ENDPOINT,

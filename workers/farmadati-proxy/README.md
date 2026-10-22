@@ -14,7 +14,7 @@ Tutte `GET`, con header `Authorization: Bearer <ID token Firebase>`.
 | `/v1/prodotti?q=` | `{prodotti: [{codice, minsan, nome, categoria}]}`. `q` può essere un nome, un codice ministeriale o un EAN (più di 9 cifre) |
 | `/v1/vendibilita?codici=a,b,c` | `{esiti: {codice: {lotto, provvedimenti: [{stato, data, motivo, esaurimento}]} \| {errore: true}}}`, massimo 50 codici; `lotto` (primo record o null) resta per le versioni precedenti dell'app |
 | `/v1/rendibilita?codice=` | `{trovato, codice}` (codice FDI_0460) |
-| `/v1/immagine?codice=` | `{url}`: URL CDN su R2, oppure null |
+| `/v1/immagine?codice=` | `{url}`: URL CDN su R2, oppure null (anche se TDZ indica un file che Farmadati non ha). L'ingest passa dal service binding `R2_INGEST` verso `pharmabox-r2-ingest` |
 | `/v1/bugiardino?codice=&tipo=F` | `{url}`: copia su doublecore, oppure un link firmato `/v1/doc` valido per un'ora |
 | `/v1/doc?tipo=&nome=&exp=&sig=` | inoltra il documento Farmadati senza esporre l'accesskey (senza token, firmato HMAC) |
 

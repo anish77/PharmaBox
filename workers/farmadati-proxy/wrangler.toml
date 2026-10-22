@@ -21,3 +21,9 @@ binding = "DB"
 database_name = "farmadati-cache"
 database_id = "5d1fd923-9e8d-4dce-b4dd-77e49653fda9"
 migrations_dir = "migrations"
+
+# Ingest delle immagini su R2: un Worker non può chiamarne un altro dello
+# stesso account dal suo URL *.workers.dev (Cloudflare risponde 404).
+[[services]]
+binding = "R2_INGEST"
+service = "pharmabox-r2-ingest"

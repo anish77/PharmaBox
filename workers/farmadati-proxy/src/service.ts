@@ -2,6 +2,8 @@ import type { CachedLoader, Policy } from "./cache";
 import type { Dataset, FdiRecord, FetchFn } from "./farmadati";
 
 const DAY = 24 * 60 * 60 * 1000;
+/** Download e ingest di un'immagine: oltre, meglio nessuna immagine che una richiesta appesa. */
+const IMMAGINE_TIMEOUT_MS = 20_000;
 const HOUR = 60 * 60 * 1000;
 
 /** Farmadati restituisce al massimo 100 record per pagina. */
@@ -48,6 +50,8 @@ export interface ServiceDeps {
   /** Chiamata reale a Farmadati (già limitata in concorrenza). */
   query: (dataset: Dataset, filterKey: string, value: string) => Promise<FdiRecord[] | null>;
   fetch: FetchFn;
+  /** Verso il Worker di ingest R2 (service binding in produzione). */
+  ingestFetch: FetchFn;
   password: string;
   docEndpoint: string;
   r2IngestEndpoint: string;
@@ -180,10 +184,21 @@ export class FarmadatiService {
       const imageUrl =
         `${this.deps.docEndpoint}?accesskey=${this.deps.password}` +
         `&tipodoc=Z&nomefile=${encodeURIComponent(file)}`;
-      const resp = await this.deps.fetch(this.deps.r2IngestEndpoint, {
+      // Se il file non c'è Farmadati risponde 200 con una pagina HTML, che
+      // l'ingest salverebbe come immagine: senza un'immagine vera, nessuna immagine.
+      const sorgente = await this.deps.fetch(imageUrl, {
+        signal: AbortSignal.timeout(IMMAGINE_TIMEOUT_MS),
+      });
+      await sorgente.body?.cancel();
+      if (!sorgente.ok || !sorgente.headers.get("content-type")?.startsWith("image/")) {
+        return null;
+      }
+
+      const resp = await this.deps.ingestFetch(this.deps.r2IngestEndpoint, {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": this.deps.r2ApiKey },
         body: JSON.stringify({ ean: found[0].FDI_T218 || codice, imageUrl }),
+        signal: AbortSignal.timeout(IMMAGINE_TIMEOUT_MS),
       });
       const data = resp.ok ? await resp.json<{ ok?: boolean; origUrl?: string }>() : null;
       // se l'ingest fallisce non salviamo nulla: si riproverà

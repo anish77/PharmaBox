@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseResponse } from "../src/farmadati";
-import { PASSWORD, setup, tr001 } from "./helpers";
+import type { Env } from "../src/index";
+import { PASSWORD, env, setup, tr001 } from "./helpers";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -233,6 +234,43 @@ describe("rendibilità e immagine", () => {
     expect(secondo.body).toEqual(primo.body);
     expect(world.chiamateFarmadati).toEqual(["TDZ|012745182"]);
     expect(world.altreChiamate.filter((c) => c.includes("r2.test"))).toHaveLength(1);
+  });
+
+  it("immagine in TDZ ma file assente su Farmadati: url null in cache, niente ingest", async () => {
+    const { get, world } = setup();
+    world.dati.set("TDZ|012745182", [{ FDI_T218: "012745182", FDI_T438: "mancante.jpg" }]);
+
+    expect((await get("/v1/immagine?codice=012745182")).body).toEqual({ url: null });
+    expect((await get("/v1/immagine?codice=012745182")).body).toEqual({ url: null });
+    expect(world.chiamateFarmadati).toEqual(["TDZ|012745182"]);
+    expect(world.altreChiamate.filter((c) => c.includes("r2.test"))).toHaveLength(0);
+  });
+
+  it("immagine: con il service binding l'ingest passa da lì, non dall'URL pubblico", async () => {
+    const { world, handler, ctx } = setup();
+    world.dati.set("TDZ|012745182", [{ FDI_T218: "012745182", FDI_T438: "img 1.jpg" }]);
+    const viaBinding: string[] = [];
+    const conBinding = {
+      ...env,
+      R2_INGEST: {
+        fetch: async (input: string) => {
+          viaBinding.push(input);
+          return Response.json({ ok: true, origUrl: "https://cdn.test/binding.jpg" });
+        },
+      },
+    } as unknown as Env;
+
+    const resp = await handler(
+      new Request("https://proxy.test/v1/immagine?codice=012745182", {
+        headers: { authorization: "Bearer token-valido" },
+      }),
+      conBinding,
+      ctx,
+    );
+
+    expect(await resp.json()).toEqual({ url: "https://cdn.test/binding.jpg" });
+    expect(viaBinding).toEqual([env.R2_INGEST_ENDPOINT]);
+    expect(world.altreChiamate.filter((c) => c.includes("r2.test"))).toHaveLength(0);
   });
 
   it("immagine assente in TDZ: url null, anche questo in cache", async () => {
